@@ -1,0 +1,1 @@
+// Khung code xử lý logic cho Checkin UCs
