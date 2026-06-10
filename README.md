@@ -50,10 +50,10 @@ Client gửi:  POST /api/v1/auth/login  →  Express nhận  →  Gọi hàm x�
 
 ```ts
 // Không có Mongoose — viết MongoDB thuần (cồng kềnh)
-db.collection('users').findOne({ email: 'a@gmail.com' });
+db.collection("users").findOne({ email: "a@gmail.com" });
 
 // Có Mongoose — gọn, có kiểu TypeScript
-const user = await User.findOne({ email: 'a@gmail.com' });
+const user = await User.findOne({ email: "a@gmail.com" });
 ```
 
 ---
@@ -68,18 +68,18 @@ const user = await User.findOne({ email: 'a@gmail.com' });
         │  HTTP Request  (POST /api/v1/auth/login)
         ▼
 ┌─────────────────────────────────────────────────────────┐
-│                    BACKEND (Express.js)                  │
-│                                                          │
-│  ① ROUTER          → Nhận request, gắn middleware        │
-│       │                                                  │
-│  ② MIDDLEWARE      → Kiểm tra JWT, phân quyền Role       │
-│       │                                                  │
+│                    BACKEND (Express.js)                 │
+│                                                         │
+│  ① ROUTER          → Nhận request, gắn middleware       │
+│       │                                                 │
+│  ② MIDDLEWARE      → Kiểm tra JWT, phân quyền Role      │
+│       │                                                 │
 │  ③ CONTROLLER      → Validate dữ liệu đầu vào (DTO/Joi) │
-│       │                                                  │
+│       │                                                 │
 │  ④ SERVICE         → Xử lý logic nghiệp vụ              │
-│       │                                                  │
+│       │                                                 │
 │  ⑤ REPOSITORY      → Truy vấn MongoDB qua Mongoose      │
-│                                                          │
+│                                                         │
 └───────────────────────────┬─────────────────────────────┘
                             │
                             ▼
@@ -273,13 +273,13 @@ File đầu tiên chạy khi bạn gõ `npm run dev`. Nó làm 3 việc: kết n
 
 ```ts
 // server.ts
-import app from './app';
-import { connectDB } from './config/db.config';
+import app from "./app";
+import { connectDB } from "./config/db.config";
 
 const PORT = process.env.PORT ?? 3000;
 
 async function bootstrap() {
-  await connectDB();                        // Kết nối MongoDB trước
+  await connectDB(); // Kết nối MongoDB trước
   app.listen(PORT, () => {
     console.log(`🚀 Server đang chạy tại cổng ${PORT}`);
   });
@@ -294,11 +294,11 @@ File này không khởi động server mà chỉ **cấu hình** ứng dụng Ex
 
 ```ts
 // app.ts
-import express from 'express';
-import cors from 'cors';
-import { errorHandler } from './shared/errors/errorHandler';
-import authRouter from './features/auth/auth.router';
-import eventsRouter from './features/events/events.router';
+import express from "express";
+import cors from "cors";
+import { errorHandler } from "./shared/errors/errorHandler";
+import authRouter from "./features/auth/auth.router";
+import eventsRouter from "./features/events/events.router";
 
 const app = express();
 
@@ -307,8 +307,8 @@ app.use(cors());
 app.use(express.json());
 
 // Nạp routes của từng feature
-app.use('/api/v1/auth', authRouter);
-app.use('/api/v1/events', eventsRouter);
+app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/events", eventsRouter);
 // ... các features khác
 
 // PHẢI đặt cuối cùng — bắt mọi lỗi throw từ các tầng bên trên
@@ -324,19 +324,19 @@ export default app;
 ```ts
 // config/app.config.ts
 export const config = {
-  port:     process.env.PORT ?? '3000',
-  nodeEnv:  process.env.NODE_ENV ?? 'development',
-  mongoUri: process.env.MONGO_URI!,          // ! = bắt buộc phải có, nếu thiếu sẽ crash
+  port: process.env.PORT ?? "3000",
+  nodeEnv: process.env.NODE_ENV ?? "development",
+  mongoUri: process.env.MONGO_URI!, // ! = bắt buộc phải có, nếu thiếu sẽ crash
   jwt: {
-    accessSecret:  process.env.JWT_ACCESS_SECRET!,
-    accessExpires: process.env.JWT_ACCESS_EXPIRES ?? '15m',
+    accessSecret: process.env.JWT_ACCESS_SECRET!,
+    accessExpires: process.env.JWT_ACCESS_EXPIRES ?? "15m",
     refreshSecret: process.env.JWT_REFRESH_SECRET!,
-    refreshExpires: process.env.JWT_REFRESH_EXPIRES ?? '7d',
+    refreshExpires: process.env.JWT_REFRESH_EXPIRES ?? "7d",
   },
 };
 
 // ✅ Đúng — import từ config
-import { config } from '../config/app.config';
+import { config } from "../config/app.config";
 jwt.sign(payload, config.jwt.accessSecret);
 
 // ❌ Sai — đọc process.env trực tiếp trong feature file
@@ -349,23 +349,23 @@ Router khai báo URL endpoint và gắn middleware phù hợp trước khi reque
 
 ```ts
 // features/auth/auth.router.ts
-import { Router } from 'express';
-import { AuthController } from './auth.controller';
-import { authMiddleware } from '../../shared/middlewares/auth.middleware';
+import { Router } from "express";
+import { AuthController } from "./auth.controller";
+import { authMiddleware } from "../../shared/middlewares/auth.middleware";
 
 const router = Router();
 const controller = new AuthController();
 
 // Endpoint công khai — không cần middleware
-router.post('/register', controller.register);
-router.post('/login',    controller.login);
-router.post('/refresh',  controller.refresh);
+router.post("/register", controller.register);
+router.post("/login", controller.login);
+router.post("/refresh", controller.refresh);
 
 // Endpoint yêu cầu đăng nhập — gắn authMiddleware
-router.post('/logout',          authMiddleware, controller.logout);
-router.get('/me',               authMiddleware, controller.getMe);
-router.patch('/me',             authMiddleware, controller.updateMe);
-router.patch('/change-password', authMiddleware, controller.changePassword);
+router.post("/logout", authMiddleware, controller.logout);
+router.get("/me", authMiddleware, controller.getMe);
+router.patch("/me", authMiddleware, controller.updateMe);
+router.patch("/change-password", authMiddleware, controller.changePassword);
 
 export default router;
 ```
@@ -377,13 +377,12 @@ Controller chỉ làm **3 việc**: nhận request, validate dữ liệu đầu 
 ```ts
 // features/auth/auth.controller.ts
 export class AuthController {
-
   // ✅ Đúng — controller mỏng, không có logic
   async login(req: Request, res: Response, next: NextFunction) {
     try {
       const dto = await validateDto(LoginSchema, req.body); // Validate trước
-      const result = await authService.login(dto);          // Gọi service
-      sendSuccess(res, result, 'Đăng nhập thành công');     // Trả response
+      const result = await authService.login(dto); // Gọi service
+      sendSuccess(res, result, "Đăng nhập thành công"); // Trả response
     } catch (err) {
       next(err); // Chuyển lỗi cho global errorHandler
     }
@@ -392,7 +391,7 @@ export class AuthController {
   // ❌ Sai — logic nghiệp vụ trong controller
   async login(req: Request, res: Response) {
     const user = await User.findOne({ email: req.body.email }); // Không được!
-    if (!user) return res.status(401).json({ message: 'Sai tài khoản' });
+    if (!user) return res.status(401).json({ message: "Sai tài khoản" });
     // ... tiếp tục vi phạm
   }
 }
@@ -405,27 +404,36 @@ Service là nơi **ra quyết định**. Nó biết quy trình nghiệp vụ: n�
 ```ts
 // features/auth/auth.service.ts
 export class AuthService {
-
   // ✅ Đúng — service gọi repository, không gọi Mongoose
   async login(dto: LoginDto) {
     // Bước 1: Tìm user qua repository
     const user = await userRepository.findByEmail(dto.email);
-    if (!user) throw new AppError('Email hoặc mật khẩu không đúng', 401);
+    if (!user) throw new AppError("Email hoặc mật khẩu không đúng", 401);
 
     // Bước 2: So sánh mật khẩu
     const isMatch = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!isMatch) throw new AppError('Email hoặc mật khẩu không đúng', 401);
+    if (!isMatch) throw new AppError("Email hoặc mật khẩu không đúng", 401);
 
     // Bước 3: Kiểm tra trạng thái tài khoản
-    if (!user.isActive) throw new AppError('Tài khoản đã bị khóa', 403);
-    if (!user.emailVerified) throw new AppError('Email chưa được xác minh', 400);
+    if (!user.isActive) throw new AppError("Tài khoản đã bị khóa", 403);
+    if (!user.emailVerified)
+      throw new AppError("Email chưa được xác minh", 400);
 
     // Bước 4: Tạo tokens
-    const accessToken  = jwt.sign({ _id: user._id, role: user.role }, config.jwt.accessSecret, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ _id: user._id }, config.jwt.refreshSecret, { expiresIn: '7d' });
+    const accessToken = jwt.sign(
+      { _id: user._id, role: user.role },
+      config.jwt.accessSecret,
+      { expiresIn: "15m" },
+    );
+    const refreshToken = jwt.sign({ _id: user._id }, config.jwt.refreshSecret, {
+      expiresIn: "7d",
+    });
 
     // Bước 5: Lưu refresh token qua repository
-    await tokenRepository.save({ userId: user._id, tokenHash: hashToken(refreshToken) });
+    await tokenRepository.save({
+      userId: user._id,
+      tokenHash: hashToken(refreshToken),
+    });
 
     return { user: sanitizeUser(user), accessToken, refreshToken };
   }
@@ -444,10 +452,9 @@ Repository chứa **tất cả câu lệnh Mongoose**. Nó không có logic, ch�
 ```ts
 // features/auth/repositories/user.repository.ts
 export class UserRepository {
-
   // Tìm user theo email — dùng .select('+passwordHash') vì field này bị ẩn mặc định
   async findByEmail(email: string) {
-    return User.findOne({ email }).select('+passwordHash').lean();
+    return User.findOne({ email }).select("+passwordHash").lean();
   }
 
   // Tạo user mới
@@ -464,7 +471,7 @@ export class UserRepository {
   // ❌ Sai — business logic trong repository
   async createIfNotExists(email: string, data: any) {
     const existing = await User.findOne({ email }); // Việc kiểm tra này thuộc về Service!
-    if (existing) throw new Error('Email đã tồn tại');
+    if (existing) throw new Error("Email đã tồn tại");
     return User.create(data);
   }
 }
@@ -477,16 +484,17 @@ export class UserRepository {
 export class AppError extends Error {
   constructor(
     public message: string,
-    public statusCode: number,    // HTTP status: 400, 401, 403, 404, 409...
+    public statusCode: number, // HTTP status: 400, 401, 403, 404, 409...
   ) {
     super(message);
-    this.name = 'AppError';
+    this.name = "AppError";
   }
 }
 
 // Dùng trong service — throw lỗi rõ ràng với status code phù hợp
-if (!event) throw new AppError('Sự kiện không tồn tại', 404);
-if (ticket.status === 'CHECKED_IN') throw new AppError('Vé đã được check-in trước đó', 409);
+if (!event) throw new AppError("Sự kiện không tồn tại", 404);
+if (ticket.status === "CHECKED_IN")
+  throw new AppError("Vé đã được check-in trước đó", 409);
 ```
 
 ### 4.9 `shared/errors/errorHandler.ts` — Bắt mọi lỗi toàn app
@@ -499,7 +507,7 @@ export const errorHandler = (
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction,   // Express yêu cầu đủ 4 tham số, dù next không dùng
+  next: NextFunction, // Express yêu cầu đủ 4 tham số, dù next không dùng
 ) => {
   // Lỗi do chính mình throw (AppError)
   if (err instanceof AppError) {
@@ -510,10 +518,10 @@ export const errorHandler = (
   }
 
   // Lỗi không mong đợi (bug, crash) — log ra console để debug
-  console.error('Unexpected error:', err);
+  console.error("Unexpected error:", err);
   return res.status(500).json({
     success: false,
-    error: { message: 'Lỗi hệ thống, vui lòng thử lại sau' },
+    error: { message: "Lỗi hệ thống, vui lòng thử lại sau" },
   });
 };
 ```
@@ -529,13 +537,16 @@ Tất cả endpoint đều phải dùng 2 hàm này để trả response — đ�
 export const sendSuccess = (
   res: Response,
   data: unknown,
-  message = 'Thành công',
+  message = "Thành công",
   statusCode = 200,
 ) => res.status(statusCode).json({ success: true, data, message });
 
 // Dùng cho: danh sách có phân trang
-export const sendPaginated = (res: Response, data: unknown, meta: PaginationMeta) =>
-  res.status(200).json({ success: true, data, meta });
+export const sendPaginated = (
+  res: Response,
+  data: unknown,
+  meta: PaginationMeta,
+) => res.status(200).json({ success: true, data, meta });
 // meta: { page: 1, limit: 10, total: 100, totalPages: 10 }
 ```
 
@@ -548,13 +559,13 @@ Mặc định Express không biết `req.user` là gì. File này "dạy" TypeSc
 declare global {
   namespace Express {
     interface Request {
-      user?: IUserPayload;   // Được gắn vào bởi authMiddleware sau khi verify JWT
+      user?: IUserPayload; // Được gắn vào bởi authMiddleware sau khi verify JWT
     }
   }
 }
 
 // Sau khi khai báo này, TypeScript không còn báo lỗi:
-const userId = req.user._id;  // ✅ TypeScript hiểu req.user tồn tại
+const userId = req.user._id; // ✅ TypeScript hiểu req.user tồn tại
 ```
 
 ---
@@ -565,28 +576,32 @@ const userId = req.user._id;  // ✅ TypeScript hiểu req.user tồn tại
 
 Đây là 2 khái niệm hay bị nhầm lẫn nhất với người mới. Cách phân biệt nhanh:
 
-| | **Middleware** | **DTO (Joi Schema)** |
-|---|---|---|
-| **Chạy ở tầng nào?** | Router (trước Controller) | Controller (đầu hàm xử lý) |
-| **Kiểm tra gì?** | Ngữ cảnh & quyền hạn | Nội dung dữ liệu gửi lên |
-| **Câu hỏi trả lời** | "Người này là ai? Có quyền không?" | "Dữ liệu có đúng format không?" |
-| **Lỗi trả về** | 401 Unauthorized / 403 Forbidden | 400 Bad Request |
+|                      | **Middleware**                     | **DTO (Joi Schema)**            |
+| -------------------- | ---------------------------------- | ------------------------------- |
+| **Chạy ở tầng nào?** | Router (trước Controller)          | Controller (đầu hàm xử lý)      |
+| **Kiểm tra gì?**     | Ngữ cảnh & quyền hạn               | Nội dung dữ liệu gửi lên        |
+| **Câu hỏi trả lời**  | "Người này là ai? Có quyền không?" | "Dữ liệu có đúng format không?" |
+| **Lỗi trả về**       | 401 Unauthorized / 403 Forbidden   | 400 Bad Request                 |
 
 **Middleware ví dụ:**
 
 ```ts
 // shared/middlewares/auth.middleware.ts
-export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const token = req.headers.authorization?.split(' ')[1]; // Lấy token từ "Bearer <token>"
+export const authMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const token = req.headers.authorization?.split(" ")[1]; // Lấy token từ "Bearer <token>"
 
-  if (!token) throw new AppError('Bạn chưa đăng nhập', 401);
+  if (!token) throw new AppError("Bạn chưa đăng nhập", 401);
 
   try {
     const payload = jwt.verify(token, config.jwt.accessSecret) as IUserPayload;
-    req.user = payload;  // Gắn thông tin user vào request để controller dùng
-    next();              // Cho đi tiếp
+    req.user = payload; // Gắn thông tin user vào request để controller dùng
+    next(); // Cho đi tiếp
   } catch {
-    throw new AppError('Token không hợp lệ hoặc đã hết hạn', 401);
+    throw new AppError("Token không hợp lệ hoặc đã hết hạn", 401);
   }
 };
 ```
@@ -596,12 +611,12 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
 ```ts
 // features/auth/dto/auth.dto.ts
 export const LoginSchema = Joi.object({
-  email:    Joi.string().email().required().messages({
-    'string.email': 'Email không đúng định dạng',
-    'any.required': 'Email là bắt buộc',
+  email: Joi.string().email().required().messages({
+    "string.email": "Email không đúng định dạng",
+    "any.required": "Email là bắt buộc",
   }),
   password: Joi.string().min(6).required().messages({
-    'string.min': 'Mật khẩu tối thiểu 6 ký tự',
+    "string.min": "Mật khẩu tối thiểu 6 ký tự",
   }),
 });
 
@@ -624,38 +639,45 @@ const dto = await validateDto(LoginSchema, req.body);
 
 Bạn sẽ thấy từ "Schema" xuất hiện ở 2 nơi: trong `dto/` (Joi Schema) và trong `models/` (Mongoose Schema). Đây là 2 thứ **hoàn toàn khác nhau**.
 
-| | **Joi Schema (trong `dto/`)** | **Mongoose Schema (trong `models/`)** |
-|---|---|---|
-| **Thư viện** | `joi` | `mongoose` |
-| **Mục đích** | Kiểm tra dữ liệu **đầu vào** từ client | Định nghĩa cấu trúc **lưu trữ** trong DB |
-| **Chạy khi nào?** | Khi request đến (trước khi xử lý) | Khi save/query MongoDB |
-| **Phạm vi** | Chỉ các field client được phép gửi | Toàn bộ document trong collection |
-| **Ví dụ field** | `email`, `password` | `email`, `passwordHash`, `role`, `isActive`, `createdAt` |
+|                   | **Joi Schema (trong `dto/`)**          | **Mongoose Schema (trong `models/`)**                    |
+| ----------------- | -------------------------------------- | -------------------------------------------------------- |
+| **Thư viện**      | `joi`                                  | `mongoose`                                               |
+| **Mục đích**      | Kiểm tra dữ liệu **đầu vào** từ client | Định nghĩa cấu trúc **lưu trữ** trong DB                 |
+| **Chạy khi nào?** | Khi request đến (trước khi xử lý)      | Khi save/query MongoDB                                   |
+| **Phạm vi**       | Chỉ các field client được phép gửi     | Toàn bộ document trong collection                        |
+| **Ví dụ field**   | `email`, `password`                    | `email`, `passwordHash`, `role`, `isActive`, `createdAt` |
 
 **Ví dụ so sánh — Đăng ký tài khoản:**
 
 ```ts
 // dto/auth.dto.ts — Joi Schema: Chỉ kiểm tra những gì CLIENT gửi lên
 export const RegisterSchema = Joi.object({
-  name:     Joi.string().min(2).required(),
-  email:    Joi.string().email().required(),
+  name: Joi.string().min(2).required(),
+  email: Joi.string().email().required(),
   password: Joi.string().min(6).required(), // Client gửi plain text password
-  phone:    Joi.string().optional(),
+  phone: Joi.string().optional(),
   // Không có: role, isActive, passwordHash, createdAt
   // (Client không được tự set mấy field này)
 });
 
 // models/user.model.ts — Mongoose Schema: Định nghĩa TOÀN BỘ document trong DB
-const userSchema = new Schema({
-  name:          { type: String, required: true, trim: true },
-  email:         { type: String, required: true, unique: true, lowercase: true },
-  passwordHash:  { type: String, required: true, select: false }, // Ẩn mặc định khi query
-  role:          { type: String, enum: ['attendee', 'organizer', 'staff', 'admin'], default: 'attendee' },
-  phone:         { type: String },
-  avatar:        { type: String },
-  isActive:      { type: Boolean, default: true },
-  emailVerified: { type: Boolean, default: false },
-}, { timestamps: true }); // Tự động thêm createdAt, updatedAt
+const userSchema = new Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    email: { type: String, required: true, unique: true, lowercase: true },
+    passwordHash: { type: String, required: true, select: false }, // Ẩn mặc định khi query
+    role: {
+      type: String,
+      enum: ["attendee", "organizer", "staff", "admin"],
+      default: "attendee",
+    },
+    phone: { type: String },
+    avatar: { type: String },
+    isActive: { type: Boolean, default: true },
+    emailVerified: { type: Boolean, default: false },
+  },
+  { timestamps: true },
+); // Tự động thêm createdAt, updatedAt
 ```
 
 **Luồng xử lý khi đăng ký:**
@@ -709,7 +731,7 @@ export class UserRepository {
 // ❌ Nếu Service gọi thẳng Model:
 class AuthService {
   async findUser(email: string) {
-    return User.findOne({ email }).select('+passwordHash'); // Rải rác khắp nơi
+    return User.findOne({ email }).select("+passwordHash"); // Rải rác khắp nơi
   }
 }
 class TicketService {
@@ -745,34 +767,34 @@ repositories/
 
 Hệ thống được phân rã thành **26 Use Cases (UC)** chia cho 5 thành viên:
 
-| Mã UC | Tên chức năng | Actor | Thư mục | Người phụ trách |
-|---|---|---|---|---|
-| **UC01** | Xem danh sách sự kiện | Guest | `features/events/` | Hào |
-| **UC02** | Xem chi tiết sự kiện | Guest | `features/events/` | Hào |
-| **UC03** | Tìm kiếm sự kiện (full-text) | Guest | `features/events/` | Hào |
-| **UC04** | Lọc sự kiện (category, date) | Guest | `features/events/` | Lượng |
-| **UC05** | Đăng ký tài khoản | Guest | `features/auth/` | **Hào** |
-| **UC06** | Đăng nhập | Registered User | `features/auth/` | **Hào** |
-| **UC07** | Đăng ký tham dự sự kiện | Attendee | `features/tickets/` | **Kha** |
-| **UC08** | Thanh toán vé (VNPay/Stripe) | Attendee | `features/tickets/` | **Kha** |
-| **UC09** | Xem chi tiết vé + QR Code | Attendee | `features/tickets/` | **Kha** |
-| **UC10** | Thêm sự kiện vào Google Calendar | Attendee | `features/tickets/` | **Kha** |
-| **UC11** | Đánh giá & chấm điểm sự kiện | Attendee | `features/reviews/` | Core team |
-| **UC12** | Xem lịch sử tham dự | Attendee | `features/tickets/` | **Kha** |
-| **UC13** | Quản lý sự kiện (CRUD + Banner) | Organizer | `features/events/` | **Hào** |
-| **UC14** | Quản lý loại vé | Organizer | `features/events/` | **Lượng** |
-| **UC15** | Xem danh sách đăng ký | Organizer | `features/events/` | **Lượng** |
-| **UC16** | Gửi thông báo hàng loạt | Organizer | `features/notifications/` | **Danh** |
-| **UC17** | Phân công nhân viên check-in | Organizer | `features/events/` | **Trọng** |
-| **UC18** | Xuất danh sách attendee (CSV) | Organizer | `features/events/` | **Lượng** |
-| **UC19** | Báo cáo tổng kết sự kiện | Organizer | `features/events/` | **Danh** |
-| **UC20** | Dashboard realtime check-in | Organizer | `features/events/` | **Danh · Trọng** |
-| **UC21** | Quét QR check-in | Staff | `features/checkin/` | **Trọng** |
-| **UC22** | Check-in thủ công (tên/email) | Staff | `features/checkin/` | **Trọng** |
-| **UC23** | Phê duyệt / Từ chối sự kiện | Admin | `features/admin/` | **Hào** |
-| **UC24** | Quản lý tài khoản (khóa/mở) | Admin | `features/admin/` | Core team |
-| **UC25** | Dashboard tổng quan hệ thống | Admin | `features/admin/` | **Danh · Trọng** |
-| **UC26** | Báo cáo doanh thu toàn nền tảng | Admin | `features/admin/` | **Danh · Trọng** |
+| Mã UC    | Tên chức năng                    | Actor           | Thư mục                   | Người phụ trách  |
+| -------- | -------------------------------- | --------------- | ------------------------- | ---------------- |
+| **UC01** | Xem danh sách sự kiện            | Guest           | `features/events/`        | Hào              |
+| **UC02** | Xem chi tiết sự kiện             | Guest           | `features/events/`        | Hào              |
+| **UC03** | Tìm kiếm sự kiện (full-text)     | Guest           | `features/events/`        | Hào              |
+| **UC04** | Lọc sự kiện (category, date)     | Guest           | `features/events/`        | Lượng            |
+| **UC05** | Đăng ký tài khoản                | Guest           | `features/auth/`          | **Hào**          |
+| **UC06** | Đăng nhập                        | Registered User | `features/auth/`          | **Hào**          |
+| **UC07** | Đăng ký tham dự sự kiện          | Attendee        | `features/tickets/`       | **Kha**          |
+| **UC08** | Thanh toán vé (VNPay/Stripe)     | Attendee        | `features/tickets/`       | **Kha**          |
+| **UC09** | Xem chi tiết vé + QR Code        | Attendee        | `features/tickets/`       | **Kha**          |
+| **UC10** | Thêm sự kiện vào Google Calendar | Attendee        | `features/tickets/`       | **Kha**          |
+| **UC11** | Đánh giá & chấm điểm sự kiện     | Attendee        | `features/reviews/`       | Core team        |
+| **UC12** | Xem lịch sử tham dự              | Attendee        | `features/tickets/`       | **Kha**          |
+| **UC13** | Quản lý sự kiện (CRUD + Banner)  | Organizer       | `features/events/`        | **Hào**          |
+| **UC14** | Quản lý loại vé                  | Organizer       | `features/events/`        | **Lượng**        |
+| **UC15** | Xem danh sách đăng ký            | Organizer       | `features/events/`        | **Lượng**        |
+| **UC16** | Gửi thông báo hàng loạt          | Organizer       | `features/notifications/` | **Danh**         |
+| **UC17** | Phân công nhân viên check-in     | Organizer       | `features/events/`        | **Trọng**        |
+| **UC18** | Xuất danh sách attendee (CSV)    | Organizer       | `features/events/`        | **Lượng**        |
+| **UC19** | Báo cáo tổng kết sự kiện         | Organizer       | `features/events/`        | **Danh**         |
+| **UC20** | Dashboard realtime check-in      | Organizer       | `features/events/`        | **Danh · Trọng** |
+| **UC21** | Quét QR check-in                 | Staff           | `features/checkin/`       | **Trọng**        |
+| **UC22** | Check-in thủ công (tên/email)    | Staff           | `features/checkin/`       | **Trọng**        |
+| **UC23** | Phê duyệt / Từ chối sự kiện      | Admin           | `features/admin/`         | **Hào**          |
+| **UC24** | Quản lý tài khoản (khóa/mở)      | Admin           | `features/admin/`         | Core team        |
+| **UC25** | Dashboard tổng quan hệ thống     | Admin           | `features/admin/`         | **Danh · Trọng** |
+| **UC26** | Báo cáo doanh thu toàn nền tảng  | Admin           | `features/admin/`         | **Danh · Trọng** |
 
 ---
 
@@ -782,30 +804,30 @@ Chiến lược: **cài đến đâu dùng đến đó** — tránh cài thư vi
 
 ### Thư viện hiện có (Core Stack)
 
-| Thư viện | Vai trò | Dùng ở đâu |
-|---|---|---|
-| `express` | HTTP framework, định tuyến API | `app.ts`, tất cả router |
-| `mongoose` | ODM kết nối MongoDB, định nghĩa Schema | Tất cả `models/`, `repositories/` |
-| `dotenv` | Đọc file `.env` vào `process.env` | `server.ts` (import đầu tiên) |
-| `cors` | Cho phép frontend khác domain gọi API | `app.ts` |
-| `joi` | Validate dữ liệu đầu vào (DTO Layer) | Tất cả `dto/` |
-| `bcrypt` | Hash + verify mật khẩu một chiều | `features/auth/auth.service.ts` |
-| `typescript` | Ngôn ngữ chính, type safety | Toàn dự án |
-| `nodemon` *(dev)* | Tự restart server khi file thay đổi | `npm run dev` |
-| `ts-node` *(dev)* | Chạy TypeScript trực tiếp (không build) | `npm run dev` |
+| Thư viện          | Vai trò                                 | Dùng ở đâu                        |
+| ----------------- | --------------------------------------- | --------------------------------- |
+| `express`         | HTTP framework, định tuyến API          | `app.ts`, tất cả router           |
+| `mongoose`        | ODM kết nối MongoDB, định nghĩa Schema  | Tất cả `models/`, `repositories/` |
+| `dotenv`          | Đọc file `.env` vào `process.env`       | `server.ts` (import đầu tiên)     |
+| `cors`            | Cho phép frontend khác domain gọi API   | `app.ts`                          |
+| `joi`             | Validate dữ liệu đầu vào (DTO Layer)    | Tất cả `dto/`                     |
+| `bcrypt`          | Hash + verify mật khẩu một chiều        | `features/auth/auth.service.ts`   |
+| `typescript`      | Ngôn ngữ chính, type safety             | Toàn dự án                        |
+| `nodemon` _(dev)_ | Tự restart server khi file thay đổi     | `npm run dev`                     |
+| `ts-node` _(dev)_ | Chạy TypeScript trực tiếp (không build) | `npm run dev`                     |
 
 ### Thư viện sẽ cài khi phát triển tính năng tiếp theo
 
-| Thư viện | Cài khi nào | Phục vụ UC nào |
-|---|---|---|
-| `jsonwebtoken` | Bắt đầu làm UC06 (Login) | UC05, UC06 — Auth |
-| `socket.io` | Bắt đầu làm UC20 (Dashboard) | UC20, UC21 — Realtime |
-| `bull` + `ioredis` | Bắt đầu làm UC16 (Notifications) | UC16 — Async job queue |
-| `nodemailer` | Bắt đầu làm UC09 (Gửi vé) | UC05, UC09 — Email |
-| `cloudinary` | Bắt đầu làm UC13 (Upload ảnh) | UC13 — File upload |
-| `firebase-admin` | Bắt đầu làm UC16 (Push notification) | UC16 — FCM |
-| `multer` | Cùng lúc với cloudinary | UC13 — Xử lý multipart |
-| `axios` *(nếu cần)* | Khi gọi API bên ngoài (VNPay) | UC08 — Payment |
+| Thư viện            | Cài khi nào                          | Phục vụ UC nào         |
+| ------------------- | ------------------------------------ | ---------------------- |
+| `jsonwebtoken`      | Bắt đầu làm UC06 (Login)             | UC05, UC06 — Auth      |
+| `socket.io`         | Bắt đầu làm UC20 (Dashboard)         | UC20, UC21 — Realtime  |
+| `bull` + `ioredis`  | Bắt đầu làm UC16 (Notifications)     | UC16 — Async job queue |
+| `nodemailer`        | Bắt đầu làm UC09 (Gửi vé)            | UC05, UC09 — Email     |
+| `cloudinary`        | Bắt đầu làm UC13 (Upload ảnh)        | UC13 — File upload     |
+| `firebase-admin`    | Bắt đầu làm UC16 (Push notification) | UC16 — FCM             |
+| `multer`            | Cùng lúc với cloudinary              | UC13 — Xử lý multipart |
+| `axios` _(nếu cần)_ | Khi gọi API bên ngoài (VNPay)        | UC08 — Payment         |
 
 ---
 
@@ -813,11 +835,11 @@ Chiến lược: **cài đến đâu dùng đến đó** — tránh cài thư vi
 
 ### Yêu cầu môi trường
 
-| Phần mềm | Phiên bản | Kiểm tra |
-|---|---|---|
-| Node.js | 22 LTS | `node --version` |
-| npm | 10+ | `npm --version` |
-| MongoDB | 6.0+ (local hoặc Atlas) | `mongod --version` |
+| Phần mềm | Phiên bản               | Kiểm tra           |
+| -------- | ----------------------- | ------------------ |
+| Node.js  | 22 LTS                  | `node --version`   |
+| npm      | 10+                     | `npm --version`    |
+| MongoDB  | 6.0+ (local hoặc Atlas) | `mongod --version` |
 
 ### Các bước cài đặt
 
@@ -884,14 +906,14 @@ GET http://localhost:3000/api/v1/events
 
 ### Scripts có sẵn
 
-| Script | Lệnh | Dùng khi nào |
-|---|---|---|
-| Chạy dev (auto-reload) | `npm run dev` | Lập trình hàng ngày |
-| Build TypeScript | `npm run build` | Chuẩn bị deploy |
-| Chạy production | `npm start` | Sau khi build |
-| Chạy tests | `npm test` | Trước khi tạo PR |
-| Kiểm tra TypeScript | `npx tsc --noEmit` | Trước khi commit |
+| Script                 | Lệnh               | Dùng khi nào        |
+| ---------------------- | ------------------ | ------------------- |
+| Chạy dev (auto-reload) | `npm run dev`      | Lập trình hàng ngày |
+| Build TypeScript       | `npm run build`    | Chuẩn bị deploy     |
+| Chạy production        | `npm start`        | Sau khi build       |
+| Chạy tests             | `npm test`         | Trước khi tạo PR    |
+| Kiểm tra TypeScript    | `npx tsc --noEmit` | Trước khi commit    |
 
 ---
 
-*EventSphere Backend Team · 2025*
+_EventSphere Backend Team · 2025_
