@@ -71,6 +71,31 @@ export class EventsService {
       ticketBreakdown,
     };
   }
+
+  async getDashboardSnapshot(eventId: string) {
+    if (!Types.ObjectId.isValid(eventId)) {
+      throw new AppError("ID sự kiện không hợp lệ", 400);
+    }
+
+    const event = await eventRepository.findById(eventId);
+    if (!event) throw new AppError("Sự kiện không tồn tại", 404);
+
+    const [totalRegistered, totalCheckedIn] = await Promise.all([
+      eventRepository.getRegistrationCount(eventId),
+      eventRepository.getCheckinCount(eventId),
+    ]);
+
+    return {
+      eventId,
+      eventTitle: event.title,
+      totalRegistered,
+      totalCheckedIn,
+      attendanceRate:
+        totalRegistered > 0
+          ? parseFloat(((totalCheckedIn / totalRegistered) * 100).toFixed(1))
+          : 0,
+    };
+  }
 }
 
 export const eventsService = new EventsService();

@@ -35,8 +35,11 @@ eventsRouter.get(
   roleMiddleware("organizer"),
   eventsController.getEventReport,
 );
-eventsRouter.get("/:id/dashboard", (req, res) =>
-  res.json({ message: "UC20 - View realtime dashboard (Socket.io)" }),
+eventsRouter.get(
+  "/:id/dashboard",
+  authMiddleware,
+  roleMiddleware("organizer"),
+  eventsController.getDashboard,
 );
 
 export default eventsRouter;

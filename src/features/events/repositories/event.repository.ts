@@ -51,6 +51,13 @@ export class EventRepository {
       eventId: new mongoose.Types.ObjectId(eventId),
     } as any);
   }
+
+  async getRegistrationCount(eventId: string) {
+    return RegistrationModel.countDocuments({
+      eventId: new mongoose.Types.ObjectId(eventId),
+      paymentStatus: "paid",
+    } as any);
+  }
 }
 
 export const eventRepository = new EventRepository();

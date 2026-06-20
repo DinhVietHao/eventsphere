@@ -15,6 +15,17 @@ export class EventsController {
       next(err);
     }
   };
+
+  // Thêm vào events.controller.ts
+  getDashboard = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params["id"] as string;
+      const snapshot = await eventsService.getDashboardSnapshot(id);
+      sendSuccess(res, snapshot, "Dashboard snapshot");
+    } catch (err) {
+      next(err);
+    }
+  };
 }
 
 export const eventsController = new EventsController();

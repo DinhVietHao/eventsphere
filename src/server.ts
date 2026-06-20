@@ -21,9 +21,11 @@
 //   });
 // });
 
+import http from "http";
 import app from "./app";
 import mongoose from "mongoose";
 import { appConfig } from "./config/app.config";
+import { initSocket } from "./shared/services/socket";
 
 const PORT = appConfig.port;
 
@@ -32,7 +34,14 @@ async function bootstrap() {
   await mongoose.connect(appConfig.mongoUri);
   console.log("🍃 MongoDB đã kết nối");
 
-  app.listen(PORT, () => {
+  // Tạo HTTP server từ Express app
+  const httpServer = http.createServer(app);
+
+  // Gắn Socket.io vào HTTP server
+  initSocket(httpServer);
+
+  // Dùng httpServer.listen thay vì app.listen
+  httpServer.listen(PORT, () => {
     console.log(`🚀 Server đang chạy tại cổng ${PORT}`);
   });
 }
