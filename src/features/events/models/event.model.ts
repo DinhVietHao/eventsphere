@@ -1,6 +1,6 @@
 import { Schema, model, Document } from 'mongoose';
 
-export interface IEventDocument extends Document {
+export interface IEvent extends Document {
   title           : string;
   description     : string;
   category        : 'music' | 'tech' | 'sport' | 'education';
@@ -8,7 +8,7 @@ export interface IEventDocument extends Document {
   startDate       : Date;
   endDate         : Date;
   status          : 'DRAFT' | 'PENDING' | 'APPROVED' | 'ONGOING' | 'ENDED' | 'CANCELLED';
-  bannerUrl       : string;
+  bannerUrl      ?: string;
   organizerId     : Schema.Types.ObjectId;
   avgRating       : number;
   attendeeCount   : number;
@@ -17,7 +17,7 @@ export interface IEventDocument extends Document {
   updatedAt       : Date;
 }
 
-const eventSchema = new Schema<IEventDocument>(
+const eventSchema = new Schema<IEvent>(
   {
     title      : { type: String, required: true },
     description: { type: String, required: true },
@@ -34,7 +34,7 @@ const eventSchema = new Schema<IEventDocument>(
       enum   : ['DRAFT', 'PENDING', 'APPROVED', 'ONGOING', 'ENDED', 'CANCELLED'],
       default: 'DRAFT'
     },
-    bannerUrl      : { type: String, required: true },
+    bannerUrl      : { type: String },
     organizerId    : { type: Schema.Types.ObjectId, ref: 'User', required: true },
     avgRating      : { type: Number, default: 0 },
     attendeeCount  : { type: Number, default: 0 },
@@ -47,4 +47,4 @@ eventSchema.index({ title: 'text', description: 'text' }, { name: 'idx_events_se
 eventSchema.index({ category: 1, status: 1, startDate: 1 }, { name: 'idx_events_filter' });
 eventSchema.index({ organizerId: 1 }, { name: 'idx_events_organizerId' });
 
-export const EventModel = model<IEventDocument>('Event', eventSchema);
+export const Event = model<IEvent>('Event', eventSchema);
