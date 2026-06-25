@@ -1,11 +1,13 @@
 import { Router } from 'express';
+import { EventController } from './events.controller';
 
 const eventsRouter = Router();
+const eventController = new EventController();
 
-// Guest UCs (Không cần token)
-eventsRouter.get('/', (req, res) => res.json({ message: 'UC01 - Browse event list & UC04 - Filter events' }));
-eventsRouter.get('/search', (req, res) => res.json({ message: 'UC03 - Search events' }));
-eventsRouter.get('/:id', (req, res) => res.json({ message: 'UC02 - View event details' }));
+// Guest UCs
+eventsRouter.get('/', eventController.getPublishedEvents);
+eventsRouter.get('/search', eventController.searchEvents);
+eventsRouter.get('/:id', eventController.getEventById);
 
 // Organizer UCs (Cần authMiddleware & roleMiddleware('organizer'))
 eventsRouter.post('/', (req, res) => res.json({ message: 'UC13 - Create event & UC14 - Manage ticket types' }));

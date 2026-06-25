@@ -1,7 +1,7 @@
 import express from 'express';
-import { errorHandler } from './shared/errors/errorHandler';
 import authRouter from './features/auth/auth.router';
 import eventsRouter from './features/events/events.router';
+import { errorHandler } from './shared/errors/errorHandler';
 import ticketsRouter from './features/tickets/tickets.router';
 import checkinRouter from './features/checkin/checkin.router';
 
