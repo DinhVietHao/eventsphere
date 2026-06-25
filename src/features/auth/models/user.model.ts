@@ -1,6 +1,6 @@
 import { Schema, model, Document } from 'mongoose';
 
-export interface IUserDocument extends Document {
+export interface IUser extends Document {
   name                   : string;
   email                  : string;
   passwordHash           : string;
@@ -16,7 +16,7 @@ export interface IUserDocument extends Document {
   updatedAt              : Date;
 }
 
-const userSchema = new Schema<IUserDocument>(
+const userSchema = new Schema<IUser>(
   {
     name        : { type: String, required: true, trim: true },
     email       : { type: String, required: true, unique: true, lowercase: true },
@@ -42,4 +42,4 @@ const userSchema = new Schema<IUserDocument>(
 
 userSchema.index({ email: 1 }, { name: 'idx_users_email', unique: true });
 
-export const UserModel = model<IUserDocument>('User', userSchema);
+export const User = model<IUser>('User', userSchema);
