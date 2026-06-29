@@ -1,5 +1,8 @@
 import path from "path";
 import express from "express";
+import flash from "connect-flash";
+import session from "express-session";
+import cookieParser from "cookie-parser";
 import viewsRouter from "./routes/views.router";
 import authRouter from "./features/auth/auth.router";
 import eventsRouter from "./features/events/events.router";
@@ -13,6 +16,22 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Config Session + Flash
+app.use(cookieParser());
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "eventsphere-secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+    },
+  }),
+);
+app.use(flash());
 
 // Config EJS
 app.set("view engine", "ejs");
