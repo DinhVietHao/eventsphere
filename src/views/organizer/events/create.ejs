@@ -1,0 +1,89 @@
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="/organizer/events">Sự kiện của tôi</a></li>
+    <li class="breadcrumb-item active">Tạo sự kiện mới</li>
+  </ol>
+</nav>
+
+<div class="card border-0 shadow-sm p-4">
+  <h2 class="h4 fw-bold text-dark mb-4 border-bottom pb-2">Thông tin cấu hình Sự kiện mới</h2>
+
+  <form action="/organizer/events" method="POST" id="eventForm">
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="mb-3">
+          <label for="title" class="form-label small fw-bold">Tên sự kiện <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="title" name="title" required placeholder="Ví dụ: Hội thảo công nghệ TechSphere 2026">
+        </div>
+
+        <div class="mb-3">
+          <label for="description" class="form-label small fw-bold">Mô tả chi tiết <span class="text-danger">*</span></label>
+          <textarea class="form-control" id="description" name="description" rows="8" required placeholder="Mô tả nội dung chương trình, lịch trình cụ thể..."></textarea>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="mb-3">
+          <label for="category" class="form-label small fw-bold">Danh mục <span class="text-danger">*</span></label>
+          <select class="form-select" id="category" name="category" required>
+            <option value="">-- Chọn danh mục --</option>
+            <option value="music">Music</option>
+            <option value="tech">Tech</option>
+            <option value="sport">Sport</option>
+            <option value="education">Education</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label for="location" class="form-label small fw-bold">Địa điểm <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="location" name="location" required placeholder="Tòa nhà, tên đường, Quận/Thành phố...">
+        </div>
+
+        <div class="mb-3">
+          <label for="startDate" class="form-label small fw-bold">Ngày bắt đầu <span class="text-danger">*</span></label>
+          <input type="datetime-local" class="form-control" id="startDate" name="startDate" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="endDate" class="form-label small fw-bold">Ngày kết thúc <span class="text-danger">*</span></label>
+          <input type="datetime-local" class="form-control" id="endDate" name="endDate" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="bannerFile" class="form-label small fw-bold">Hình ảnh Banner</label>
+          <input type="file" class="form-control mb-2" id="bannerFile" name="banner" accept="image/*">
+          <div class="border rounded bg-light text-center p-2 overflow-hidden" style="height: 140px;">
+            <img id="previewImg" src="#" alt="Preview" class="w-100 h-100 object-fit-cover d-none">
+            <span id="previewText" class="text-muted small d-block pt-4"><i class="bi bi-image fs-2 d-block"></i>Chưa chọn ảnh</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 border-top pt-3 d-flex justify-content-end gap-2">
+        <input type="hidden" name="actionType" id="actionType" value="submit">
+        <button type="button" class="btn btn-outline-secondary px-4" onclick="submitAs('draft')">Lưu bản nháp</button>
+        <button type="button" class="btn btn-primary px-4 fw-bold" onclick="submitAs('submit')">Gửi duyệt sự kiện</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Xử lý preview ảnh trước khi đăng tải lên hệ thống
+  document.getElementById('bannerFile').addEventListener('change', function(event) {
+    const [file] = event.target.files;
+    const previewImg = document.getElementById('previewImg');
+    const previewText = document.getElementById('previewText');
+    if (file) {
+      previewImg.src = URL.createObjectURL(file);
+      previewImg.classList.remove('d-none');
+      previewText.classList.add('d-none');
+    }
+  });
+
+  // Hàm chuyển đổi trường actionType ẩn
+  function submitAs(type) {
+    document.getElementById('actionType').value = type;
+    document.getElementById('eventForm').submit();
+  }
+</script>
