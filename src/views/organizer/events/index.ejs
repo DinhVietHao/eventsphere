@@ -1,3 +1,17 @@
+<% const msgs = typeof messages !== 'undefined' ? messages : { success: [], error: [] }; %>
+<% if (msgs.error && msgs.error.length > 0) { %>
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+  <i class="bi bi-exclamation-triangle me-2"></i><%= msgs.error[0] %>
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<% } %>
+<% if (msgs.success && msgs.success.length > 0) { %>
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+  <i class="bi bi-check-circle me-2"></i><%= msgs.success[0] %>
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<% } %>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1 class="h3 fw-bold text-dark mb-0">Quản lý sự kiện của tôi</h1>
   <a href="/organizer/events/create" class="btn btn-primary fw-bold"><i class="bi bi-plus-lg me-2"></i>Tạo sự kiện mới</a>

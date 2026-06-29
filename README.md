@@ -1080,22 +1080,24 @@ refreshToken không hợp lệ → AuthService.logout → 401 "Phiên đăng nh�
 | EJS — Event Browsing Views | Giao diện web UC01-04: danh sách, chi tiết, tìm kiếm | `feat/ejs-views` |
 | EJS — Layout & Partials | main.ejs, navbar, footer, flash-message, event-card, pagination | `feat/ejs-views` |
 | EJS — Auth Pages | login.ejs, register.ejs với error handling, retain input, toggle password | `feat/ejs-views` |
+| EJS — Organizer Dashboard | layouts/organizer.ejs, dashboard, events CRUD, registrations views | `feat/ejs-views` |
+| UC13 — Event Management API | Organizer CRUD event: tạo, sửa, xóa, gửi duyệt + view routes | `feat/uc13-events-manage` |
 
 ### 🔄 Đang thực hiện
 
 | Tính năng | Người phụ trách | Nhánh |
 |---|---|---|
-| UC13 — Event Management | Hào | `feat/uc13-events-manage` |
 | UC07 — Ticket Registration | Kha | `feat/uc07-tickets-register` |
 
 ### ⏳ Chưa bắt đầu
 
-UC08–UC12, UC14–UC26 · EJS Organizer Dashboard · EJS Admin Dashboard
+UC08–UC12, UC14–UC26 · EJS Admin Dashboard
 
 ### 📝 Planned Features
 
 | Tính năng | Mô tả |
 |---|---|
+| Cloudinary banner upload | Upload và lưu URL ảnh banner cho event |
 | Quên mật khẩu | Reset mật khẩu qua email (Nodemailer) |
 | Xác thực email | Gửi email xác thực sau khi đăng ký |
 | Staff invite link | Organizer/Admin tạo invite link gắn với event cụ thể để tạo tài khoản staff |

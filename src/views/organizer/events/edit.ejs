@@ -23,7 +23,8 @@
     <span class="badge bg-primary px-3 py-2 text-uppercase">Trạng thái: <%= event.status %></span>
   </div>
 
-  <form action="/organizer/events/<%= event._id %>/edit" method="POST">
+  <%# Form edit — có id để button bên ngoài link vào %>
+  <form action="/organizer/events/<%= event._id %>/edit" method="POST" id="editForm">
     <fieldset <%= isLocked ? 'disabled' : '' %>>
       <div class="row g-4">
         <div class="col-lg-8">
@@ -68,12 +69,22 @@
         </div>
       </div>
     </fieldset>
-
-    <div class="col-12 border-top mt-4 pt-3 d-flex justify-content-end gap-2">
-      <a href="/organizer/events" class="btn btn-outline-secondary px-4">Quay lại</a>
-      <% if (!isLocked) { %>
-      <button type="submit" class="btn btn-success px-4 fw-bold">Cập nhật thay đổi</button>
-      <% } %>
-    </div>
   </form>
+
+  <div class="col-12 border-top mt-4 pt-3 d-flex justify-content-end gap-2">
+    <a href="/organizer/events" class="btn btn-outline-secondary px-4">Quay lại</a>
+    <% if (!isLocked) { %>
+    <%# Button này link với editForm qua thuộc tính form="editForm" %>
+    <button type="submit" form="editForm" class="btn btn-success px-4 fw-bold">
+      Cập nhật thay đổi
+    </button>
+    <% if (event.status === 'DRAFT') { %>
+    <form action="/organizer/events/<%= event._id %>/submit" method="POST" class="d-inline">
+      <button type="submit" class="btn btn-primary px-4 fw-bold">
+        <i class="bi bi-send me-2"></i>Gửi duyệt
+      </button>
+    </form>
+    <% } %>
+    <% } %>
+  </div>
 </div>
