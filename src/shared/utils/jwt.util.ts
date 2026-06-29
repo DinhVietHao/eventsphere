@@ -1,9 +1,10 @@
-import jwt from 'jsonwebtoken';
-import { appConfig } from '../../config/app.config';
+import jwt from "jsonwebtoken";
+import { appConfig } from "../../config/app.config";
 
 export interface IJwtPayload {
-  id  : string;
-  role: string;
+  id: string;
+  role: "attendee" | "organizer" | "staff" | "admin";
+  name: string;
 }
 
 // Tạo access token — hết hạn nhanh (15 phút)

@@ -18,6 +18,7 @@
 8. [Hướng dẫn khởi động dự án](#8-hướng-dẫn-khởi-động-dự-án)
 9. [Hướng dẫn sử dụng Middleware phân quyền](#9-hướng-dẫn-sử-dụng-middleware-phân-quyền)
 10. [Tiến độ phát triển](#10-tiến-độ-phát-triển)
+11. [Hướng dẫn tích hợp EJS Views](#11-hướng-dẫn-tích-hợp-ejs-views)
 
 ---
 
@@ -262,6 +263,42 @@ D:\EVENTSPHERE\SRC
         ├── admin.service.ts
         └── repositories/
             └── .gitkeep
+
+── routes/
+│   └── views.router.ts             # EJS view routes (tái sử dụng Service layer)
+│
+└── views/                          # EJS templates — nhánh feat/ejs-views
+    ├── layouts/
+    │   ├── main.ejs                # Layout public: navbar + footer
+    │   ├── organizer.ejs           # Layout organizer: sidebar trái
+    │   └── admin.ejs               # Layout admin: sidebar tối
+    ├── partials/
+    │   ├── navbar.ejs              # Navbar component (include vào main.ejs)
+    │   ├── footer.ejs              # Footer component
+    │   ├── event-card.ejs          # Card event tái sử dụng
+    │   ├── pagination.ejs          # Phân trang dynamic
+    │   └── flash-message.ejs       # Hiển thị success/error message
+    ├── auth/
+    │   ├── login.ejs               # Trang đăng nhập
+    │   └── register.ejs            # Trang đăng ký
+    ├── events/                     # Public pages
+    │   ├── index.ejs               # Danh sách + filter (UC01, UC04) ✅
+    │   ├── detail.ejs              # Chi tiết event (UC02) ✅
+    │   └── search.ejs              # Tìm kiếm (UC03) ✅
+    ├── organizer/
+    │   ├── dashboard.ejs
+    │   └── events/
+    │       ├── index.ejs
+    │       ├── create.ejs
+    │       ├── edit.ejs
+    │       └── registrations.ejs
+    └── admin/
+        ├── dashboard.ejs
+        ├── events/
+        │   ├── pending.ejs
+        │   └── detail.ejs
+        └── users/
+            └── index.ejs
 ```
 
 > **`.gitkeep` là gì?** Đây là file rỗng dùng để Git theo dõi thư mục trống. Git không commit thư mục rỗng, nên ta tạo file này như một placeholder. Khi bạn bắt đầu viết code cho tính năng đó, xóa `.gitkeep` và tạo file thật vào.
@@ -794,6 +831,8 @@ Chiến lược: **cài đến đâu dùng đến đó** — tránh cài thư vi
 | `joi` | Validate dữ liệu đầu vào (DTO Layer) | Tất cả `dto/` |
 | `bcrypt` | Hash + verify mật khẩu một chiều | `features/auth/auth.service.ts` |
 | `jsonwebtoken` | Tạo và verify JWT access/refresh token | `shared/utils/jwt.util.ts` |
+| `ejs` | Template engine render giao diện server-side | `src/views/` |
+| `express-ejs-layouts` | Layout engine cho EJS (dùng `<%- body %>`) | `app.ts` |
 | `typescript` | Ngôn ngữ chính, type safety | Toàn dự án |
 | `nodemon` *(dev)* | Tự restart server khi file thay đổi | `npm run dev` |
 | `ts-node` *(dev)* | Chạy TypeScript trực tiếp (không build) | `npm run dev` |
@@ -1027,17 +1066,20 @@ refreshToken không hợp lệ → AuthService.logout → 401 "Phiên đăng nh�
 
 ## 10. Tiến độ phát triển
 
-> Cập nhật lần cuối: 2025 — Hào
+> Cập nhật lần cuối: 2026 — Hào
 
 ### ✅ Đã hoàn thành
 
 | Tính năng | Mô tả | Nhánh |
 |---|---|---|
-| UC01-04 — Event Browsing | Xem danh sách, chi tiết, tìm kiếm, lọc event | `feat/uc01-04-events-browse` |
+| UC01-04 — Event Browsing API | Xem danh sách, chi tiết, tìm kiếm, lọc event | `feat/uc01-04-events-browse` |
 | UC05 — Register | Đăng ký tài khoản với bcrypt + JWT | `feat/uc05-06-auth-core` |
 | UC06 — Login | Đăng nhập, cấp access token + refresh token | `feat/uc05-06-auth-core` |
 | UC06 — Logout | Đăng xuất, xóa refresh token khỏi DB | `feat/uc05-06-auth-core` |
 | Auth Middleware | `authMiddleware` + `roleMiddleware` dùng chung toàn app | `feat/uc05-06-auth-core` |
+| EJS — Event Browsing Views | Giao diện web UC01-04: danh sách, chi tiết, tìm kiếm | `feat/ejs-views` |
+| EJS — Layout & Partials | main.ejs, navbar, footer, flash-message, event-card, pagination | `feat/ejs-views` |
+| EJS — Auth Pages | login.ejs, register.ejs với error handling, retain input, toggle password | `feat/ejs-views` |
 
 ### 🔄 Đang thực hiện
 
@@ -1048,7 +1090,143 @@ refreshToken không hợp lệ → AuthService.logout → 401 "Phiên đăng nh�
 
 ### ⏳ Chưa bắt đầu
 
-UC08–UC12, UC14–UC26
+UC08–UC12, UC14–UC26 · EJS Organizer Dashboard · EJS Admin Dashboard
+
+### 📝 Planned Features
+
+| Tính năng | Mô tả |
+|---|---|
+| Quên mật khẩu | Reset mật khẩu qua email (Nodemailer) |
+| Xác thực email | Gửi email xác thực sau khi đăng ký |
+| Staff invite link | Organizer/Admin tạo invite link gắn với event cụ thể để tạo tài khoản staff |
+
+---
+
+## 11. Hướng dẫn tích hợp EJS Views
+
+Dự án dùng **Hướng song song** — giữ nguyên API routes (`/api/v1/...`), thêm view routes riêng render EJS.
+
+### 11.1 Cấu hình trong `app.ts`
+
+```ts
+const ejsLayouts = require('express-ejs-layouts'); // dùng require vì không có @types
+
+app.use(cookieParser());
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'eventsphere-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { httpOnly: true, sameSite: 'lax', maxAge: 24 * 60 * 60 * 1000 },
+}));
+app.use(flash()); // Flash message — dùng cho register success → redirect login
+
+app.use(express.urlencoded({ extended: true })); // Parse form POST
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(ejsLayouts);
+app.set('layout', 'layouts/main'); // Layout mặc định cho public pages
+
+app.use('/', viewsRouter);         // View routes — đặt TRƯỚC api routes
+app.use('/api/v1/auth', authRouter);
+```
+
+### 11.2 `views.router.ts` — Nguyên tắc thiết kế
+
+View router **không query MongoDB trực tiếp** — tái sử dụng Service layer có sẵn:
+
+```ts
+// ✅ Đúng — tái sử dụng Service
+const eventService = new EventService();
+viewsRouter.get('/events', async (req, res) => {
+  const events = await eventService.getPublishedEvents(page, limit);
+  res.render('events/index', { events, user: req.user || null });
+});
+
+// ❌ Sai — query thẳng MongoDB trong router
+viewsRouter.get('/events', async (req, res) => {
+  const events = await Event.find({ status: 'APPROVED' }); // vi phạm 3-layer
+});
+```
+
+View router dùng **optional auth middleware** đặt ở đầu file — đọc `accessToken` từ cookie, gắn `req.user` nếu hợp lệ, không block request nếu không có token:
+
+```ts
+// Middleware đọc user từ cookie — optional, không block request
+viewsRouter.use((req, res, next) => {
+  try {
+    const token = req.cookies?.accessToken;
+    if (token) {
+      const payload = verifyAccessToken(token);
+      req.user = { id: payload.id, role: payload.role, name: payload.name };
+    }
+  } catch (_) {
+    // Token hết hạn hoặc invalid → bỏ qua, user = null
+  }
+  next();
+});
+```
+
+> **Lưu ý:** `authMiddleware` gốc hỗ trợ cả 2 nguồn token: `Authorization: Bearer ...` header (API clients) và cookie `accessToken` (browser/EJS clients).
+
+### 11.3 Truyền data vào EJS
+
+Mọi `res.render()` phải truyền `user` để navbar hiển thị đúng trạng thái login:
+
+```ts
+res.render('events/index', {
+  events,
+  pagination: { currentPage: 1, totalPages: 5, limit: 9 },
+  user: req.user || null, // null nếu chưa đăng nhập
+});
+```
+
+Auth pages dùng `layout: false` và truyền `error`/`success` trực tiếp (không qua flash):
+
+```ts
+// Khi đăng nhập thất bại — render thẳng với error
+res.render('auth/login', {
+  layout: false,
+  error: err.message || 'Đăng nhập thất bại',
+  success: null,
+});
+
+// Khi đăng ký thất bại — giữ lại data cũ trừ password
+res.render('auth/register', {
+  layout: false,
+  error: err.message || 'Đăng ký thất bại',
+  old: { name: req.body.name, email: req.body.email, role: req.body.role },
+});
+```
+
+### 11.4 Lưu ý quan trọng — Thứ tự route
+
+Route cụ thể phải đặt **trước** route dynamic, tránh conflict:
+
+```ts
+// ✅ Đúng thứ tự
+viewsRouter.get('/events/search', ...); // đặt TRƯỚC
+viewsRouter.get('/events/:id', ...);    // đặt SAU
+
+// ❌ Sai — Express sẽ match 'search' vào :id
+viewsRouter.get('/events/:id', ...);
+viewsRouter.get('/events/search', ...);
+```
+
+### 11.5 Layout cho từng nhóm trang
+
+```ts
+// Public pages → dùng layout mặc định (layouts/main)
+res.render('events/index', { ... });
+
+// Organizer pages → override layout
+res.render('organizer/dashboard', { layout: 'layouts/organizer', ... });
+
+// Admin pages → override layout
+res.render('admin/dashboard', { layout: 'layouts/admin', ... });
+
+// Auth pages → không dùng layout
+res.render('auth/login', { layout: false, ... });
+```
 
 ---
 

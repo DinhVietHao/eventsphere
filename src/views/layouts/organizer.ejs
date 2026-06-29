@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Organizer Dashboard - EventSphere</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --sidebar-width: 250px;
+    }
+
+    body {
+      background-color: #f8f9fa;
+      min-height: 100vh;
+    }
+
+    /* Sidebar Styles */
+    .sidebar {
+      width: var(--sidebar-width);
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 100;
+      background-color: #1e293b;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar .nav-link {
+      color: #94a3b8;
+      padding: 0.8rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-radius: 0.375rem;
+      margin: 0.2rem 1rem;
+    }
+
+    .sidebar .nav-link:hover,
+    .sidebar .nav-link.active {
+      color: #fff;
+      background-color: #0d6efd;
+    }
+
+    /* Main Content Wrapper */
+    .main-wrapper {
+      margin-left: var(--sidebar-width);
+      transition: all 0.3s ease;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Responsive Mobile Code */
+    @media (max-width: 991.98px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.show {
+        transform: translateX(0);
+      }
+
+      .main-wrapper {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <aside class="sidebar d-flex flex-column" id="sidebarMenu">
+    <div class="p-4 border-bottom border-secondary-subtle">
+      <a href="/events" class="text-white text-decoration-none h4 fw-bold mb-0 block">
+        <i class="bi bi-calendar2-event-fill text-primary me-2"></i>EventSphere
+      </a>
+      <small class="text-muted d-block mt-1">Khu vực Nhà tổ chức</small>
+    </div>
+
+    <ul class="nav flex-column mt-3 flex-grow-1">
+      <li><a href="/organizer/dashboard" class="nav-link"><i class="bi bi-speedometer2"></i> Tổng quan</a></li>
+      <li><a href="/organizer/events" class="nav-link"><i class="bi bi-collection"></i> Sự kiện của tôi</a></li>
+      <li><a href="/organizer/events/create" class="nav-link"><i class="bi bi-plus-circle"></i> Tạo sự kiện</a></li>
+      <li><a href="#" class="nav-link"><i class="bi bi-bell"></i> Thông báo</a></li>
+    </ul>
+
+    <div class="mt-auto border-top border-secondary-subtle p-2">
+      <a href="/logout" class="nav-link text-danger"><i class="bi bi-box-arrow-right"></i> Đăng xuất</a>
+    </div>
+  </aside>
+
+  <div class="main-wrapper">
+    <header class="navbar navbar-expand-lg navbar-white bg-white border-bottom px-4 sticky-top py-2">
+      <div class="container-fluid p-0 d-flex justify-content-between align-items-center">
+
+        <button class="btn btn-outline-secondary d-lg-none me-2" type="button" onclick="document.getElementById('sidebarMenu').classList.toggle('show')">
+          <i class="bi bi-list"></i>
+        </button>
+
+        <nav aria-label="breadcrumb" class="d-none d-sm-inline-block">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="/organizer/dashboard" class="text-decoration-none">Organizer</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Hệ thống</li>
+          </ol>
+        </nav>
+
+        <div class="d-flex align-items-center gap-2">
+          <span class="small fw-semibold text-dark"><%= user ? user.name : 'Nhà tổ chức' %></span>
+          <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; font-weight: bold;">
+            <%= user ? user.name.charAt(0).toUpperCase() : 'O' %>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="container-fluid p-4 flex-grow-1">
+      <%- body %>
+    </main>
+
+    <footer class="bg-white border-top text-center py-3 text-muted small mt-auto">
+      &copy; 2026 EventSphere Workspace.
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Tự động active link menu dựa vào đường dẫn URL hiện tại
+    document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+      if (link.getAttribute('href') === window.location.pathname) {
+        link.classList.add('active');
+      }
+    });
+  </script>
+</body>
+
+</html>

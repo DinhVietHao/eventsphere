@@ -1,19 +1,34 @@
-import { Request, Response, NextFunction } from 'express';
-import { verifyAccessToken } from '../utils/jwt.util';
-import { AppError } from '../errors/AppError';
+import { Request, Response, NextFunction } from "express";
+import { verifyAccessToken } from "../utils/jwt.util";
+import { AppError } from "../errors/AppError";
 
-export const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
+export const authMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void => {
   try {
+    let token: string | undefined;
+
+    // Ưu tiên đọc từ Authorization header (API clients)
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new AppError('Bạn chưa đăng nhập', 401);
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
     }
 
-    const token = authHeader.split(' ')[1];
+    // Fallback: đọc từ cookie (EJS browser clients)
+    if (!token && (req as any).cookies?.accessToken) {
+      token = (req as any).cookies.accessToken;
+    }
+
+    if (!token) {
+      throw new AppError("Bạn chưa đăng nhập", 401);
+    }
+
     const payload = verifyAccessToken(token);
     (req as any).user = { id: payload.id, role: payload.role };
     next();
   } catch (err) {
-    next(new AppError('Token không hợp lệ hoặc đã hết hạn', 401));
+    next(new AppError("Token không hợp lệ hoặc đã hết hạn", 401));
   }
 };
