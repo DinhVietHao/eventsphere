@@ -1,0 +1,50 @@
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="/organizer/events">Sự kiện</a></li>
+        <li class="breadcrumb-item">
+            <a href="/organizer/events/<%= event._id %>/ticket-types">Loại vé</a>
+        </li>
+        <li class="breadcrumb-item active">Thêm loại vé</li>
+    </ol>
+</nav>
+
+<div class="card border-0 shadow-sm p-4" style="max-width:560px">
+    <h4 class="mb-4">Thêm loại vé mới</h4>
+
+    <% if (error) { %>
+        <div class="alert alert-danger">
+            <%= error %>
+        </div>
+        <% } %>
+
+            <form action="/organizer/events/<%= event._id %>/ticket-types" method="POST">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tên loại vé <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="name" required
+                        placeholder="VD: VIP, General, Early Bird..." value="<%= old ? old.name || '' : '' %>">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Giá (VNĐ) <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" name="price" required min="0" placeholder="0 = miễn phí"
+                        value="<%= old ? old.price ?? '' : '' %>">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Số lượng (quota) <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" name="quota" required min="1"
+                        value="<%= old ? old.quota || '' : '' %>">
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Mô tả</label>
+                    <textarea class="form-control" name="description" rows="3"
+                        placeholder="Quyền lợi đi kèm..."><%= old ? old.description || '' : '' %></textarea>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <a href="/organizer/events/<%= event._id %>/ticket-types" class="btn btn-outline-secondary">Hủy</a>
+                    <button type="submit" class="btn btn-primary">Thêm loại vé</button>
+                </div>
+            </form>
+</div>

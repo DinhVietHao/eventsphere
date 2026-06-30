@@ -4,6 +4,7 @@ import { authMiddleware } from "../../shared/middlewares/auth.middleware";
 import { roleMiddleware } from "../../shared/middlewares/role.middleware";
 import ticketTypesRouter from "../ticketTypes/ticketTypes.router";
 
+
 const eventsRouter = Router();
 const eventController = new EventController();
 
@@ -52,6 +53,6 @@ eventsRouter.get("/:id/dashboard", (req, res) =>
   res.json({ message: "UC20 - View realtime dashboard" }),
 );
 
-eventsRouter.use("/:eventId/ticket-types", ticketTypesRouter);
+
 
 export default eventsRouter;

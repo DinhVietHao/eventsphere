@@ -1,0 +1,60 @@
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="/organizer/events">Sự kiện</a></li>
+        <li class="breadcrumb-item">
+            <a href="/organizer/events/<%= event._id %>/ticket-types">Loại vé</a>
+        </li>
+        <li class="breadcrumb-item active">Sửa loại vé</li>
+    </ol>
+</nav>
+
+<div class="card border-0 shadow-sm p-4" style="max-width:560px">
+    <h4 class="mb-4">Sửa loại vé — <%= ticketType.name %>
+    </h4>
+
+    <% if (error) { %>
+        <div class="alert alert-danger">
+            <%= error %>
+        </div>
+        <% } %>
+
+            <form action="/organizer/events/<%= event._id %>/ticket-types/<%= ticketType._id %>/edit" method="POST">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tên loại vé <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="name" required value="<%= ticketType.name %>">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Giá (VNĐ) <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" name="price" required min="0"
+                        value="<%= ticketType.price %>" <%=ticketType.sold> 0 ? 'disabled' : '' %>>
+                    <% if (ticketType.sold> 0) { %>
+                        <%# Khi disabled thì giá trị không được gửi lên, cần hidden field %>
+                            <input type="hidden" name="price" value="<%= ticketType.price %>">
+                            <div class="form-text text-warning">
+                                Không thể đổi giá vì đã có <%= ticketType.sold %> vé được bán.
+                            </div>
+                            <% } %>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Số lượng (quota) <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" name="quota" required min="<%= ticketType.sold || 1 %>"
+                        value="<%= ticketType.quota %>">
+                    <% if (ticketType.sold> 0) { %>
+                        <div class="form-text text-muted">Tối thiểu: <%= ticketType.sold %> (số đã bán)</div>
+                        <% } %>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Mô tả</label>
+                    <textarea class="form-control" name="description"
+                        rows="3"><%= ticketType.description || '' %></textarea>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <a href="/organizer/events/<%= event._id %>/ticket-types" class="btn btn-outline-secondary">Hủy</a>
+                    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                </div>
+            </form>
+</div>

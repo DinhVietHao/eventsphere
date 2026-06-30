@@ -218,12 +218,8 @@ organizerViewsRouter.get(
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
-      const event = await eventService.getEventById(
-        req.params.eventId as string,
-      );
-      const ticketTypes = await ticketTypeService.getTicketTypes(
-        req.params.eventId as string,
-      );
+      const event = await eventService.getEventById(req.params.eventId);
+      const ticketTypes = await ticketTypeService.getTicketTypes(req.params.eventId);
       const messages = (req as any).flash();
       res.render("organizer/events/ticket-types/index", {
         layout: "layouts/organizer",
@@ -244,9 +240,7 @@ organizerViewsRouter.get(
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
-      const event = await eventService.getEventById(
-        req.params.eventId as string,
-      );
+      const event = await eventService.getEventById(req.params.eventId);
       res.render("organizer/events/ticket-types/create", {
         layout: "layouts/organizer",
         user: req.user,
@@ -267,16 +261,14 @@ organizerViewsRouter.post(
   async (req: Request, res: Response) => {
     try {
       await ticketTypeService.createTicketType(
-        req.params.eventId as string,
+        req.params.eventId,
         req.user!.id,
         req.body,
       );
       (req as any).flash("success", "Thêm loại vé thành công!");
       res.redirect(`/organizer/events/${req.params.eventId}/ticket-types`);
     } catch (err: any) {
-      const event = await eventService.getEventById(
-        req.params.eventId as string,
-      );
+      const event = await eventService.getEventById(req.params.eventId);
       res.render("organizer/events/ticket-types/create", {
         layout: "layouts/organizer",
         user: req.user,
@@ -294,12 +286,8 @@ organizerViewsRouter.get(
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
-      const event = await eventService.getEventById(
-        req.params.eventId as string,
-      );
-      const ticketTypes = await ticketTypeService.getTicketTypes(
-        req.params.eventId as string,
-      );
+      const event = await eventService.getEventById(req.params.eventId);
+      const ticketTypes = await ticketTypeService.getTicketTypes(req.params.eventId);
       const ticketType = ticketTypes.find(
         (t) => t._id.toString() === req.params.id,
       );
@@ -324,19 +312,15 @@ organizerViewsRouter.post(
   async (req: Request, res: Response) => {
     try {
       await ticketTypeService.updateTicketType(
-        req.params.id as string,
+        req.params.id,
         req.user!.id,
         req.body,
       );
       (req as any).flash("success", "Cập nhật loại vé thành công!");
       res.redirect(`/organizer/events/${req.params.eventId}/ticket-types`);
     } catch (err: any) {
-      const event = await eventService.getEventById(
-        req.params.eventId as string,
-      );
-      const ticketTypes = await ticketTypeService.getTicketTypes(
-        req.params.eventId as string,
-      );
+      const event = await eventService.getEventById(req.params.eventId);
+      const ticketTypes = await ticketTypeService.getTicketTypes(req.params.eventId);
       const ticketType = ticketTypes.find(
         (t) => t._id.toString() === req.params.id,
       );
@@ -351,16 +335,12 @@ organizerViewsRouter.post(
   },
 );
 
-// POST /organizer/events/:eventId/ticket-types/:id/delete
 organizerViewsRouter.post(
   "/organizer/events/:eventId/ticket-types/:id/delete",
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
-      await ticketTypeService.deleteTicketType(
-        req.params.id as string,
-        req.user!.id,
-      );
+      await ticketTypeService.deleteTicketType(req.params.id, req.user!.id);
       (req as any).flash("success", "Xóa loại vé thành công!");
     } catch (err: any) {
       (req as any).flash("error", err.message || "Xóa thất bại");
@@ -368,5 +348,6 @@ organizerViewsRouter.post(
     res.redirect(`/organizer/events/${req.params.eventId}/ticket-types`);
   },
 );
+
 
 export default organizerViewsRouter;

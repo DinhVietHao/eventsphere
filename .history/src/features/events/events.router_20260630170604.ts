@@ -52,6 +52,6 @@ eventsRouter.get("/:id/dashboard", (req, res) =>
   res.json({ message: "UC20 - View realtime dashboard" }),
 );
 
-eventsRouter.use("/:eventId/ticket-types", ticketTypesRouter);
+
 
 export default eventsRouter;
