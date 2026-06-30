@@ -67,11 +67,10 @@ export class EventService {
     organizerId: string,
     dto: ICreateEventDto,
   ): Promise<IEvent> {
-    const min24h = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    if (new Date(dto.startDate) <= min24h) {
-      throw new AppError("Ngày bắt đầu phải cách hiện tại ít nhất 24 giờ", 400);
-    }
-
+    const now = new Date();
+    if (new Date(dto.startDate) <= now) {
+    throw new AppError("Ngày bắt đầu phải là ngày trong tương lai", 400);
+  }
     if (new Date(dto.startDate) >= new Date(dto.endDate)) {
       throw new AppError("Ngày kết thúc phải sau ngày bắt đầu", 400);
     }
