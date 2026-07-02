@@ -118,29 +118,6 @@ organizerViewsRouter.post(
   },
 );
 
-// GET /organizer/events/:id — chi tiết event (đặt SAU /create)
-organizerViewsRouter.get(
-  "/organizer/events/:id",
-  ...organizerGuard,
-  async (req: Request, res: Response) => {
-    try {
-      const event = await eventService.getEventById(req.params.id as string);
-      if (event.organizerId.toString() !== req.user!.id && req.user!.role !== "admin") {
-        return res.status(403).render("errors/403", { layout: false, user: req.user });
-      }
-      const ticketTypes = await ticketTypeService.getTicketTypes(req.params.id as string);
-      res.render("organizer/events/show", {
-        layout: "layouts/organizer",
-        user: req.user,
-        event,
-        ticketTypes,
-      });
-    } catch (err) {
-      res.status(500).send("Server error");
-    }
-  },
-);
-
 // GET /organizer/events/:id/edit
 organizerViewsRouter.get(
   "/organizer/events/:id/edit",

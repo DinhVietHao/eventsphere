@@ -1,0 +1,110 @@
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="/organizer/events">Sự kiện của tôi</a></li>
+    <li class="breadcrumb-item"><a href="/organizer/events/<%= event._id %>/ticket-types">Loại vé</a></li>
+    <li class="breadcrumb-item active">Sửa loại vé</li>
+  </ol>
+</nav>
+
+<div class="card border-0 shadow-sm p-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
+    <h2 class="h4 fw-bold text-dark mb-0">
+      <i class="bi bi-ticket-perforated me-2"></i>Cập nhật loại vé
+    </h2>
+    <% if (ticketType.sold > 0) { %>
+      <span class="badge bg-primary px-3 py-2">Đã bán: <%= ticketType.sold %> vé</span>
+    <% } else { %>
+      <span class="badge bg-secondary px-3 py-2">Chưa có người mua</span>
+    <% } %>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i><%= error %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <% } %>
+
+  <% if (ticketType.sold > 0) { %>
+  <div class="alert alert-warning border-0 d-flex align-items-center mb-4" role="alert">
+    <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+    <div>Loại vé này đã có <strong><%= ticketType.sold %></strong> người mua. Giá không thể thay đổi.</div>
+  </div>
+  <% } %>
+
+  <form action="/organizer/events/<%= event._id %>/ticket-types/<%= ticketType._id %>/edit" method="POST">
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Tên loại vé <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="name" required
+                 value="<%= ticketType.name %>">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Giá (VNĐ) <span class="text-danger">*</span></label>
+          <div class="input-group">
+            <input type="number" class="form-control" name="price" required min="0"
+                   value="<%= ticketType.price %>"
+                   <%= ticketType.sold > 0 ? 'disabled' : '' %>>
+            <span class="input-group-text">VNĐ</span>
+          </div>
+          <% if (ticketType.sold > 0) { %>
+            <input type="hidden" name="price" value="<%= ticketType.price %>">
+            <div class="form-text text-warning">
+              <i class="bi bi-lock me-1"></i>Không thể thay đổi vì đã có người mua
+            </div>
+          <% } %>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Số lượng (quota) <span class="text-danger">*</span></label>
+          <input type="number" class="form-control" name="quota" required
+                 min="<%= ticketType.sold || 1 %>"
+                 value="<%= ticketType.quota %>">
+          <% if (ticketType.sold > 0) { %>
+            <div class="form-text text-muted">
+              <i class="bi bi-arrow-down-up me-1"></i>Tối thiểu <%= ticketType.sold %> (số đã bán)
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Mô tả quyền lợi</label>
+          <textarea class="form-control" name="description" rows="6"><%= ticketType.description || '' %></textarea>
+          <div class="form-text">Không bắt buộc</div>
+        </div>
+
+        <div class="card bg-light border-0 p-3">
+          <p class="small fw-bold text-muted mb-2"><i class="bi bi-bar-chart me-1"></i>Thống kê hiện tại</p>
+          <div class="row text-center g-2">
+            <div class="col-4">
+              <div class="fw-bold fs-5 text-dark"><%= ticketType.quota %></div>
+              <div class="text-muted small">Tổng quota</div>
+            </div>
+            <div class="col-4">
+              <div class="fw-bold fs-5 text-primary"><%= ticketType.sold %></div>
+              <div class="text-muted small">Đã bán</div>
+            </div>
+            <div class="col-4">
+              <% const remaining = ticketType.quota - ticketType.sold; %>
+              <div class="fw-bold fs-5 <%= remaining === 0 ? 'text-danger' : 'text-success' %>"><%= remaining %></div>
+              <div class="text-muted small">Còn lại</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 border-top mt-4 pt-3 d-flex justify-content-end gap-2">
+      <a href="/organizer/events/<%= event._id %>/ticket-types" class="btn btn-outline-secondary px-4">
+        Quay lại
+      </a>
+      <button type="submit" class="btn btn-success px-4 fw-bold">
+        <i class="bi bi-check-lg me-2"></i>Lưu thay đổi
+      </button>
+    </div>
+  </form>
+</div>

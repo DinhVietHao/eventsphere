@@ -1,0 +1,80 @@
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="/organizer/events">Sự kiện của tôi</a></li>
+    <li class="breadcrumb-item"><a href="/organizer/events/<%= event._id %>/ticket-types">Loại vé</a></li>
+    <li class="breadcrumb-item active">Thêm loại vé</li>
+  </ol>
+</nav>
+
+<div class="card border-0 shadow-sm p-4">
+  <h2 class="h4 fw-bold text-dark mb-4 border-bottom pb-2">
+    <i class="bi bi-ticket-perforated me-2"></i>Thêm loại vé mới
+  </h2>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i><%= error %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <% } %>
+
+  <form action="/organizer/events/<%= event._id %>/ticket-types" method="POST">
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Tên loại vé <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="name" required
+                 placeholder="VD: VIP, General, Early Bird..."
+                 value="<%= old ? old.name || '' : '' %>">
+          <div class="form-text">Tên ngắn gọn, dễ nhận biết</div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Giá (VNĐ) <span class="text-danger">*</span></label>
+          <div class="input-group">
+            <input type="number" class="form-control" name="price" required min="0"
+                   placeholder="0"
+                   value="<%= old ? (old.price ?? '') : '' %>">
+            <span class="input-group-text">VNĐ</span>
+          </div>
+          <div class="form-text">Nhập 0 nếu là vé miễn phí</div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Số lượng (quota) <span class="text-danger">*</span></label>
+          <input type="number" class="form-control" name="quota" required min="1"
+                 placeholder="VD: 100"
+                 value="<%= old ? old.quota || '' : '' %>">
+          <div class="form-text">Tổng số vé phát hành cho loại này</div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Mô tả quyền lợi</label>
+          <textarea class="form-control" name="description" rows="6"
+                    placeholder="VD: Bao gồm ghế hạng nhất, đồ uống miễn phí, quà lưu niệm..."><%= old ? old.description || '' : '' %></textarea>
+          <div class="form-text">Không bắt buộc</div>
+        </div>
+
+        <div class="card bg-light border-0 p-3">
+          <p class="small fw-bold text-muted mb-2"><i class="bi bi-info-circle me-1"></i>Lưu ý</p>
+          <ul class="small text-muted mb-0 ps-3">
+            <li>Giá không thể thay đổi sau khi đã có người mua</li>
+            <li>Quota có thể tăng nhưng không thể giảm xuống dưới số đã bán</li>
+            <li>Loại vé không thể xóa nếu đã có người mua</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 border-top mt-4 pt-3 d-flex justify-content-end gap-2">
+      <a href="/organizer/events/<%= event._id %>/ticket-types" class="btn btn-outline-secondary px-4">
+        Hủy
+      </a>
+      <button type="submit" class="btn btn-primary px-4 fw-bold">
+        <i class="bi bi-plus-lg me-2"></i>Thêm loại vé
+      </button>
+    </div>
+  </form>
+</div>

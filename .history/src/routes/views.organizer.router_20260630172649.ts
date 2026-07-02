@@ -118,29 +118,6 @@ organizerViewsRouter.post(
   },
 );
 
-// GET /organizer/events/:id — chi tiết event (đặt SAU /create)
-organizerViewsRouter.get(
-  "/organizer/events/:id",
-  ...organizerGuard,
-  async (req: Request, res: Response) => {
-    try {
-      const event = await eventService.getEventById(req.params.id as string);
-      if (event.organizerId.toString() !== req.user!.id && req.user!.role !== "admin") {
-        return res.status(403).render("errors/403", { layout: false, user: req.user });
-      }
-      const ticketTypes = await ticketTypeService.getTicketTypes(req.params.id as string);
-      res.render("organizer/events/show", {
-        layout: "layouts/organizer",
-        user: req.user,
-        event,
-        ticketTypes,
-      });
-    } catch (err) {
-      res.status(500).send("Server error");
-    }
-  },
-);
-
 // GET /organizer/events/:id/edit
 organizerViewsRouter.get(
   "/organizer/events/:id/edit",
@@ -241,9 +218,7 @@ organizerViewsRouter.get(
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
-      const event = await eventService.getEventById(
-        req.params.eventId as string,
-      );
+      const event = await eventService.getEventById(req.params.eventId as string);
       const ticketTypes = await ticketTypeService.getTicketTypes(
         req.params.eventId as string,
       );
@@ -267,9 +242,7 @@ organizerViewsRouter.get(
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
-      const event = await eventService.getEventById(
-        req.params.eventId as string,
-      );
+      const event = await eventService.getEventById(req.params.eventId as string);
       res.render("organizer/events/ticket-types/create", {
         layout: "layouts/organizer",
         user: req.user,
@@ -297,9 +270,7 @@ organizerViewsRouter.post(
       (req as any).flash("success", "Thêm loại vé thành công!");
       res.redirect(`/organizer/events/${req.params.eventId}/ticket-types`);
     } catch (err: any) {
-      const event = await eventService.getEventById(
-        req.params.eventId as string,
-      );
+      const event = await eventService.getEventById(req.params.eventId as string);
       res.render("organizer/events/ticket-types/create", {
         layout: "layouts/organizer",
         user: req.user,
@@ -317,9 +288,7 @@ organizerViewsRouter.get(
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
-      const event = await eventService.getEventById(
-        req.params.eventId as string,
-      );
+      const event = await eventService.getEventById(req.params.eventId as string);
       const ticketTypes = await ticketTypeService.getTicketTypes(
         req.params.eventId as string,
       );
@@ -354,9 +323,7 @@ organizerViewsRouter.post(
       (req as any).flash("success", "Cập nhật loại vé thành công!");
       res.redirect(`/organizer/events/${req.params.eventId}/ticket-types`);
     } catch (err: any) {
-      const event = await eventService.getEventById(
-        req.params.eventId as string,
-      );
+      const event = await eventService.getEventById(req.params.eventId as string);
       const ticketTypes = await ticketTypeService.getTicketTypes(
         req.params.eventId as string,
       );
@@ -380,10 +347,7 @@ organizerViewsRouter.post(
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
-      await ticketTypeService.deleteTicketType(
-        req.params.id as string,
-        req.user!.id,
-      );
+      await ticketTypeService.deleteTicketType(req.params.id, req.user!.id);
       (req as any).flash("success", "Xóa loại vé thành công!");
     } catch (err: any) {
       (req as any).flash("error", err.message || "Xóa thất bại");
