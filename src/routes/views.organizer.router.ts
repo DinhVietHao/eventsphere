@@ -127,10 +127,17 @@ organizerViewsRouter.get(
   async (req: Request, res: Response) => {
     try {
       const event = await eventService.getEventById(req.params.id as string);
-      if (event.organizerId.toString() !== req.user!.id && req.user!.role !== "admin") {
-        return res.status(403).render("errors/403", { layout: false, user: req.user });
+      if (
+        event.organizerId.toString() !== req.user!.id &&
+        req.user!.role !== "admin"
+      ) {
+        return res
+          .status(403)
+          .render("errors/403", { layout: false, user: req.user });
       }
-      const ticketTypes = await ticketTypeService.getTicketTypes(req.params.id as string);
+      const ticketTypes = await ticketTypeService.getTicketTypes(
+        req.params.id as string,
+      );
       res.render("organizer/events/show", {
         layout: "layouts/organizer",
         user: req.user,
@@ -214,6 +221,47 @@ organizerViewsRouter.post(
     } catch (err: any) {
       (req as any).flash("error", err.message || "Xóa thất bại");
       res.redirect("/organizer/events");
+    }
+  },
+);
+
+// GET /organizer/events/:id/report — UC19
+organizerViewsRouter.get(
+  "/organizer/events/:id/report",
+  ...organizerGuard,
+  async (req: Request, res: Response) => {
+    try {
+      const report = await eventService.getEventReport(
+        req.params.id as string,
+        req.user!.id,
+      );
+      res.render("organizer/events/report", {
+        layout: "layouts/organizer",
+        user: req.user,
+        report,
+      });
+    } catch (err: any) {
+      res.status(err.statusCode || 500).send(err.message || "Server error");
+    }
+  },
+);
+
+// GET /organizer/events/:id/dashboard — UC20
+organizerViewsRouter.get(
+  "/organizer/events/:id/dashboard",
+  ...organizerGuard,
+  async (req: Request, res: Response) => {
+    try {
+      const snapshot = await eventService.getDashboardSnapshot(
+        req.params.id as string,
+      );
+      res.render("organizer/events/dashboard", {
+        layout: "layouts/organizer",
+        user: req.user,
+        snapshot,
+      });
+    } catch (err: any) {
+      res.status(err.statusCode || 500).send(err.message || "Server error");
     }
   },
 );

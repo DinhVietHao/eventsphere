@@ -7,13 +7,8 @@ import { TokenRepository } from "./repositories/token.repository";
 import { signAccessToken, signRefreshToken } from "../../shared/utils/jwt.util";
 
 export class AuthService {
-  private userRepository: UserRepository;
-  private tokenRepository: TokenRepository;
-
-  constructor() {
-    this.userRepository = new UserRepository();
-    this.tokenRepository = new TokenRepository();
-  }
+  private userRepository = new UserRepository();
+  private tokenRepository = new TokenRepository();
 
   async register(dto: any): Promise<IAuthResponse> {
     const existingUser = await this.userRepository.findByEmail(dto.email);
@@ -22,7 +17,6 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
-
     const newUser = await this.userRepository.create({
       name: dto.name,
       email: dto.email,
@@ -32,7 +26,6 @@ export class AuthService {
 
     const userId = (newUser as any)._id.toString();
 
-    // Tạo JWT
     const accessToken = signAccessToken({
       id: userId,
       role: newUser.role,
@@ -44,12 +37,10 @@ export class AuthService {
       name: newUser.name,
     });
 
-    // Hash refresh token trước khi lưu DB — không lưu raw token
     const tokenHash = crypto
       .createHash("sha256")
       .update(refreshToken)
       .digest("hex");
-
     await this.tokenRepository.createToken({
       userId: (newUser as any)._id,
       tokenHash: tokenHash,
@@ -74,25 +65,20 @@ export class AuthService {
     userAgent?: string,
   ): Promise<IAuthResponse> {
     const user = await this.userRepository.findByEmail(dto.email);
-    if (!user) {
-      throw new AppError("Email hoặc mật khẩu không chính xác", 401);
-    }
+    if (!user) throw new AppError("Email hoặc mật khẩu không chính xác", 401);
 
-    if (!user.isActive) {
+    if (!user.isActive)
       throw new AppError("Tài khoản của bạn đã bị khóa bởi quản trị viên", 403);
-    }
 
     const isPasswordMatch = await bcrypt.compare(
       dto.password,
       user.passwordHash,
     );
-    if (!isPasswordMatch) {
+    if (!isPasswordMatch)
       throw new AppError("Email hoặc mật khẩu không chính xác", 401);
-    }
 
     const userId = (user as any)._id.toString();
 
-    // Tạo JWT
     const accessToken = signAccessToken({
       id: userId,
       role: user.role,
@@ -104,12 +90,10 @@ export class AuthService {
       name: user.name,
     });
 
-    // Hash refresh token trước khi lưu DB
     const tokenHash = crypto
       .createHash("sha256")
       .update(refreshToken)
       .digest("hex");
-
     await this.tokenRepository.createToken({
       userId: (user as any)._id,
       tokenHash: tokenHash,
@@ -130,12 +114,10 @@ export class AuthService {
       .createHash("sha256")
       .update(refreshToken)
       .digest("hex");
-
     const existingToken = await this.tokenRepository.findByHash(tokenHash);
     if (!existingToken) {
       throw new AppError("Phiên đăng nhập không hợp lệ hoặc đã hết hạn", 401);
     }
-
     await this.tokenRepository.deleteByHash(tokenHash);
   }
 }

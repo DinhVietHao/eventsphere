@@ -1,5 +1,10 @@
 import { IEvent, Event } from "../models/event.model";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
+
+import { TicketTypeModel } from "../models/ticketType.model";
+import { RegistrationModel } from "../../tickets/models/registration.model";
+import { CheckinLogModel } from "../../checkin/models/checkinLog.model";
+import { ReviewModel } from "../../reviews/models/review.model";
 
 export class EventRepository {
   // UC01 - Danh sách event công khai, có phân trang
@@ -90,5 +95,55 @@ export class EventRepository {
   // Xóa event theo id
   async deleteById(id: string): Promise<void> {
     await Event.findByIdAndDelete(id);
+  }
+
+  //UC-19-20
+
+  // Đếm registrations đã paid theo từng ticketTypeId
+  async getRegistrationStats(eventId: string) {
+    return RegistrationModel.aggregate([
+      {
+        // getRegistrationStats — chỗ $match trong aggregate
+        $match: {
+          eventId: new mongoose.Types.ObjectId(eventId),
+          paymentStatus: "paid",
+        },
+      },
+      {
+        $group: {
+          _id: "$ticketTypeId",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    // Trả về: [{ _id: ObjectId, count: number }, ...]
+  }
+
+  // Đếm tổng check-in của sự kiện
+  async getCheckinCount(eventId: string) {
+    return CheckinLogModel.countDocuments({
+      eventId: new mongoose.Types.ObjectId(eventId),
+    } as any);
+  }
+
+  // Lấy tất cả ticket types của sự kiện
+  async getTicketTypes(eventId: string) {
+    return TicketTypeModel.find({
+      eventId: new mongoose.Types.ObjectId(eventId),
+    } as any).lean();
+  }
+
+  // Đếm số lượt review
+  async getReviewCount(eventId: string) {
+    return ReviewModel.countDocuments({
+      eventId: new mongoose.Types.ObjectId(eventId),
+    } as any);
+  }
+
+  async getRegistrationCount(eventId: string) {
+    return RegistrationModel.countDocuments({
+      eventId: new mongoose.Types.ObjectId(eventId),
+      paymentStatus: "paid",
+    } as any);
   }
 }
