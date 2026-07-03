@@ -54,4 +54,5 @@ eventsRouter.get("/:id/dashboard", (req, res) =>
 
 eventsRouter.use("/:eventId/ticket-types", ticketTypesRouter);
 
+
 export default eventsRouter;

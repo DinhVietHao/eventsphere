@@ -1,11 +1,9 @@
 import { Request, Response, NextFunction, Router } from "express";
 import { EventService } from "../features/events/events.service";
-import { NotificationService } from "../features/notifications/notification.service";
 import { TicketTypeService } from "../features/ticketTypes/ticketTypes.service";
 
 const organizerViewsRouter = Router();
 const eventService = new EventService();
-const notificationService = new NotificationService();
 const ticketTypeService = new TicketTypeService();
 
 const LIMIT = 9;
@@ -120,29 +118,6 @@ organizerViewsRouter.post(
   },
 );
 
-// GET /organizer/events/:id — chi tiết event (đặt SAU /create)
-organizerViewsRouter.get(
-  "/organizer/events/:id",
-  ...organizerGuard,
-  async (req: Request, res: Response) => {
-    try {
-      const event = await eventService.getEventById(req.params.id as string);
-      if (event.organizerId.toString() !== req.user!.id && req.user!.role !== "admin") {
-        return res.status(403).render("errors/403", { layout: false, user: req.user });
-      }
-      const ticketTypes = await ticketTypeService.getTicketTypes(req.params.id as string);
-      res.render("organizer/events/show", {
-        layout: "layouts/organizer",
-        user: req.user,
-        event,
-        ticketTypes,
-      });
-    } catch (err) {
-      res.status(500).send("Server error");
-    }
-  },
-);
-
 // GET /organizer/events/:id/edit
 organizerViewsRouter.get(
   "/organizer/events/:id/edit",
@@ -237,38 +212,15 @@ organizerViewsRouter.get(
   },
 );
 
-// GET /organizer/notifications — UC16
-organizerViewsRouter.get(
-  "/organizer/notifications",
-  ...organizerGuard,
-  async (req: any, res: Response) => {
-    try {
-      const { events } = await eventService.getMyEvents(req.user!.id, 1, 100);
-      const messages = req.flash();
-      res.render("organizer/notifications", {
-        layout: "layouts/organizer",
-        user: req.user,
-        events,
-        sentHistory: [], // Có thể mở rộng sau để lưu lịch sử
-        messages: { success: messages.success, error: messages.error },
-        old: null,
-      });
-    } catch (err) {
-      res.status(500).send("Server error");
-    }
-  },
-);
 // GET /organizer/events/:eventId/ticket-types
 organizerViewsRouter.get(
   "/organizer/events/:eventId/ticket-types",
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
-      const event = await eventService.getEventById(
-        req.params.eventId as string,
-      );
+      const event = await eventService.getEventById(req.params.eventId);
       const ticketTypes = await ticketTypeService.getTicketTypes(
-        req.params.eventId as string,
+        req.params.eventId,
       );
       const messages = (req as any).flash();
       res.render("organizer/events/ticket-types/index", {
@@ -290,9 +242,7 @@ organizerViewsRouter.get(
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
-      const event = await eventService.getEventById(
-        req.params.eventId as string,
-      );
+      const event = await eventService.getEventById(req.params.eventId);
       res.render("organizer/events/ticket-types/create", {
         layout: "layouts/organizer",
         user: req.user,
@@ -306,29 +256,6 @@ organizerViewsRouter.get(
   },
 );
 
-// POST /organizer/notifications/send — UC16 gửi thông báo
-organizerViewsRouter.post(
-  "/organizer/notifications/send",
-  ...organizerGuard,
-  async (req: any, res: Response) => {
-    try {
-      const { eventId, subject, message } = req.body;
-      const result = await notificationService.sendMassNotification(
-        eventId,
-        subject,
-        message,
-      );
-      req.flash(
-        "success",
-        `Đã đưa vào hàng đợi gửi thông báo cho ${result.totalQueued} người thành công!`,
-      );
-      res.redirect("/organizer/notifications");
-    } catch (err: any) {
-      req.flash("error", err.message || "Gửi thông báo thất bại");
-      res.redirect("/organizer/notifications");
-    }
-  },
-);
 // POST /organizer/events/:eventId/ticket-types
 organizerViewsRouter.post(
   "/organizer/events/:eventId/ticket-types",
@@ -336,16 +263,14 @@ organizerViewsRouter.post(
   async (req: Request, res: Response) => {
     try {
       await ticketTypeService.createTicketType(
-        req.params.eventId as string,
+        req.params.eventId,
         req.user!.id,
         req.body,
       );
       (req as any).flash("success", "Thêm loại vé thành công!");
       res.redirect(`/organizer/events/${req.params.eventId}/ticket-types`);
     } catch (err: any) {
-      const event = await eventService.getEventById(
-        req.params.eventId as string,
-      );
+      const event = await eventService.getEventById(req.params.eventId);
       res.render("organizer/events/ticket-types/create", {
         layout: "layouts/organizer",
         user: req.user,
@@ -363,11 +288,9 @@ organizerViewsRouter.get(
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
-      const event = await eventService.getEventById(
-        req.params.eventId as string,
-      );
+      const event = await eventService.getEventById(req.params.eventId);
       const ticketTypes = await ticketTypeService.getTicketTypes(
-        req.params.eventId as string,
+        req.params.eventId,
       );
       const ticketType = ticketTypes.find(
         (t) => t._id.toString() === req.params.id,
@@ -393,18 +316,16 @@ organizerViewsRouter.post(
   async (req: Request, res: Response) => {
     try {
       await ticketTypeService.updateTicketType(
-        req.params.id as string,
+        req.params.id,
         req.user!.id,
         req.body,
       );
       (req as any).flash("success", "Cập nhật loại vé thành công!");
       res.redirect(`/organizer/events/${req.params.eventId}/ticket-types`);
     } catch (err: any) {
-      const event = await eventService.getEventById(
-        req.params.eventId as string,
-      );
+      const event = await eventService.getEventById(req.params.eventId);
       const ticketTypes = await ticketTypeService.getTicketTypes(
-        req.params.eventId as string,
+        req.params.eventId,
       );
       const ticketType = ticketTypes.find(
         (t) => t._id.toString() === req.params.id,
@@ -426,10 +347,7 @@ organizerViewsRouter.post(
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
-      await ticketTypeService.deleteTicketType(
-        req.params.id as string,
-        req.user!.id,
-      );
+      await ticketTypeService.deleteTicketType(req.params.id, req.user!.id);
       (req as any).flash("success", "Xóa loại vé thành công!");
     } catch (err: any) {
       (req as any).flash("error", err.message || "Xóa thất bại");
