@@ -1,0 +1,97 @@
+<div class="w-100 bg-dark position-relative text-white overflow-hidden" style="height: 350px;">
+  <img src="<%= event.bannerUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80' %>" class="w-100 h-100 object-fit-cover opacity-50" alt="<%= event.title %>">
+  <div class="position-absolute top-50 start-50 translate-middle text-center w-75">
+    <span class="badge bg-primary text-uppercase px-3 py-2 mb-3 shadow"><%= event.category %></span>
+    <h1 class="display-5 fw-bold text-shadow"><%= event.title %></h1>
+  </div>
+</div>
+
+<div class="container mt-4">
+  <div class="row g-4">
+
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm p-4 mb-4">
+        <h3 class="h4 fw-bold mb-4 border-bottom pb-2 text-dark">Thông tin sự kiện</h3>
+
+        <div class="row g-3 mb-4">
+          <div class="col-sm-6 d-flex align-items-start">
+            <i class="bi bi-geo-alt-fill text-danger fs-4 me-3"></i>
+            <div>
+              <strong class="d-block text-dark">Địa điểm tổ chức</strong>
+              <span class="text-muted"><%= event.location %></span>
+            </div>
+          </div>
+          <div class="col-sm-6 d-flex align-items-start">
+            <i class="bi bi-calendar-check-fill text-primary fs-4 me-3"></i>
+            <div>
+              <strong class="d-block text-dark">Thời gian bắt đầu</strong>
+              <span class="text-muted"><%= new Date(event.startDate).toLocaleString('vi-VN') %></span>
+            </div>
+          </div>
+          <div class="col-sm-6 d-flex align-items-start">
+            <i class="bi bi-person-bounding-box text-success fs-4 me-3"></i>
+            <div>
+              <strong class="d-block text-dark">Ban tổ chức</strong>
+              <span class="text-muted"><%= event.organizer || 'EventSphere Team' %></span>
+            </div>
+          </div>
+        </div>
+
+        <h4 class="h5 fw-bold mb-3 text-dark">Giới thiệu</h4>
+        <div class="text-muted lh-lg">
+          <%- event.description || 'Chưa có mô tả chi tiết cho sự kiện này.' %>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm p-4">
+        <h3 class="h5 fw-bold mb-4 text-dark"><i class="bi bi-chat-left-heart me-2 text-primary"></i>Đánh giá từ cộng đồng</h3>
+
+        <form class="mb-4">
+          <div class="mb-3">
+            <label class="form-label small fw-bold text-secondary">Để lại bình luận của bạn</label>
+            <textarea class="form-control" rows="3" placeholder="Chia sẻ cảm nghĩ của bạn về sự kiện này..."></textarea>
+          </div>
+          <button type="button" class="btn btn-outline-primary btn-sm px-4">Gửi bình luận</button>
+        </form>
+
+        <div class="d-flex border-top pt-3 mb-3">
+          <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width: 45px; height: 45px; font-weight: bold;">
+            N
+          </div>
+          <div>
+            <div class="d-flex align-items-center mb-1">
+              <h6 class="mb-0 fw-bold me-2">Nguyễn Văn A</h6>
+              <small class="text-muted">2 ngày trước</small>
+            </div>
+            <p class="text-muted mb-0 small">Sự kiện tuyệt vời, ban tổ chức chuẩn bị rất chu đáo và chuyên nghiệp!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm text-center p-4 sticky-lg-top" style="top: 80px;">
+        <div class="card-body">
+          <span class="text-muted d-block mb-1 small text-uppercase fw-bold">Giá vé tham dự</span>
+          <h2 class="display-6 fw-bold text-primary mb-3">
+            <%= event.price === 0 || !event.price ? 'Miễn phí' : event.price.toLocaleString('vi-VN') + ' đ' %>
+          </h2>
+
+          <hr class="my-4">
+
+          <% if (event.status === 'APPROVED' || event.status === 'ONGOING') { %>
+          <a href="/events/<%= event._id %>/booking" class="btn btn-primary btn-lg w-100 fw-bold mb-3 shadow-sm">Đăng Ký Ngay</a>
+          <p class="text-muted small mb-0"><i class="bi bi-shield-check text-success me-1"></i>Cam kết hoàn tiền trong 24h nếu có sự cố xảy ra.</p>
+          <% } else if (event.status === 'PENDING' || event.status === 'DRAFT') { %>
+          <button class="btn btn-secondary btn-lg w-100 fw-bold mb-3" disabled>Chưa mở đăng ký</button>
+          <p class="text-muted small mb-0"><i class="bi bi-clock me-1"></i>Sự kiện đang chờ được phê duyệt.</p>
+          <% } else { %>
+          <button class="btn btn-secondary btn-lg w-100 fw-bold mb-3" disabled>Đã Đóng Đăng Ký</button>
+          <p class="text-danger small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Sự kiện này đã kết thúc hoặc bị hủy.</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

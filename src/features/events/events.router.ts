@@ -1,28 +1,44 @@
 import { Router } from "express";
-import { eventsController } from "./events.controller";
+import { EventController } from "./events.controller";
 import { authMiddleware } from "../../shared/middlewares/auth.middleware";
 import { roleMiddleware } from "../../shared/middlewares/role.middleware";
+import ticketTypesRouter from "../ticketTypes/ticketTypes.router";
 
 const eventsRouter = Router();
+const eventController = new EventController();
 
-// Guest UCs (Không cần token)
-eventsRouter.get("/", (req, res) =>
-  res.json({ message: "UC01 - Browse event list & UC04 - Filter events" }),
+// ───── Guest ─────
+eventsRouter.get("/search", eventController.searchEvents);
+eventsRouter.get(
+  "/my",
+  authMiddleware,
+  roleMiddleware("organizer", "admin"),
+  eventController.getMyEvents,
 );
-eventsRouter.get("/search", (req, res) =>
-  res.json({ message: "UC03 - Search events" }),
+eventsRouter.get("/", eventController.getPublishedEvents);
+eventsRouter.get("/:id", eventController.getEventById);
+
+// ───── Organizer ─────
+eventsRouter.post(
+  "/",
+  authMiddleware,
+  roleMiddleware("organizer", "admin"),
+  eventController.createEvent,
 );
-eventsRouter.get("/:id", (req, res) =>
-  res.json({ message: "UC02 - View event details" }),
+eventsRouter.put(
+  "/:id",
+  authMiddleware,
+  roleMiddleware("organizer", "admin"),
+  eventController.updateEvent,
+);
+eventsRouter.delete(
+  "/:id",
+  authMiddleware,
+  roleMiddleware("organizer", "admin"),
+  eventController.deleteEvent,
 );
 
-// Organizer UCs (Cần authMiddleware & roleMiddleware('organizer'))
-eventsRouter.post("/", (req, res) =>
-  res.json({ message: "UC13 - Create event & UC14 - Manage ticket types" }),
-);
-eventsRouter.put("/:id", (req, res) =>
-  res.json({ message: "UC13 - Update event" }),
-);
+// ───── Placeholder ─────
 eventsRouter.get("/:id/registrations", (req, res) =>
   res.json({ message: "UC15 - View registration list" }),
 );
@@ -33,13 +49,15 @@ eventsRouter.get(
   "/:id/report",
   authMiddleware,
   roleMiddleware("organizer"),
-  eventsController.getEventReport,
+  eventController.getEventReport,
 );
 eventsRouter.get(
   "/:id/dashboard",
   authMiddleware,
   roleMiddleware("organizer"),
-  eventsController.getDashboard,
+  eventController.getDashboard,
 );
+
+eventsRouter.use("/:eventId/ticket-types", ticketTypesRouter);
 
 export default eventsRouter;
