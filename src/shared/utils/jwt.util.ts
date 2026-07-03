@@ -9,19 +9,19 @@ export interface IJwtPayload {
 
 // Tạo access token — hết hạn nhanh (15 phút)
 export const signAccessToken = (payload: IJwtPayload): string => {
-  return jwt.sign(payload, appConfig.jwtAccessSecret, {
-    expiresIn: appConfig.jwtAccessExpires as any,
+  return jwt.sign(payload, appConfig.jwt.accessSecret, {
+    expiresIn: appConfig.jwt.accessExpires as any,
   });
 };
 
 // Tạo refresh token — hết hạn lâu (7 ngày)
 export const signRefreshToken = (payload: IJwtPayload): string => {
-  return jwt.sign(payload, appConfig.jwtRefreshSecret, {
-    expiresIn: appConfig.jwtRefreshExpires as any,
+  return jwt.sign(payload, appConfig.jwt.refreshSecret, {
+    expiresIn: appConfig.jwt.refreshExpires as any,
   });
 };
 
 // Verify access token — trả về payload nếu hợp lệ
 export const verifyAccessToken = (token: string): IJwtPayload => {
-  return jwt.verify(token, appConfig.jwtAccessSecret) as IJwtPayload;
+  return jwt.verify(token, appConfig.jwt.accessSecret) as IJwtPayload;
 };

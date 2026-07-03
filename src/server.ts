@@ -1,13 +1,13 @@
-import app from './app';
-import mongoose from 'mongoose';
-import { appConfig } from './config/app.config';
+import app from "./app";
+import mongoose from "mongoose";
+import { appConfig } from "./config/app.config";
 
 const PORT = appConfig.port;
 
 mongoose
   .connect(appConfig.mongoUri)
   .then(() => {
-    console.log('🍃 MongoDB đã kết nối thành công');
+    console.log("🍃 MongoDB đã kết nối thành công");
     app.listen(PORT, () => {
       console.log(`=========================================`);
       console.log(`🚀 EventSphere Backend Server đang chạy!`);
@@ -17,11 +17,11 @@ mongoose
     });
   })
   .catch((err) => {
-    console.error('💥 Kết nối MongoDB thất bại:', err.message);
+    console.error("💥 Kết nối MongoDB thất bại:", err.message);
     process.exit(1);
   });
 
-process.on('unhandledRejection', (err: Error) => {
+process.on("unhandledRejection", (err: Error) => {
   console.error(`💥 Lỗi nghiêm trọng Unhandled Rejection: ${err.message}`);
   process.exit(1);
 });

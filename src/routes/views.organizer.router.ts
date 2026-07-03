@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction, Router } from "express";
 import { EventService } from "../features/events/events.service";
+import { NotificationService } from "../features/notifications/notification.service";
 import { TicketTypeService } from "../features/ticketTypes/ticketTypes.service";
 
 const organizerViewsRouter = Router();
 const eventService = new EventService();
+const notificationService = new NotificationService();
 const ticketTypeService = new TicketTypeService();
 
 const LIMIT = 9;
@@ -235,6 +237,27 @@ organizerViewsRouter.get(
   },
 );
 
+// GET /organizer/notifications — UC16
+organizerViewsRouter.get(
+  "/organizer/notifications",
+  ...organizerGuard,
+  async (req: any, res: Response) => {
+    try {
+      const { events } = await eventService.getMyEvents(req.user!.id, 1, 100);
+      const messages = req.flash();
+      res.render("organizer/notifications", {
+        layout: "layouts/organizer",
+        user: req.user,
+        events,
+        sentHistory: [], // Có thể mở rộng sau để lưu lịch sử
+        messages: { success: messages.success, error: messages.error },
+        old: null,
+      });
+    } catch (err) {
+      res.status(500).send("Server error");
+    }
+  },
+);
 // GET /organizer/events/:eventId/ticket-types
 organizerViewsRouter.get(
   "/organizer/events/:eventId/ticket-types",
@@ -283,6 +306,29 @@ organizerViewsRouter.get(
   },
 );
 
+// POST /organizer/notifications/send — UC16 gửi thông báo
+organizerViewsRouter.post(
+  "/organizer/notifications/send",
+  ...organizerGuard,
+  async (req: any, res: Response) => {
+    try {
+      const { eventId, subject, message } = req.body;
+      const result = await notificationService.sendMassNotification(
+        eventId,
+        subject,
+        message,
+      );
+      req.flash(
+        "success",
+        `Đã đưa vào hàng đợi gửi thông báo cho ${result.totalQueued} người thành công!`,
+      );
+      res.redirect("/organizer/notifications");
+    } catch (err: any) {
+      req.flash("error", err.message || "Gửi thông báo thất bại");
+      res.redirect("/organizer/notifications");
+    }
+  },
+);
 // POST /organizer/events/:eventId/ticket-types
 organizerViewsRouter.post(
   "/organizer/events/:eventId/ticket-types",
