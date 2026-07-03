@@ -57,6 +57,10 @@
             <div class="btn-group btn-group-sm">
               <a href="/organizer/events/<%= item._id %>/edit" class="btn btn-outline-secondary" title="Sửa"><i class="bi bi-pencil"></i></a>
               <a href="/organizer/events/<%= item._id %>/registrations" class="btn btn-outline-info" title="Danh sách đăng ký"><i class="bi bi-card-list"></i></a>
+              <% if (item.status === 'APPROVED' || item.status === 'ONGOING' || item.status === 'ENDED') { %>
+              <a href="/organizer/events/<%= item._id %>/report" class="btn btn-outline-primary" title="Báo cáo tổng kết (UC19)"><i class="bi bi-bar-chart-line"></i></a>
+              <a href="/organizer/events/<%= item._id %>/dashboard" class="btn btn-outline-success" title="Dashboard realtime (UC20)"><i class="bi bi-speedometer2"></i></a>
+              <% } %>
               <form action="/organizer/events/<%= item._id %>/delete" method="POST" class="d-inline" onsubmit="return confirm('Bạn chắc chắn có muốn xóa sự kiện này? Thao tác không thể khôi phục!');">
                 <button type="submit" class="btn btn-outline-danger rounded-start-0" title="Xóa"><i class="bi bi-trash"></i></button>
               </form>
