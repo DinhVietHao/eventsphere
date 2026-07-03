@@ -1,5 +1,5 @@
 import { Schema, model, Document } from 'mongoose';
-import { EventModel }              from '../../events/models/event.model';
+import { Event }              from '../../events/models/event.model';
 
 export interface IReviewDocument extends Document {
   userId     : Schema.Types.ObjectId;
@@ -34,7 +34,7 @@ reviewSchema.post('save', async function (this: IReviewDocument) {
 
   const finalAvg = result[0]?.avg ?? 0;
 
-  await EventModel.findByIdAndUpdate(this.eventId, {
+  await Event.findByIdAndUpdate(this.eventId, {
     avgRating: parseFloat(finalAvg.toFixed(1)),
   });
 });

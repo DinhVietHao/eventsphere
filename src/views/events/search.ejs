@@ -1,0 +1,61 @@
+<div class="container">
+  <div class="row justify-content-center mb-5">
+    <div class="col-lg-8 text-center">
+      <h2 class="fw-bold mb-3 text-dark">Khám phá các sự kiện tiếp theo của bạn</h2>
+      <form action="/events/search" method="GET" class="d-flex p-2 bg-white rounded-pill shadow-sm border">
+        <input class="form-control border-0 bg-transparent px-4 py-2 shadow-none" type="search" name="keyword" value="<%= keyword || '' %>" placeholder="Nhập tên sự kiện, từ khóa bạn quan tâm..." aria-label="Search">
+        <button class="btn btn-primary rounded-pill px-4" type="submit">
+          <i class="bi bi-search me-2"></i>Tìm kiếm
+        </button>
+      </form>
+      <% if (keyword) { %>
+      <p class="text-muted mt-3 small">Kết quả tìm kiếm cho từ khóa: <strong class="text-primary">"<%= keyword %>"</strong></p>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <% if (events && events.length > 0) { %>
+
+      <% events.forEach(item => { %>
+      <div class="card border-0 shadow-sm mb-3 overflow-hidden hover-shadow transition">
+        <div class="row g-0">
+          <div class="col-md-4">
+            <img src="<%= item.bannerUrl || 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=600&q=80' %>" class="img-fluid h-100 w-100 object-fit-cover" alt="<%= item.title %>" style="min-height: 180px;">
+          </div>
+          <div class="col-md-8">
+            <div class="card-body h-100 d-flex flex-column p-4">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                <h4 class="card-title h5 fw-bold text-dark mb-0"><%= item.title %></h4>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle text-uppercase"><%= item.category %></span>
+              </div>
+
+              <p class="card-text text-muted small mb-2">
+                <i class="bi bi-geo-alt-fill text-danger me-1"></i><%= item.location %>
+              </p>
+              <p class="card-text text-muted small mb-3">
+                <i class="bi bi-calendar2-week text-primary me-1"></i><%= new Date(item.startDate).toLocaleDateString('vi-VN') %>
+              </p>
+
+              <div class="mt-auto d-flex align-items-center justify-content-between pt-3 border-top">
+                <span class="fw-bold text-dark fs-5"><%= item.price === 0 || !item.price ? 'Miễn phí' : item.price.toLocaleString('vi-VN') + ' đ' %></span>
+                <a href="/events/<%= item._id %>" class="btn btn-primary px-4 btn-sm">Xem chi tiết</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <% }) %>
+
+      <% } else { %>
+      <div class="text-center py-5 bg-white rounded shadow-sm">
+        <i class="bi bi-search-heart text-muted display-1"></i>
+        <h3 class="h5 fw-bold text-dark mt-4">Không tìm thấy kết quả phù hợp</h3>
+        <p class="text-muted small">Hãy thử tìm kiếm lại bằng một từ khóa khác hoặc kiểm tra lại chính tả.</p>
+        <a href="/events" class="btn btn-outline-primary btn-sm mt-2 px-4">Quay lại trang sự kiện</a>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
