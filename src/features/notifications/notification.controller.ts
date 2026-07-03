@@ -4,6 +4,7 @@ import { notificationService } from "./notification.service";
 import { sendSuccess } from "../../shared/utils/response.util";
 
 const SendNotificationSchema = Joi.object({
+  eventId: Joi.string().length(24).hex().required(),
   subject: Joi.string().min(1).max(200).required(),
   message: Joi.string().min(1).max(2000).required(),
 });
@@ -23,11 +24,11 @@ export class NotificationController {
         return;
       }
 
-      const eventId = req.params["eventId"] as string;
+      const { eventId, subject, message } = value;
       const result = await notificationService.sendMassNotification(
         eventId,
-        value.subject,
-        value.message,
+        subject,
+        message,
       );
 
       sendSuccess(

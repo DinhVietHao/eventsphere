@@ -7,9 +7,9 @@ const notificationRouter = Router();
 
 // POST /api/v1/notifications/:eventId/send
 notificationRouter.post(
-  "/:eventId/send",
+  "/",
   authMiddleware,
-  roleMiddleware("organizer"),
+  roleMiddleware("organizer", "admin"),
   notificationController.sendMassNotification,
 );
 

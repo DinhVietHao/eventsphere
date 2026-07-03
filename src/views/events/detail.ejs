@@ -79,12 +79,15 @@
 
           <hr class="my-4">
 
-          <% if (event.status === 'upcoming') { %>
+          <% if (event.status === 'APPROVED' || event.status === 'ONGOING') { %>
           <a href="/events/<%= event._id %>/booking" class="btn btn-primary btn-lg w-100 fw-bold mb-3 shadow-sm">Đăng Ký Ngay</a>
           <p class="text-muted small mb-0"><i class="bi bi-shield-check text-success me-1"></i>Cam kết hoàn tiền trong 24h nếu có sự cố xảy ra.</p>
+          <% } else if (event.status === 'PENDING' || event.status === 'DRAFT') { %>
+          <button class="btn btn-secondary btn-lg w-100 fw-bold mb-3" disabled>Chưa mở đăng ký</button>
+          <p class="text-muted small mb-0"><i class="bi bi-clock me-1"></i>Sự kiện đang chờ được phê duyệt.</p>
           <% } else { %>
           <button class="btn btn-secondary btn-lg w-100 fw-bold mb-3" disabled>Đã Đóng Đăng Ký</button>
-          <p class="text-danger small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Sự kiện này đã kết thúc hoặc hết chỗ.</p>
+          <p class="text-danger small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Sự kiện này đã kết thúc hoặc bị hủy.</p>
           <% } %>
         </div>
       </div>

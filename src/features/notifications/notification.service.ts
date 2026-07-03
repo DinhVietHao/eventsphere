@@ -1,6 +1,7 @@
+import { IUser } from "../auth/models/user.model";
 import { notificationQueue } from "./notification.queue";
 import { RegistrationModel } from "../tickets/models/registration.model";
-import { UserModel } from "../auth/models/user.model";
+import { User } from "../auth/models/user.model";
 import { AppError } from "../../shared/errors/AppError";
 import { Types } from "mongoose";
 
@@ -26,11 +27,14 @@ export class NotificationService {
 
     // Lấy thông tin email của từng attendee
     const userIds = registrations.map((r) => r.userId);
-    const users = await UserModel.find({ _id: { $in: userIds } } as any)
+    const users = await User.find({ _id: { $in: userIds } } as any)
       .select("name email")
       .lean();
 
-    const recipients = users.map((u) => ({ name: u.name, email: u.email }));
+    const recipients = users.map((u: Partial<IUser>) => ({
+      name: u.name!,
+      email: u.email!,
+    }));
 
     // Đưa job vào queue — không chờ xử lý xong
     await notificationQueue.add({ eventId, subject, message, recipients });

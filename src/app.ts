@@ -4,6 +4,7 @@ import flash from "connect-flash";
 import session from "express-session";
 import cookieParser from "cookie-parser";
 import viewsRouter from "./routes/views.router";
+import notificationRouter from "./features/notifications/notification.router";
 import authRouter from "./features/auth/auth.router";
 import eventsRouter from "./features/events/events.router";
 import { errorHandler } from "./shared/errors/errorHandler";
@@ -47,6 +48,7 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/events", eventsRouter);
 app.use("/api/v1/tickets", ticketsRouter);
 app.use("/api/v1/checkin", checkinRouter);
+app.use("/api/v1/notifications", notificationRouter);
 
 // Global Error Handler
 app.use(errorHandler);
