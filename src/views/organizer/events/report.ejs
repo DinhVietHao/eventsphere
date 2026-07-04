@@ -1,0 +1,187 @@
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="/organizer/events">Sự kiện của tôi</a></li>
+    <li class="breadcrumb-item active">Báo cáo tổng kết</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 fw-bold text-dark mb-1"><i class="bi bi-bar-chart-line-fill text-primary me-2"></i>Báo cáo tổng kết sự kiện</h1>
+    <p class="text-muted small mb-0"><%= report.eventTitle %></p>
+  </div>
+  <a href="/organizer/events/<%= report.eventId %>/dashboard" class="btn btn-outline-primary">
+    <i class="bi bi-speedometer2 me-2"></i>Xem Dashboard Realtime
+  </a>
+</div>
+
+<%# Stat cards row %>
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <p class="text-muted small text-uppercase fw-bold mb-1">Tổng đăng ký</p>
+          <h3 class="fw-bold text-dark mb-0"><%= report.totalRegistered %></h3>
+          <small class="text-muted">vé đã thanh toán</small>
+        </div>
+        <div class="bg-primary-subtle text-primary rounded p-3">
+          <i class="bi bi-ticket-perforated fs-4"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <p class="text-muted small text-uppercase fw-bold mb-1">Đã check-in</p>
+          <h3 class="fw-bold text-success mb-0"><%= report.totalCheckedIn %></h3>
+          <small class="text-muted">tỷ lệ: <strong class="text-success"><%= report.attendanceRate %>%</strong></small>
+        </div>
+        <div class="bg-success-subtle text-success rounded p-3">
+          <i class="bi bi-person-check fs-4"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <p class="text-muted small text-uppercase fw-bold mb-1">Tổng doanh thu</p>
+          <h3 class="fw-bold text-warning mb-0">
+            <%= report.totalRevenue.toLocaleString('vi-VN') %>đ
+          </h3>
+          <small class="text-muted">từ tất cả loại vé</small>
+        </div>
+        <div class="bg-warning-subtle text-warning rounded p-3">
+          <i class="bi bi-wallet2 fs-4"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-sm-6 col-xl-3">
+    <div class="card border-0 shadow-sm p-3 h-100">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <p class="text-muted small text-uppercase fw-bold mb-1">Đánh giá TB</p>
+          <h3 class="fw-bold text-info mb-0">
+            <%= report.avgRating > 0 ? report.avgRating.toFixed(1) : '—' %>
+            <% if (report.avgRating > 0) { %><i class="bi bi-star-fill text-warning fs-5"></i><% } %>
+          </h3>
+          <small class="text-muted"><%= report.totalReviews %> lượt đánh giá</small>
+        </div>
+        <div class="bg-info-subtle text-info rounded p-3">
+          <i class="bi bi-star fs-4"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <%# Attendance rate progress %>
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm p-4 h-100">
+      <h5 class="fw-bold text-dark mb-4 border-bottom pb-2">Tỷ lệ tham dự</h5>
+
+      <div class="text-center mb-3">
+        <div class="position-relative d-inline-block">
+          <svg width="160" height="160" viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#e9ecef" stroke-width="16"/>
+            <circle cx="80" cy="80" r="60" fill="none" stroke="#0d6efd" stroke-width="16"
+              stroke-dasharray="<%= (report.attendanceRate / 100 * 377).toFixed(1) %> 377"
+              stroke-dashoffset="94"
+              stroke-linecap="round"
+              transform="rotate(-90 80 80)"/>
+          </svg>
+          <div class="position-absolute top-50 start-50 translate-middle text-center">
+            <h2 class="fw-bold text-primary mb-0"><%= report.attendanceRate %>%</h2>
+            <small class="text-muted">check-in</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="row text-center g-2 mt-2">
+        <div class="col-6">
+          <div class="bg-primary-subtle rounded p-2">
+            <div class="fw-bold text-primary fs-5"><%= report.totalRegistered %></div>
+            <div class="text-muted small">Đã đăng ký</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="bg-success-subtle rounded p-2">
+            <div class="fw-bold text-success fs-5"><%= report.totalCheckedIn %></div>
+            <div class="text-muted small">Đã check-in</div>
+          </div>
+        </div>
+      </div>
+
+      <% const absent = report.totalRegistered - report.totalCheckedIn; %>
+      <% if (absent > 0) { %>
+      <div class="alert alert-warning border-0 small mt-3 mb-0 py-2">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        <strong><%= absent %> người</strong> đã đăng ký nhưng không đến.
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <%# Ticket breakdown table %>
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm p-4 h-100">
+      <h5 class="fw-bold text-dark mb-4 border-bottom pb-2">Doanh thu theo loại vé</h5>
+
+      <% if (report.ticketBreakdown && report.ticketBreakdown.length > 0) { %>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light text-muted small text-uppercase">
+            <tr>
+              <th>Loại vé</th>
+              <th class="text-end">Giá</th>
+              <th class="text-end">Quota</th>
+              <th class="text-end">Đã bán</th>
+              <th class="text-end">Doanh thu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% report.ticketBreakdown.forEach(tt => { %>
+            <tr>
+              <td class="fw-semibold text-dark"><%= tt.ticketTypeName %></td>
+              <td class="text-end text-muted small"><%= tt.price.toLocaleString('vi-VN') %>đ</td>
+              <td class="text-end">
+                <span class="badge bg-light text-dark"><%= tt.sold %>/<%= tt.quota %></span>
+              </td>
+              <td class="text-end">
+                <div class="progress" style="height: 6px; min-width: 60px;">
+                  <div class="progress-bar bg-primary" style="width: <%= tt.quota > 0 ? (tt.sold/tt.quota*100).toFixed(0) : 0 %>%"></div>
+                </div>
+                <small class="text-muted"><%= tt.quota > 0 ? (tt.sold/tt.quota*100).toFixed(0) : 0 %>%</small>
+              </td>
+              <td class="text-end fw-bold text-success"><%= tt.revenue.toLocaleString('vi-VN') %>đ</td>
+            </tr>
+            <% }) %>
+          </tbody>
+          <tfoot class="border-top">
+            <tr>
+              <td colspan="4" class="fw-bold text-dark text-end">Tổng doanh thu:</td>
+              <td class="text-end fw-bold text-warning fs-6"><%= report.totalRevenue.toLocaleString('vi-VN') %>đ</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <% } else { %>
+      <div class="text-center py-4 text-muted">
+        <i class="bi bi-ticket display-4 d-block mb-2"></i>
+        Chưa có dữ liệu loại vé.
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+</div>

@@ -45,11 +45,17 @@ eventsRouter.get("/:id/registrations", (req, res) =>
 eventsRouter.get("/:id/export", (req, res) =>
   res.json({ message: "UC18 - Export attendee CSV" }),
 );
-eventsRouter.get("/:id/report", (req, res) =>
-  res.json({ message: "UC19 - View event report" }),
+eventsRouter.get(
+  "/:id/report",
+  authMiddleware,
+  roleMiddleware("organizer"),
+  eventController.getEventReport,
 );
-eventsRouter.get("/:id/dashboard", (req, res) =>
-  res.json({ message: "UC20 - View realtime dashboard" }),
+eventsRouter.get(
+  "/:id/dashboard",
+  authMiddleware,
+  roleMiddleware("organizer"),
+  eventController.getDashboard,
 );
 
 eventsRouter.use("/:eventId/ticket-types", ticketTypesRouter);
