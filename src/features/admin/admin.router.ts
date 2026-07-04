@@ -1,10 +1,27 @@
-import { Router } from 'express';
+import { Router } from "express";
+import { adminController } from "./admin.controller";
+import { authMiddleware } from "../../shared/middlewares/auth.middleware";
+import { roleMiddleware } from "../../shared/middlewares/role.middleware";
 
 const adminRouter = Router();
 
-adminRouter.patch('/events/:id/approve', (req, res) => res.json({ message: 'UC23 - Approve event' }));
-adminRouter.put('/accounts/:id', (req, res) => res.json({ message: 'UC24 - Manage accounts (Ban/Unban/Role)' }));
-adminRouter.get('/dashboard', (req, res) => res.json({ message: 'UC25 - View system dashboard (MongoDB Aggregation)' }));
-adminRouter.get('/reports/revenue', (req, res) => res.json({ message: 'UC26 - View revenue report' }));
+const adminGuard = [authMiddleware, roleMiddleware("admin")];
+
+// UC25 — Dashboard tổng quan hệ thống
+adminRouter.get("/dashboard", ...adminGuard, adminController.getDashboard);
+
+// Placeholder — UC23, UC24, UC26 implement sau
+adminRouter.patch("/events/:id/approve", ...adminGuard, (req, res) =>
+  res.json({ message: "UC23 - Approve event" }),
+);
+adminRouter.patch("/events/:id/reject", ...adminGuard, (req, res) =>
+  res.json({ message: "UC23 - Reject event" }),
+);
+adminRouter.get("/users", ...adminGuard, (req, res) =>
+  res.json({ message: "UC24 - Manage accounts" }),
+);
+adminRouter.get("/reports/revenue", ...adminGuard, (req, res) =>
+  res.json({ message: "UC26 - Revenue report" }),
+);
 
 export default adminRouter;
