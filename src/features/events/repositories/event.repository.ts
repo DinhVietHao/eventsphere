@@ -91,4 +91,12 @@ export class EventRepository {
   async deleteById(id: string): Promise<void> {
     await Event.findByIdAndDelete(id);
   }
+
+  // 
+  async updateByAttendeeCount(_id: string) {
+    return Event.updateOne(
+      { _id },
+      { $inc: { attendeeCount: 1 } }
+    );
+  }
 }

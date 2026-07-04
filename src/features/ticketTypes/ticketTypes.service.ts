@@ -1,4 +1,4 @@
-import { ITicketTypeDocument } from "../events/models/ticketType.model";
+import { ITicketType } from "../events/models/ticketType.model";
 import { AppError } from "../../shared/errors/AppError";
 import { TicketTypeRepository } from "./repositories/ticketType.repository";
 import { EventRepository } from "../events/repositories/event.repository";
@@ -11,7 +11,7 @@ const ticketTypeRepository = new TicketTypeRepository();
 const eventRepository = new EventRepository();
 
 export class TicketTypeService {
-  async getTicketTypes(eventId: string): Promise<ITicketTypeDocument[]> {
+  async getTicketTypes(eventId: string): Promise<ITicketType[]> {
     const event = await eventRepository.findById(eventId);
     if (!event) throw new AppError("Event không tồn tại", 404);
     return ticketTypeRepository.findByEventId(eventId);
@@ -21,7 +21,7 @@ export class TicketTypeService {
     eventId: string,
     organizerId: string,
     dto: ICreateTicketTypeDto,
-  ): Promise<ITicketTypeDocument> {
+  ): Promise<ITicketType> {
     const event = await eventRepository.findById(eventId);
     if (!event) throw new AppError("Event không tồn tại", 404);
 
@@ -43,7 +43,7 @@ export class TicketTypeService {
     id: string,
     organizerId: string,
     dto: IUpdateTicketTypeDto,
-  ): Promise<ITicketTypeDocument> {
+  ): Promise<ITicketType> {
     const ticketType = await ticketTypeRepository.findById(id);
     if (!ticketType) throw new AppError("Loại vé không tồn tại", 404);
 

@@ -1,6 +1,6 @@
 import { IUser } from "../auth/models/user.model";
 import { notificationQueue } from "./notification.queue";
-import { RegistrationModel } from "../tickets/models/registration.model";
+import { Registration } from "../tickets/models/registration.model";
 import { User } from "../auth/models/user.model";
 import { AppError } from "../../shared/errors/AppError";
 import { Types } from "mongoose";
@@ -16,7 +16,7 @@ export class NotificationService {
     }
 
     // Lấy danh sách attendee đã paid của event
-    const registrations = await RegistrationModel.find({
+    const registrations = await Registration.find({
       eventId: new Types.ObjectId(eventId),
       paymentStatus: "paid",
     } as any).lean();
