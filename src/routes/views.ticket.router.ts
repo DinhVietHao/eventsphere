@@ -21,4 +21,20 @@ ticketsViewsRouter.get("/tickets/:id", async (req: Request, res: Response) => {
     }
 });
 
+//UC12 - View attendance history
+ticketsViewsRouter.get("/tickets", async (req: Request, res: Response) => {
+    try {
+        const attendeeId = req.user!.id;
+        const tickets = await ticketsService.getAttendanceHistory(attendeeId);
+        res.render("tickets/index", {
+            tickets,
+            user: req.user || null,
+            messages: req.flash?.() || {},
+        });
+    } catch (error) {
+        res.status(500).send("Server error");
+    }
+});
+
+
 export default ticketsViewsRouter;

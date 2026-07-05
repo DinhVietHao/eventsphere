@@ -287,6 +287,31 @@ export class TicketsService {
         if (!ticket) {
             throw new AppError("Khong tim thay ve.", 404);
         }
+
         return ticket;
+    }
+
+    async getAttendanceHistory(attendeeId: string) {
+        const tickets = await this.ticketRepository.findByAttendeeIdWithDetails(attendeeId);
+        return tickets.map((ticket) => ({
+            ...ticket,
+            displayStatus: this.getAttendanceDisplayStatus(ticket),
+        }));
+    }
+
+    private getAttendanceDisplayStatus(ticket: any) {
+        const registrationStatus = String(ticket.registrationId?.status || "").toLowerCase();
+        const ticketStatus = String(ticket.status || "").toLowerCase();
+        const eventEndTime = ticket.eventId?.endTime || ticket.eventId?.endDate;
+        if (registrationStatus === "cancelled") {
+            return { label: "Da huy", className: "bg-secondary", key: "cancelled" };
+        }
+        if (ticketStatus === "checked_in") {
+            return { label: "Da tham du", className: "bg-success", key: "attended" };
+        }
+        if (eventEndTime && new Date(eventEndTime).getTime() < Date.now()) {
+            return { label: "Da het han", className: "bg-danger", key: "expired" };
+        }
+        return { label: "Sap dien ra", className: "bg-primary", key: "upcoming" };
     }
 }
