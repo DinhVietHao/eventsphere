@@ -4,8 +4,8 @@ export interface IRegistration extends Document {
   userId: Types.ObjectId;
   eventId: Types.ObjectId;
   ticketTypeId: Types.ObjectId;
-  status: 'pending_payment' | 'confirmed' | 'cancelled';
-  paymentStatus: 'unpaid' | 'paid' | 'free' | 'pending' | 'refunded';
+  status: 'pending_payment' | 'confirmed' | 'payment_failed' | 'cancelled';
+  paymentStatus: 'unpaid' | 'paid' | 'free' | 'pending';
   paymentRef?: string;
   registeredAt?: Date;
 }
@@ -17,12 +17,12 @@ const registrationSchema = new Schema<IRegistration>(
     ticketTypeId: { type: Schema.Types.ObjectId, ref: 'TicketType', required: true },
     status: {
       type: String,
-      enum: ['pending_payment', 'confirmed', 'cancelled'],
+      enum: ['pending_payment', 'confirmed', 'payment_failed', 'cancelled'],
       default: 'pending_payment'
     },
     paymentStatus: {
       type: String,
-      enum: ['unpaid', 'paid', 'free', 'pending', 'refunded'],
+      enum: ['unpaid', 'paid', 'free', 'pending'],
       default: 'unpaid'
     },
     paymentRef: { type: String, default: null },

@@ -24,4 +24,17 @@ export const appConfig = {
     password: process.env.EMAIL_PASSWORD ?? "",
     from: process.env.EMAIL_FROM ?? "noreply@eventsphere.com",
   },
+  vnpay: {
+    tmnCode: process.env.VNP_TMN_CODE ?? "",
+    hashSecret: process.env.VNP_HASH_SECRET ?? "",
+    paymentUrl:
+      process.env.VNP_URL ??
+      "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html",
+    returnUrl:
+      process.env.VNP_RETURN_URL ??
+      "http://localhost:5000/api/v1/payments/vnpay/return",
+    apiUrl:
+      process.env.VNP_API ??
+      "http://sandbox.vnpayment.vn/merchant_webapi/merchant.html",
+  },
 };

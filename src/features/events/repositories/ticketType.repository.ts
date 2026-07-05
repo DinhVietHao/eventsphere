@@ -33,15 +33,16 @@ export class TicketTypeRepository {
         );
     }
 
-    async decreaseSold(ticketTypeId: string): Promise<void> {
+    async releaseTicket(ticketTypeId: string, eventId: string): Promise<void> {
         await TicketType.updateOne(
             {
                 _id: new Types.ObjectId(ticketTypeId),
+                eventId: new Types.ObjectId(eventId),
                 sold: { $gt: 0 },
             },
             {
                 $inc: { sold: -1 },
-            }
+            },
         );
     }
 }

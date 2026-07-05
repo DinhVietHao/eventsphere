@@ -3,11 +3,13 @@ import { Request, Response } from "express";
 import { EventService } from "../features/events/events.service";
 import { TicketTypeService } from "../features/ticketTypes/ticketTypes.service";
 import { TicketsService } from "../features/tickets/tickets.service";
+import { PaymentService } from "../features/payment/payment.service";
 
 const eventsViewsRouter = Router();
 const eventService = new EventService();
 const ticketTypeService = new TicketTypeService();
 const ticketsService = new TicketsService();
+const paymentService = new PaymentService();
 
 const LIMIT = 9;
 
@@ -72,12 +74,16 @@ eventsViewsRouter.get("/events/:id/booking", async (req: Request, res: Response)
 
     const event = await eventService.getEventById(req.params.id as string);
     const ticketTypes = await ticketTypeService.getTicketTypes(req.params.id as string);
+    const registrationResult = await ticketsService.getExistingBookingResult(
+      req.user.id as string,
+      req.params.id as string,
+    );
 
     return res.render("events/booking", {
       event,
       ticketTypes,
-      selectedTicketTypeId: null,
-      registrationResult: null,
+      selectedTicketTypeId: registrationResult?.registration?.ticketTypeId || null,
+      registrationResult,
       error: null,
       user: req.user || null,
       messages: req.flash(),
@@ -116,6 +122,23 @@ eventsViewsRouter.post("/events/:id/booking", async (req: Request, res: Response
       eventId,
       ticketTypeId,
     });
+
+    if (registrationResult.nextStep === "payment_required") {
+      const ipAddr =
+        (req.headers["x-forwarded-for"] as string)?.split(",")[0] ||
+        req.socket.remoteAddress ||
+        "127.0.0.1";
+
+      const payment = await paymentService.createVNPayPaymentUrl({
+        attendeeId: req.user.id as string,
+        registrationId: registrationResult.registration._id.toString(),
+        bankCode: "NCB",
+        language: "vn",
+        ipAddr,
+      });
+
+      return res.redirect(payment.paymentUrl);
+    }
 
     const event = await eventService.getEventById(eventId);
     const ticketTypes = await ticketTypeService.getTicketTypes(eventId);
