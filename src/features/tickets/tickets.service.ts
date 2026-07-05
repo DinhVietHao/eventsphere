@@ -53,11 +53,13 @@ export class TicketsService {
             );
 
         if (existingRegistration) {
-            const isRetryable = ["cancelled", "payment_failed"].includes(
-                existingRegistration.status,
-            );
+            const canChangeTicketType = [
+                "pending_payment",
+                "cancelled",
+                "payment_failed",
+            ].includes(existingRegistration.status);
 
-            if (!isRetryable) {
+            if (!canChangeTicketType) {
                 return this.buildRegistrationResult(existingRegistration);
             }
         }
@@ -156,7 +158,7 @@ export class TicketsService {
             );
 
         if (!registration) return null;
-        if (["cancelled", "payment_failed"].includes(registration.status)) {
+        if (["pending_payment", "cancelled", "payment_failed"].includes(registration.status)) {
             return null;
         }
 
