@@ -38,4 +38,19 @@ export class TicketsController {
             next(error);
         }
     };
+
+    async viewTicketDetail(
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ) {
+        try {
+            const ticketId = req.params.id as string;
+            const attendeeId = req.user!.id;
+            const ticket = await this.ticketsService.getTicketDetail(ticketId, attendeeId);
+            sendSuccess(res, ticket, "Chi tiết vé sự kiện", 200);
+        } catch (error) {
+            next(error);
+        }
+    };
 }

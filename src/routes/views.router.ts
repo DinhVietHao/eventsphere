@@ -5,6 +5,7 @@ import { verifyAccessToken } from "../shared/utils/jwt.util";
 import authViewsRouter from "./views.auth.router";
 import eventsViewsRouter from "./views.events.router";
 import organizerViewsRouter from "./views.organizer.router";
+import ticketsViewsRouter from "./views.ticket.router";
 
 const viewsRouter = Router();
 
@@ -25,5 +26,6 @@ viewsRouter.use((req: Request, res: Response, next: NextFunction) => {
 viewsRouter.use("/", authViewsRouter);
 viewsRouter.use("/", eventsViewsRouter);
 viewsRouter.use("/", organizerViewsRouter);
+viewsRouter.use("/", ticketsViewsRouter);
 
 export default viewsRouter;
