@@ -1,0 +1,100 @@
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="/organizer/events">Sự kiện của tôi</a></li>
+        <li class="breadcrumb-item active">Quản Lý Nhân Viên Sự Kiện</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 fw-bold text-dark mb-1">
+            <i class="bi bi-person-gear text-primary me-2"></i>Quản lý nhân viên check-in
+        </h1>
+        <h3 class="text-muted small fw-bold mb-0"><%= event.title %></h3>
+    </div>
+    <a href="/organizer/events" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Quay lại danh sách
+    </a>
+</div>
+
+<div class="row g-4">
+    <%# Cột Form Thêm Staff %>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold text-dark mb-4 border-bottom pb-2">Thêm nhân viên mới</h5>
+
+            <form action="/organizer/events/<%= event._id %>/staffs" method="POST">
+                <div class="mb-3">
+                    <label for="staffEmail" class="form-label text-muted small fw-bold text-uppercase">Email nhân viên</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope text-muted"></i></span>
+                        <input type="email" name="email" class="form-control border-start-0 ps-0" id="staffEmail" placeholder="nhanvien@example.com" required>
+                    </div>
+                    <% if (error) { %>
+                        <div class="form-text text-danger mt-2"><i class="bi bi-exclamation-circle me-1"></i><%= error %></div>
+                    <% } %>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-person-plus me-2"></i>Thêm vào sự kiện
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <%# Cột Danh sách Staff đã phân công %>
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm p-4 h-100">
+            <h5 class="fw-bold text-dark mb-4 border-bottom pb-2">Danh sách nhân viên phụ trách</h5>
+
+            <% if (staffs && staffs.length > 0) { %>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted small text-uppercase">
+                        <tr>
+                            <th>Nhân viên</th>
+                            <th>Email</th>
+                            <th>Ngày phân công</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <% staffs.forEach(staff => { %>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                            <span class="fw-bold"><%= staff.name ? staff.name.charAt(0).toUpperCase() : 'S' %></span>
+                                        </div>
+                                        <span class="fw-semibold text-dark"><%= staff.name || 'Chưa cập nhật tên' %></span>
+                                    </div>
+                                </td>
+                                <td class="text-muted"><%= staff.email %></td>
+                                <td class="text-muted small">
+                                    <%= staff.assignedAt ? new Date(staff.assignedAt).toLocaleDateString('vi-VN') : '—' %>
+                                </td>
+                                <td class="text-end">
+                                    <form action="/organizer/events/<%= event._id %>/staffs/<%= staff._id %>/delete" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa nhân viên này khỏi sự kiện?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa nhân viên">
+                                            <i class="bi bi-person-x"></i> Xóa
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="text-center py-5 text-muted">
+                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                        <i class="bi bi-people display-5 text-secondary"></i>
+                    </div>
+                    <h5>Chưa có nhân viên nào</h5>
+                    <p class="small mb-0">Hãy sử dụng form bên cạnh để thêm nhân viên check-in cho sự kiện này.</p>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+

@@ -3,6 +3,7 @@ import { AppError } from "../../shared/errors/AppError";
 import { sendSuccess } from "../../shared/utils/response.util";
 import type { Request, Response, NextFunction } from "express";
 import { CreateEventSchema, UpdateEventSchema } from "./dto/event.dto";
+import {AddStaffSchema} from "./dto/add-staff.dto";
 
 const eventService = new EventService();
 
@@ -149,4 +150,52 @@ export class EventController {
       next(err);
     }
   };
+
+
+  // ───── UC17 — Quản lý nhân viên check-in (Organizer) ─────
+
+  async addStaff(req: Request, res: Response, next: NextFunction) {
+    try {
+      const {error, value} = AddStaffSchema.validate(req.body, {
+        abortEarly: false,
+      })
+      if (error) {
+        throw new AppError(error.details.map((d) => d.message).join(", "), 400);
+      }
+      const eventId = req.params.id as string;
+      const organizerId = req.user!.id;
+      const {email} = value;
+
+      const result = await eventService.addStaffToEvent(
+          eventId,
+          email,
+          organizerId,
+      );
+      sendSuccess(res, result, "Thêm nhân viên thành công", 201);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+
+  async removeStaff(req: Request, res: Response, next: NextFunction) {
+    try {
+      // 1. Lấy id sự kiện và id nhân viên từ URL params
+      const eventId = req.params.id as string;
+      const staffId = req.params.staffId as string;
+
+      // 2. Lấy ID của người đang thao tác
+      const organizerId = req.user!.id;
+
+      await eventService.removeStaffFromEvent(eventId, staffId, organizerId);
+
+      sendSuccess(res, null, "Xóa nhân viên khỏi sự kiện thành công", 200);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+
 }
+
+

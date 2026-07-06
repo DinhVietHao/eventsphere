@@ -1,10 +1,13 @@
 import { IEvent, Event } from "../models/event.model";
+import {User} from "../../auth/models/user.model";
 import mongoose, { Types } from "mongoose";
 
 import { TicketType } from "../models/ticketType.model";
 import { Registration } from "../../tickets/models/registration.model";
 import { CheckinLogModel } from "../../checkin/models/checkinLog.model";
 import { ReviewModel } from "../../reviews/models/review.model";
+import e from "cors";
+import {EventStaffModel} from "../models/eventStaff.model";
 
 export class EventRepository {
   // UC01 - Danh sách event công khai, có phân trang
@@ -153,4 +156,54 @@ export class EventRepository {
       paymentStatus: "paid",
     } as any);
   }
+
+  // ───── UC17 — Quản lý nhân viên check-in ─────
+
+  // Tìm thông tin User thông qua email
+  async findUserByEmail(email: string) {
+    return User.findOne({email}).lean();
+  }
+  // Kiểm tra xem nhân viên đã được gán vào sự kiện này chưa
+  async checkStaffAssigned(eventId: string, staffId: string) {
+    const count = await EventStaffModel.countDocuments({
+      eventId: new Types.ObjectId(eventId),
+      staffId: new Types.ObjectId(staffId),
+    } as any)
+    return count > 0;
+  }
+
+  // Thêm nhân viên vào sự kiện
+  async addStaffToEvent(eventId: string, staffId: string, assignedBy: string) {
+    return EventStaffModel.create({
+      eventId: new Types.ObjectId(eventId),
+      staffId: new Types.ObjectId(staffId),
+      assignedBy: new Types.ObjectId(assignedBy),
+    } as any);
+  }
+
+  // Xóa nhân viên khỏi sự kiện
+  async removeStaffFromEvent(eventId: string, staffId: string): Promise<void> {
+    await EventStaffModel.deleteOne({
+      eventId: new Types.ObjectId(eventId),
+      staffId: new Types.ObjectId(staffId),
+    } as any);
+  }
+
+  async getStaffsByEventId(eventId: string) {
+    const staffAssignments = await EventStaffModel.find({
+      eventId: new Types.ObjectId(eventId),
+    } as any).populate('staffId', 'name email') // Lấy thêm trường name và email từ User collection
+        .lean();
+    // Mapping lại mảng dữ liệu cho phẳng (phù hợp với cấu trúc EJS đang cần)
+    return staffAssignments.map((assignment: any) => {
+      const user = assignment.staffId;
+      return {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        assignedAt: assignment.assignedAt,
+      };
+    });
+  }
+
 }
