@@ -1,5 +1,6 @@
 import { TicketModel } from "../models/ticket.model";
 import { ITicket } from "../types/ticket.type";
+import { Types } from "mongoose";
 
 
 export class TicketRepository {
@@ -10,5 +11,11 @@ export class TicketRepository {
     const ticket = new TicketModel(data);
     const savedTicket = await ticket.save();
     return savedTicket;
+  }
+
+  async findByRegistrationIdPlain(registrationId: string) {
+    return TicketModel.findOne({
+      registrationId: new Types.ObjectId(registrationId),
+    });
   }
 }

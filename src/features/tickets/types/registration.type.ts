@@ -5,7 +5,7 @@ export interface IRegistration {
   userId: Types.ObjectId;
   eventId: Types.ObjectId;
   ticketTypeId: Types.ObjectId;
-  status: 'pending_payment' | 'confirmed' | 'cancelled';
+  status: 'pending_payment' | 'confirmed' | 'payment_failed' | 'cancelled';
   paymentStatus: 'unpaid' | 'paid' | 'free' | 'pending' | 'refunded';
   paymentRef?: string;
   registeredAt?: Date;

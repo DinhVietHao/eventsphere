@@ -32,12 +32,8 @@ export class TicketsController {
 
             const attendeeId = req.user!.id;
             const data = await this.ticketsService.registerAttendance(attendeeId, value);
-            const message =
-                data.nextStep === "payment_required"
-                    ? "Registration created. Please continue to UC08 Payment."
-                    : "Registration confirmed. Ticket QR has been issued.";
 
-            sendSuccess(res, data, message, 201);
+            sendSuccess(res, data, "Đăng ký vé sự kiện thành công", 201);
         } catch (error) {
             next(error);
         }

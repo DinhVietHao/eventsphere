@@ -69,6 +69,25 @@
                                 <%= registrationResult.payment.amount.toLocaleString('vi-VN') %>
                                   <%= registrationResult.payment.currency %>
                               </span>
+                              <form action="/api/v1/payments/vnpay/create" method="POST" class="mt-3">
+                                <input type="hidden" name="registrationId"
+                                  value="<%= registrationResult.registration._id %>">
+                                <input type="hidden" name="language" value="vn">
+                                <div class="row g-2 align-items-end">
+                                  <div class="col-md-8">
+                                    <label for="bankCode" class="form-label small fw-bold">Bank</label>
+                                    <select id="bankCode" name="bankCode" class="form-select">
+                                      <option value="">VNPay default</option>
+                                      <option value="NCB">NCB</option>
+                                    </select>
+                                  </div>
+                                  <div class="col-md-4 d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                      Thanh toán qua VNPay
+                                    </button>
+                                  </div>
+                                </div>
+                              </form>
                             </div>
                           </div>
                         </div>
