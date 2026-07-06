@@ -1,9 +1,13 @@
 import { Router } from "express";
 import { Request, Response } from "express";
 import { EventService } from "../features/events/events.service";
+import { TicketTypeService } from "../features/ticketTypes/ticketTypes.service";
+import { TicketsService } from "../features/tickets/tickets.service";
 
 const eventsViewsRouter = Router();
 const eventService = new EventService();
+const ticketTypeService = new TicketTypeService();
+const ticketsService = new TicketsService();
 
 const LIMIT = 9;
 
@@ -19,10 +23,10 @@ eventsViewsRouter.get("/events", async (req: Request, res: Response) => {
     const [events, total] = await Promise.all([
       hasFilter
         ? eventService.filterEvents({
-            category,
-            startFrom: startFrom ? new Date(startFrom) : undefined,
-            startTo: startTo ? new Date(startTo) : undefined,
-          })
+          category,
+          startFrom: startFrom ? new Date(startFrom) : undefined,
+          startTo: startTo ? new Date(startTo) : undefined,
+        })
         : eventService.getPublishedEvents(page, LIMIT),
       eventService.countPublishedEvents({ category }),
     ]);
@@ -53,10 +57,116 @@ eventsViewsRouter.get("/events/search", async (req: Request, res: Response) => {
 });
 
 // UC02 — Chi tiết event
+// UC07 - Show ticket selection form.
+eventsViewsRouter.get("/events/:id/booking", async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      req.flash("error", "Vui lòng đăng nhập để đăng ký tham dự sự kiện.");
+      return res.redirect("/login");
+    }
+
+    if (req.user.role !== "attendee") {
+      req.flash("error", "Chỉ tài khoản attendee mới có thể đăng ký tham dự.");
+      return res.redirect(`/events/${req.params.id}`);
+    }
+
+    const event = await eventService.getEventById(req.params.id as string);
+    const ticketTypes = await ticketTypeService.getTicketTypes(req.params.id as string);
+
+    return res.render("events/booking", {
+      event,
+      ticketTypes,
+      selectedTicketTypeId: null,
+      registrationResult: null,
+      error: null,
+      user: req.user || null,
+      messages: req.flash(),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Server error";
+    return res.status(500).render("events/booking", {
+      event: null,
+      ticketTypes: [],
+      selectedTicketTypeId: null,
+      registrationResult: null,
+      error: message,
+      user: req.user || null,
+      messages: req.flash(),
+    });
+  }
+});
+
+// UC07 - Submit attendance registration from web view.
+eventsViewsRouter.post("/events/:id/booking", async (req: Request, res: Response) => {
+  const eventId = req.params.id as string;
+
+  try {
+    if (!req.user) {
+      req.flash("error", "Vui lòng đăng nhập để đăng ký tham dự sự kiện.");
+      return res.redirect("/login");
+    }
+
+    if (req.user.role !== "attendee") {
+      req.flash("error", "Chỉ tài khoản attendee mới có thể đăng ký tham dự.");
+      return res.redirect(`/events/${eventId}`);
+    }
+
+    const ticketTypeId = req.body.ticketTypeId as string;
+    const registrationResult = await ticketsService.registerAttendance(req.user.id as string, {
+      eventId,
+      ticketTypeId,
+    });
+
+    const event = await eventService.getEventById(eventId);
+    const ticketTypes = await ticketTypeService.getTicketTypes(eventId);
+
+    return res.render("events/booking", {
+      event,
+      ticketTypes,
+      selectedTicketTypeId: ticketTypeId,
+      registrationResult,
+      error: null,
+      user: req.user || null,
+      messages: req.flash(),
+    });
+  } catch (err) {
+    const statusCode =
+      typeof err === "object" &&
+        err !== null &&
+        "statusCode" in err &&
+        typeof err.statusCode === "number"
+        ? err.statusCode
+        : 400;
+    const message = err instanceof Error ? err.message : "Đăng ký tham dự thất bại";
+    const event = await eventService.getEventById(eventId);
+    const ticketTypes = await ticketTypeService.getTicketTypes(eventId);
+
+    return res.status(statusCode).render("events/booking", {
+      event,
+      ticketTypes,
+      selectedTicketTypeId: req.body.ticketTypeId || null,
+      registrationResult: null,
+      error: message,
+      user: req.user || null,
+      messages: req.flash(),
+    });
+  }
+});
+
 eventsViewsRouter.get("/events/:id", async (req: Request, res: Response) => {
   try {
     const event = await eventService.getEventById(req.params.id as string);
-    res.render("events/detail", { event, user: req.user || null });
+    const ticketTypes = await ticketTypeService.getTicketTypes(req.params.id as string);
+    const prices = ticketTypes.map(ticket => ticket.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    res.render("events/detail", {
+      event,
+      minPrice,
+      maxPrice,
+      user: req.user || null,
+      messages: req.flash(),
+    });
   } catch (err) {
     res.status(500).send("Server error");
   }

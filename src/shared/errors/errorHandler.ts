@@ -17,7 +17,9 @@ export const errorHandler: ErrorRequestHandler = (
 
   res.status(statusCode).json({
     success: false,
+    data: null,
     message,
+    error: message,
     ...(appConfig.nodeEnv === 'development' && { stack: err.stack })
   });
 };

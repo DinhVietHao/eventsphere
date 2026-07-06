@@ -1,35 +1,35 @@
 import {
-  ITicketTypeDocument,
-  TicketTypeModel,
+  ITicketType,
+  TicketType,
 } from "../../events/models/ticketType.model";
 import { Types } from "mongoose";
 
 export class TicketTypeRepository {
   // Lấy tất cả loại vé của 1 event
-  async findByEventId(eventId: string): Promise<ITicketTypeDocument[]> {
-    return TicketTypeModel.find({
+  async findByEventId(eventId: string): Promise<ITicketType[]> {
+    return TicketType.find({
       eventId: new Types.ObjectId(eventId),
     } as any);
   }
 
   // Tìm 1 loại vé theo id (dùng khi sửa/xóa)
-  async findById(id: string): Promise<ITicketTypeDocument | null> {
-    return TicketTypeModel.findById(id);
+  async findById(id: string): Promise<ITicketType | null> {
+    return TicketType.findById(id);
   }
 
   // Tạo mới
   async create(
-    data: Partial<ITicketTypeDocument>,
-  ): Promise<ITicketTypeDocument> {
-    return TicketTypeModel.create(data);
+    data: Partial<ITicketType>,
+  ): Promise<ITicketType> {
+    return TicketType.create(data);
   }
 
   // Cập nhật, trả về document mới sau khi update
   async updateById(
     id: string,
-    data: Partial<ITicketTypeDocument>,
-  ): Promise<ITicketTypeDocument | null> {
-    return TicketTypeModel.findByIdAndUpdate(id, data, {
+    data: Partial<ITicketType>,
+  ): Promise<ITicketType | null> {
+    return TicketType.findByIdAndUpdate(id, data, {
       returnDocument: "after", // trả về document SAU khi update
       runValidators: true, // chạy lại validation của schema
     });
@@ -37,6 +37,6 @@ export class TicketTypeRepository {
 
   // Xóa
   async deleteById(id: string): Promise<void> {
-    await TicketTypeModel.findByIdAndDelete(id);
+    await TicketType.findByIdAndDelete(id);
   }
 }

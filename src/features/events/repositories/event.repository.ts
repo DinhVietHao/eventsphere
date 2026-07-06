@@ -1,8 +1,8 @@
 import { IEvent, Event } from "../models/event.model";
 import mongoose, { Types } from "mongoose";
 
-import { TicketTypeModel } from "../models/ticketType.model";
-import { RegistrationModel } from "../../tickets/models/registration.model";
+import { TicketType } from "../models/ticketType.model";
+import { Registration } from "../../tickets/models/registration.model";
 import { CheckinLogModel } from "../../checkin/models/checkinLog.model";
 import { ReviewModel } from "../../reviews/models/review.model";
 
@@ -97,11 +97,18 @@ export class EventRepository {
     await Event.findByIdAndDelete(id);
   }
 
+  // Update attendeeCount khi có registration mới
+  async updateByAttendeeCount(_id: string) {
+    return Event.updateOne(
+      { _id },
+      { $inc: { attendeeCount: 1 } }
+    );
+  }
   //UC-19-20
 
   // Đếm registrations đã paid theo từng ticketTypeId
   async getRegistrationStats(eventId: string) {
-    return RegistrationModel.aggregate([
+    return Registration.aggregate([
       {
         // getRegistrationStats — chỗ $match trong aggregate
         $match: {
@@ -128,7 +135,7 @@ export class EventRepository {
 
   // Lấy tất cả ticket types của sự kiện
   async getTicketTypes(eventId: string) {
-    return TicketTypeModel.find({
+    return TicketType.find({
       eventId: new mongoose.Types.ObjectId(eventId),
     } as any).lean();
   }
@@ -141,7 +148,7 @@ export class EventRepository {
   }
 
   async getRegistrationCount(eventId: string) {
-    return RegistrationModel.countDocuments({
+    return Registration.countDocuments({
       eventId: new mongoose.Types.ObjectId(eventId),
       paymentStatus: "paid",
     } as any);
