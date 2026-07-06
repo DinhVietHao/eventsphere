@@ -57,6 +57,7 @@
             <div class="btn-group btn-group-sm">
               <a href="/organizer/events/<%= item._id %>/edit" class="btn btn-outline-secondary" title="Sửa"><i class="bi bi-pencil"></i></a>
               <a href="/organizer/events/<%= item._id %>/registrations" class="btn btn-outline-info" title="Danh sách đăng ký"><i class="bi bi-card-list"></i></a>
+              <a href="/organizer/events/<%= item._id %>/staffs" class="btn btn-outline-dark" title="Quản lý nhân viên (UC17)"><i class="bi bi-person-gear"></i></a>
               <% if (item.status === 'APPROVED' || item.status === 'ONGOING' || item.status === 'ENDED') { %>
               <a href="/organizer/events/<%= item._id %>/report" class="btn btn-outline-primary" title="Báo cáo tổng kết (UC19)"><i class="bi bi-bar-chart-line"></i></a>
               <a href="/organizer/events/<%= item._id %>/dashboard" class="btn btn-outline-success" title="Dashboard realtime (UC20)"><i class="bi bi-speedometer2"></i></a>

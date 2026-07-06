@@ -38,6 +38,20 @@ eventsRouter.delete(
   eventController.deleteEvent,
 );
 
+// ───── UC17 — Quản lý nhân viên check-in (Organizer) ─────
+eventsRouter.post("/:id/staffs",
+    authMiddleware,
+    roleMiddleware("organizer", "admin"),
+    eventController.addStaff
+)
+
+eventsRouter.delete(
+    "/:id/staffs/:staffId",
+    authMiddleware,
+    roleMiddleware("organizer", "admin"),
+    eventController.removeStaff
+)
+
 // ───── Placeholder ─────
 eventsRouter.get("/:id/registrations", (req, res) =>
   res.json({ message: "UC15 - View registration list" }),

@@ -256,4 +256,86 @@ export class EventService {
           : 0,
     };
   }
+
+  // ───── UC17 — Quản lý nhân viên check-in (Organizer) ─────
+
+  async addStaffToEvent(eventId: string, email: string, organizerId: string) {
+    if (!Types.ObjectId.isValid(eventId)) {
+      throw new AppError("ID sự kiện không hợp lệ", 400);
+    }
+
+    // 1. Kiểm tra xem sự kiện (eventId) có tồn tại hay không
+    const event = await eventRepository.findById(eventId)
+    if (!event) {
+      throw new AppError("Sự kiện không tồn tại", 404);
+    }
+
+    // 2. Kiểm tra xem người đang gọi API có đúng là chủ sở hữu của sự kiện này hay không
+    if (event.organizerId.toString() !== organizerId) {
+      throw new AppError("Bạn không có quyền quản lý nhân sự cho sự kiện này", 403);
+    }
+
+    // 3. Kiểm tra xem tài khoản chuẩn bị thêm có tồn tại và đúng role là staff hay không
+    const staff = await eventRepository.findUserByEmail(email) as any;
+    if (!staff) {
+      throw new AppError("Không tìm thấy tài khoản với email này", 404);
+    }
+
+    if (staff.role !== "staff") {
+      throw new AppError("Tài khoản này không có quyền nhân viên (staff)", 400);
+    }
+
+    // 4. Kiểm tra xem Staff này đã được thêm vào sự kiện trước đó chưa (tránh trùng lặp)
+    const isAssigned = await eventRepository.checkStaffAssigned(eventId, staff._id.toString());
+    if (isAssigned) {
+      throw new AppError("Nhân viên này đã được phân công vào sự kiện", 400);
+    }
+
+    // 5. Nếu tất cả điều kiện thỏa mãn, gọi xuống Repository để thêm mới
+    return eventRepository.addStaffToEvent(eventId, staff._id.toString(), organizerId);
+  }
+
+  async removeStaffFromEvent(eventId: string, staffId: string, organizerId: string) {
+    if (!Types.ObjectId.isValid(eventId) || !Types.ObjectId.isValid(staffId)) {
+      throw new AppError("ID không hợp lệ", 400);
+    }
+
+    // 1. Kiểm tra sự kiện tồn tại
+    const event = await eventRepository.findById(eventId);
+    if (!event) {
+      throw new AppError("Sự kiện không tồn tại", 404);
+    }
+
+    // 2. Kiểm tra quyền sở hữu
+    if (event.organizerId.toString() !== organizerId) {
+      throw new AppError("Bạn không có quyền quản lý nhân sự cho sự kiện này", 403);
+    }
+
+    // 3. Gọi xuống Repository để xóa staff
+    await eventRepository.removeStaffFromEvent(eventId, staffId);
+  }
+
+  async getStaffsByEventId(eventId: string, requesterId: string) {
+    if (!Types.ObjectId.isValid(eventId)) {
+      throw new AppError("ID sự kiện không hợp lệ", 400);
+    }
+
+    // 1. Kiểm tra sự kiện tồn tại
+    const event = await eventRepository.findById(eventId);
+    if (!event) {
+      throw new AppError("Sự kiện không tồn tại", 404);
+    }
+
+    // 2. Kiểm tra quyền sở hữu (Chỉ chủ sự kiện mới được xem danh sách staff của họ)
+    if (event.organizerId.toString() !== requesterId) {
+      throw new AppError("Bạn không có quyền xem danh sách nhân sự của sự kiện này", 403);
+    }
+
+    // 3. Gọi repository lấy dữ liệu
+    return eventRepository.getStaffsByEventId(eventId);
+  }
+
 }
+
+
+
