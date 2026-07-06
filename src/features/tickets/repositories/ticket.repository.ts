@@ -18,4 +18,12 @@ export class TicketRepository {
       registrationId: new Types.ObjectId(registrationId),
     });
   }
+
+  async findDetailById(ticketId: string) {
+    return TicketModel.findById(new Types.ObjectId(ticketId))
+      .populate("eventId", "title startDate endDate startTime endTime location")
+      .populate("ticketTypeId", "name price")
+      .populate("registrationId", "userId status")
+      .lean();
+  }
 }

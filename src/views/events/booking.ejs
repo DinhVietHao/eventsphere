@@ -41,7 +41,8 @@
 
                   <% if (registrationResult) { %>
                     <% if (registrationResult.nextStep==='ticket_issued' ) { %>
-                      <div class="alert alert-success border-0 shadow-sm">
+                      <div
+                        class="d-flex align-items-start justify-content-between alert alert-success border-0 shadow-sm">
                         <div class="d-flex align-items-start">
                           <i class="bi bi-check-circle-fill fs-4 me-3"></i>
                           <div>
@@ -49,13 +50,17 @@
                             <p class="mb-0">Vé QR đã được tạo và gửi đến email của bạn.</p>
                           </div>
                         </div>
+                        <div> <a href="/tickets/<%= registrationResult.ticket._id %>" class="btn btn-primary">
+                            <i class="bi bi-ticket-perforated me-1"></i>Xem chi tiết vé
+                          </a></div>
                       </div>
 
                       <div class="text-center bg-light rounded p-4 border">
                         <img src="<%= registrationResult.ticket.qrCode %>" alt="Ticket QR Code"
                           class="img-fluid bg-white p-3 rounded shadow-sm" style="max-width: 260px;">
-                        <p class="text-muted small mt-3 mb-0">Ma ve: <%= registrationResult.ticket._id %>
+                        <p class="text-muted small mt-3 mb-0">Mã vé: <%= registrationResult.ticket._id %>
                         </p>
+
                       </div>
                       <% } else { %>
                         <div class="alert alert-warning border-0 shadow-sm">

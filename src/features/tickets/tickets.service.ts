@@ -281,4 +281,12 @@ export class TicketsService {
 
         return ticket;
     }
+
+    async getTicketDetail(ticketId: string, attendeeId: string) {
+        const ticket = await this.ticketRepository.findDetailById(ticketId);
+        if (!ticket) {
+            throw new AppError("Khong tim thay ve.", 404);
+        }
+        return ticket;
+    }
 }
