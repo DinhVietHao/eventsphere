@@ -4,14 +4,17 @@ import { EventService } from "../features/events/events.service";
 import { TicketTypeService } from "../features/ticketTypes/ticketTypes.service";
 import { TicketsService } from "../features/tickets/tickets.service";
 import { PaymentService } from "../features/payment/payment.service";
+import { ReviewsService } from "../features/reviews/reviews.service";
 
 const eventsViewsRouter = Router();
 const eventService = new EventService();
 const ticketTypeService = new TicketTypeService();
 const ticketsService = new TicketsService();
 const paymentService = new PaymentService();
+const reviewsService = new ReviewsService();
 
 const LIMIT = 9;
+const REVIEW_LIMIT = 5;
 
 // UC01 + UC04 — Danh sách + lọc
 eventsViewsRouter.get("/events", async (req: Request, res: Response) => {
@@ -178,17 +181,26 @@ eventsViewsRouter.post("/events/:id/booking", async (req: Request, res: Response
 
 eventsViewsRouter.get("/events/:id", async (req: Request, res: Response) => {
   try {
+    const reviewPage = Number(req.query.reviewPage) || 1;
     const event = await eventService.getEventById(req.params.id as string);
     const ticketTypes = await ticketTypeService.getTicketTypes(req.params.id as string);
+    const reviewContext = await reviewsService.getEventReviewContext(
+      req.params.id as string,
+      req.user,
+      reviewPage,
+      REVIEW_LIMIT,
+    );
     const prices = ticketTypes.map(ticket => ticket.price);
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
+    const minPrice = prices.length ? Math.min(...prices) : 0;
+    const maxPrice = prices.length ? Math.max(...prices) : 0;
     res.render("events/detail", {
       event,
       minPrice,
       maxPrice,
+      ...reviewContext,
       user: req.user || null,
       messages: req.flash(),
+      reviewSuccess: req.query.review === "success",
     });
   } catch (err) {
     res.status(500).send("Server error");

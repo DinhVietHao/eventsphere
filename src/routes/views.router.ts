@@ -4,6 +4,7 @@ import { verifyAccessToken } from "../shared/utils/jwt.util";
 
 import authViewsRouter from "./views.auth.router";
 import eventsViewsRouter from "./views.events.router";
+import reviewsViewsRouter from "./views.reviews.router";
 import organizerViewsRouter from "./views.organizer.router";
 import ticketsViewsRouter from "./views.ticket.router";
 import adminViewsRouter from "./views.admin.router";
@@ -25,6 +26,7 @@ viewsRouter.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 viewsRouter.use("/", authViewsRouter);
+viewsRouter.use("/", reviewsViewsRouter);
 viewsRouter.use("/", eventsViewsRouter);
 viewsRouter.use("/", organizerViewsRouter);
 viewsRouter.use("/", ticketsViewsRouter);
