@@ -56,31 +56,97 @@
       </div>
 
       <div class="card border-0 shadow-sm p-4">
-        <h3 class="h5 fw-bold mb-4 text-dark"><i class="bi bi-chat-left-heart me-2 text-primary"></i>Đánh giá từ cộng
-          đồng</h3>
-
-        <form class="mb-4">
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-secondary">Để lại bình luận của bạn</label>
-            <textarea class="form-control" rows="3" placeholder="Chia sẻ cảm nghĩ của bạn về sự kiện này..."></textarea>
-          </div>
-          <button type="button" class="btn btn-outline-primary btn-sm px-4">Gửi bình luận</button>
-        </form>
-
-        <div class="d-flex border-top pt-3 mb-3">
-          <div
-            class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0"
-            style="width: 45px; height: 45px; font-weight: bold;">
-            N
-          </div>
-          <div>
-            <div class="d-flex align-items-center mb-1">
-              <h6 class="mb-0 fw-bold me-2">Nguyễn Văn A</h6>
-              <small class="text-muted">2 ngày trước</small>
-            </div>
-            <p class="text-muted mb-0 small">Sự kiện tuyệt vời, ban tổ chức chuẩn bị rất chu đáo và chuyên nghiệp!</p>
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-4">
+          <h3 class="h5 fw-bold mb-0 text-dark">
+            <i class="bi bi-chat-left-heart me-2 text-primary"></i>Đánh giá sự kiện
+          </h3>
+          <div class="fw-bold text-warning">
+            ⭐ <%= Number(averageRating || 0).toFixed(1) %> / 5
+              <span class="text-muted fw-normal">(<%= reviewCount || 0 %> đánh giá)</span>
           </div>
         </div>
+
+        <% if (reviewSuccess) { %>
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+            Đánh giá của bạn đã được ghi nhận.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+          </div>
+          <% } %>
+
+            <div class="bg-light rounded-3 p-3 p-md-4 mb-4">
+              <% if (!canReview) { %>
+                <div class="d-flex align-items-center text-muted">
+                  <i class="bi bi-info-circle me-2 text-primary"></i>
+                  <span>
+                    <%= reviewMessage %>
+                  </span>
+                </div>
+                <% } else { %>
+                  <form method="POST" action="/reviews/events/<%= event._id %>">
+                    <div class="mb-3">
+                      <label class="form-label small fw-bold text-secondary">Chọn số sao</label>
+                      <div class="d-flex flex-wrap gap-2">
+                        <% for (let star=1; star <=5; star++) { %>
+                          <input type="radio" class="btn-check" name="rating" id="rating-<%= star %>"
+                            value="<%= star %>" <%=Number(currentUserReview?.rating || 5)===star ? 'checked' : '' %>
+                          required>
+                          <label class="btn btn-outline-warning" for="rating-<%= star %>">
+                            <%= star %> <i class="bi bi-star-fill"></i>
+                          </label>
+                          <% } %>
+                      </div>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="review-comment" class="form-label small fw-bold text-secondary">Nhận xét của
+                        bạn</label>
+                      <textarea id="review-comment" name="comment" class="form-control" rows="4" maxlength="500"
+                        placeholder="Chia sẻ cảm nhận của bạn về sự kiện này..."><%= currentUserReview?.comment || '' %></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary px-4">
+                      <i class="bi bi-send me-2"></i>
+                      <%= currentUserReview ? 'Cập nhật đánh giá' : 'Gửi đánh giá' %>
+                    </button>
+                  </form>
+                  <% } %>
+            </div>
+
+            <% if (!reviews || reviews.length===0) { %>
+              <div class="text-center text-muted py-4 border-top">
+                <i class="bi bi-star fs-2 d-block mb-2 text-warning"></i>
+                Chưa có đánh giá nào cho sự kiện này.
+              </div>
+              <% } else { %>
+                <% reviews.forEach(function(review) { %>
+                  <div class="d-flex border-top pt-3 mb-3">
+                    <div
+                      class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0"
+                      style="width: 45px; height: 45px; font-weight: bold;">
+                      <%= (review.userId?.name || 'U' ).charAt(0).toUpperCase() %>
+                    </div>
+                    <div class="flex-grow-1">
+                      <div
+                        class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-1 mb-1">
+                        <h6 class="mb-0 fw-bold">
+                          <%= review.userId?.name || 'Người tham dự' %>
+                        </h6>
+                        <small class="text-muted">
+                          <%= new Date(review.reviewedAt).toLocaleString('vi-VN') %>
+                        </small>
+                      </div>
+                      <div class="text-warning small mb-2">
+                        <% for (let star=1; star <=5; star++) { %>
+                          <i class="bi <%= star <= review.rating ? 'bi-star-fill' : 'bi-star' %>"></i>
+                          <% } %>
+                      </div>
+                      <p class="text-muted mb-0 small">
+                        <%= review.comment || 'Không có nhận xét.' %>
+                      </p>
+                    </div>
+                  </div>
+                  <% }); %>
+                    <% } %>
       </div>
     </div>
 

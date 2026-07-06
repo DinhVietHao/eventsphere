@@ -1,4 +1,8 @@
 import { Router } from 'express';
+import { authMiddleware } from '../../shared/middlewares/auth.middleware';
+import { roleMiddleware } from '../../shared/middlewares/role.middleware';
+import { ReviewsController } from './reviews.controller';
 const reviewsRouter = Router();
-reviewsRouter.post('/', (req, res) => res.json({ message: 'UC11 - Review event (Tính lại avgRating bằng Mongoose Middleware)' }));
+const reviewsController = new ReviewsController();
+reviewsRouter.post('/', authMiddleware, roleMiddleware('attendee'), reviewsController.submitReview);
 export default reviewsRouter;

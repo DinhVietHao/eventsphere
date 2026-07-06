@@ -35,4 +35,16 @@ export class TicketRepository {
       .sort({ issuedAt: -1 })
       .lean();
   }
+
+  async findAttendanceByEventAndUser(
+    eventId: string, userId: string
+  ) {
+    const eventObjectId = new Types.ObjectId(eventId);
+    const userObjectId = new Types.ObjectId(userId);
+    return TicketModel.findOne({
+      eventId: eventObjectId,
+      attendeeId: userObjectId,
+      status: { $in: ["ISSUED", "CHECKED_IN", "EXPIRED"] },
+    });
+  }
 }

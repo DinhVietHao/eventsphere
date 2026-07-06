@@ -79,4 +79,17 @@ export class RegistrationRepository {
       { new: true },
     );
   }
+
+  async findAttendanceByEventAndUser(
+    eventId: string, userId: string
+  ) {
+    const eventObjectId = new Types.ObjectId(eventId);
+    const userObjectId = new Types.ObjectId(userId);
+    return Registration.findOne({
+      eventId: eventObjectId,
+      userId: userObjectId,
+      status: { $nin: ["cancelled", "payment_failed"] },
+      paymentStatus: { $in: ["paid", "free"] },
+    })
+  }
 }
