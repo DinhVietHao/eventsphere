@@ -266,6 +266,7 @@ organizerViewsRouter.get(
   },
 );
 
+// GET /organizer/events/:id/registrations
 // GET /organizer/events/:id/registrations — UC15
 organizerViewsRouter.get(
   "/organizer/events/:id/registrations",

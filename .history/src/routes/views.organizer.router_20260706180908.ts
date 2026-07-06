@@ -266,35 +266,21 @@ organizerViewsRouter.get(
   },
 );
 
-// GET /organizer/events/:id/registrations — UC15
+// GET /organizer/events/:id/registrations
 organizerViewsRouter.get(
   "/organizer/events/:id/registrations",
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
-      const page = Number(req.query.page) || 1;
-      const limit = 20;
       const event = await eventService.getEventById(req.params.id as string);
-      const result = await eventService.getRegistrationsByEvent(
-        req.params.id as string,
-        req.user!.id,
-        req.user!.role,
-        page,
-        limit,
-      );
       res.render("organizer/events/registrations", {
         layout: "layouts/organizer",
         user: req.user,
         event,
-        registrations: result.registrations,
-        pagination: {
-          currentPage: page,
-          totalPages: Math.ceil(result.total / limit),
-          limit,
-        },
+        registrations: [], // UC15 implement sau
       });
-    } catch (err: any) {
-      res.status(err.statusCode || 500).send(err.message || "Server error");
+    } catch (err) {
+      res.status(500).send("Server error");
     }
   },
 );
@@ -502,72 +488,68 @@ organizerViewsRouter.post(
 
 export default organizerViewsRouter;
 
+
 // GET /organizer/events/:id/staffs — Giao diện quản lý UC17
 organizerViewsRouter.get(
-  "/organizer/events/:id/staffs",
-  ...organizerGuard,
-  async (req: Request, res: Response) => {
-    try {
-      const eventId = req.params.id as string;
-      const organizerId = req.user!.id;
+    "/organizer/events/:id/staffs",
+    ...organizerGuard,
+    async (req: Request, res: Response) => {
+        try {
+            const eventId = req.params.id as string;
+            const organizerId = req.user!.id;
 
-      const event = await eventService.getEventById(eventId);
-      const staffs = await eventService.getStaffsByEventId(
-        eventId,
-        organizerId,
-      );
+            const event = await eventService.getEventById(eventId);
+            const staffs = await eventService.getStaffsByEventId(eventId, organizerId);
 
-      const messages = (req as any).flash();
-      res.render("organizer/events/assignStaff", {
-        layout: "layouts/organizer",
-        user: req.user,
-        event,
-        staffs,
-        error: messages.error || null,
-        messages: { success: messages.success },
-      });
-    } catch (err: any) {
-      res
-        .status(err.statusCode || 500)
-        .send(err.message || "Đã xảy ra lỗi hệ thống");
+            const messages = (req as any).flash();
+            res.render("organizer/events/assignStaff", {
+                layout: "layouts/organizer",
+                user: req.user,
+                event,
+                staffs,
+                error: messages.error || null,
+                messages: { success: messages.success }
+            });
+        } catch (err: any) {
+            res.status(err.statusCode || 500).send(err.message || "Đã xảy ra lỗi hệ thống");
+        }
     }
-  },
-);
+)
 
 // POST /organizer/events/:id/staffs — Xử lý Thêm Staff
 organizerViewsRouter.post(
-  "/organizer/events/:id/staffs",
-  ...organizerGuard,
-  async (req: Request, res: Response) => {
-    try {
-      const eventId = req.params.id as string;
-      const organizer = req.user!.id;
-      const { email } = req.body;
-      await eventService.addStaffToEvent(eventId, email, organizer);
-      (req as any).flash("success", "Thêm nhân viên check-in thành công!");
-      res.redirect(`/organizer/events/${req.params.id}/staffs`);
-    } catch (err: any) {
-      (req as any).flash("error", err.message || "Thêm nhân viên thất bại");
-      res.redirect(`/organizer/events/${req.params.id}/staffs`);
+    "/organizer/events/:id/staffs",
+    ...organizerGuard,
+    async (req: Request, res: Response)=> {
+        try {
+            const eventId = req.params.id as string;
+            const organizer = req.user!.id;
+            const { email } = req.body;
+            await eventService.addStaffToEvent(eventId, email, organizer);
+            (req as any).flash("success", "Thêm nhân viên check-in thành công!");
+            res.redirect(`/organizer/events/${req.params.id}/staffs`);
+        } catch (err: any) {
+            (req as any).flash("error", err.message || "Thêm nhân viên thất bại");
+            res.redirect(`/organizer/events/${req.params.id}/staffs`);
+        }
     }
-  },
-);
+)
 
 // POST /organizer/events/:id/staffs/:staffId/delete — Xử lý Xóa Staff
 organizerViewsRouter.post(
-  "/organizer/events/:id/staffs/:staffId/delete",
-  ...organizerGuard,
-  async (req: Request, res: Response) => {
-    try {
-      const eventId = req.params.id as string;
-      const staffId = req.params.staffId as string;
-      const organizer = req.user!.id;
-      await eventService.removeStaffFromEvent(eventId, staffId, organizer);
-      (req as any).flash("success", "Xóa nhân viên thành công!");
-      res.redirect(`/organizer/events/${req.params.id}/staffs`);
-    } catch (err: any) {
-      (req as any).flash("error", err.message || "Xóa nhân viên thất bại");
-      res.redirect(`/organizer/events/${req.params.id}/staffs`);
+    "/organizer/events/:id/staffs/:staffId/delete",
+    ...organizerGuard,
+    async (req: Request, res: Response) => {
+        try {
+            const eventId = req.params.id as string;
+            const staffId = req.params.staffId as string;
+            const organizer = req.user!.id;
+            await eventService.removeStaffFromEvent(eventId, staffId, organizer);
+            (req as any).flash("success", "Xóa nhân viên thành công!");
+            res.redirect(`/organizer/events/${req.params.id}/staffs`);
+        } catch (err: any) {
+            (req as any).flash("error", err.message || "Xóa nhân viên thất bại");
+            res.redirect(`/organizer/events/${req.params.id}/staffs`);
+        }
     }
-  },
-);
+)

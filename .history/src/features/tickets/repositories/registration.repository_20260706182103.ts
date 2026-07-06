@@ -90,7 +90,6 @@ export class RegistrationRepository {
       paymentStatus: { $in: ["paid", "free"] },
     });
   }
-  
   async findByEventId(
     eventId: string,
     page: number,
