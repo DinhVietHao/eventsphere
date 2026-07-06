@@ -84,14 +84,18 @@ export class ReviewsService {
     };
   }
 
-  async getEventReviewContext(eventId: string, user?: ReviewUser) {
+  async getEventReviewContext(eventId: string, user?: ReviewUser, page = 1, limit = 5) {
     const event = await this.eventRepository.findById(eventId);
     if (!event) {
       throw new AppError("Không tìm thấy sự kiện.", 404);
     }
 
-    const [reviews, currentUserReview, attendanceRegistration, attendanceTicket] = await Promise.all([
-      this.reviewsRepository.findByEvent(eventId),
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.max(1, limit);
+
+    const [reviews, reviewCount, currentUserReview, attendanceRegistration, attendanceTicket] = await Promise.all([
+      this.reviewsRepository.findByEvent(eventId, safePage, safeLimit),
+      this.reviewsRepository.countByEvent(eventId),
       user ? this.reviewsRepository.findByEventAndUser(eventId, user.id) : null,
       user ? this.registrationRepository.findAttendanceByEventAndUser(eventId, user.id) : null,
       user ? this.ticketRepository.findAttendanceByEventAndUser(eventId, user.id) : null,
@@ -104,14 +108,18 @@ export class ReviewsService {
       isEnded &&
       (attendanceRegistration || attendanceTicket),
     );
-    console.log("averageRating", event.avgRating);
     return {
       reviews,
       currentUserReview,
       canReview,
       reviewMessage: this.getReviewMessage(user, isEnded, Boolean(attendanceRegistration || attendanceTicket)),
       averageRating: event.avgRating,
-      reviewCount: reviews.length,
+      reviewCount,
+      reviewPagination: {
+        currentPage: safePage,
+        totalPages: Math.ceil(reviewCount / safeLimit),
+        limit: safeLimit,
+      },
     };
   }
 

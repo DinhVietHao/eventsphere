@@ -14,6 +14,7 @@ const paymentService = new PaymentService();
 const reviewsService = new ReviewsService();
 
 const LIMIT = 9;
+const REVIEW_LIMIT = 5;
 
 // UC01 + UC04 — Danh sách + lọc
 eventsViewsRouter.get("/events", async (req: Request, res: Response) => {
@@ -180,11 +181,14 @@ eventsViewsRouter.post("/events/:id/booking", async (req: Request, res: Response
 
 eventsViewsRouter.get("/events/:id", async (req: Request, res: Response) => {
   try {
+    const reviewPage = Number(req.query.reviewPage) || 1;
     const event = await eventService.getEventById(req.params.id as string);
     const ticketTypes = await ticketTypeService.getTicketTypes(req.params.id as string);
     const reviewContext = await reviewsService.getEventReviewContext(
       req.params.id as string,
       req.user,
+      reviewPage,
+      REVIEW_LIMIT,
     );
     const prices = ticketTypes.map(ticket => ticket.price);
     const minPrice = prices.length ? Math.min(...prices) : 0;

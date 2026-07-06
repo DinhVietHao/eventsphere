@@ -55,7 +55,7 @@
         </div>
       </div>
 
-      <div class="card border-0 shadow-sm p-4">
+      <div class="card border-0 shadow-sm p-4" id="reviews">
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-4">
           <h3 class="h5 fw-bold mb-0 text-dark">
             <i class="bi bi-chat-left-heart me-2 text-primary"></i>Đánh giá sự kiện
@@ -81,6 +81,11 @@
                     <%= reviewMessage %>
                   </span>
                 </div>
+                <% } else if (currentUserReview?.hasEdited) { %>
+                  <div class="d-flex align-items-center text-muted">
+                    <i class="bi bi-check-circle me-2 text-success"></i>
+                    <span>Bạn đã cập nhật đánh giá một lần nên không thể chỉnh sửa thêm.</span>
+                  </div>
                 <% } else { %>
                   <form method="POST" action="/reviews/events/<%= event._id %>">
                     <div class="mb-3">
@@ -146,6 +151,29 @@
                     </div>
                   </div>
                   <% }); %>
+                    <% if (typeof reviewPagination !== 'undefined' && reviewPagination.totalPages > 1) { %>
+                      <nav class="mt-4" aria-label="Review pagination">
+                        <ul class="pagination justify-content-center mb-0">
+                          <li class="page-item <%= reviewPagination.currentPage === 1 ? 'disabled' : '' %>">
+                            <a class="page-link" href="?reviewPage=<%= reviewPagination.currentPage - 1 %>#reviews" aria-label="Previous">
+                              <span aria-hidden="true">&laquo; Trước</span>
+                            </a>
+                          </li>
+
+                          <% for (let page = 1; page <= reviewPagination.totalPages; page++) { %>
+                            <li class="page-item <%= reviewPagination.currentPage === page ? 'active' : '' %>">
+                              <a class="page-link" href="?reviewPage=<%= page %>#reviews"><%= page %></a>
+                            </li>
+                          <% } %>
+
+                          <li class="page-item <%= reviewPagination.currentPage === reviewPagination.totalPages ? 'disabled' : '' %>">
+                            <a class="page-link" href="?reviewPage=<%= reviewPagination.currentPage + 1 %>#reviews" aria-label="Next">
+                              <span aria-hidden="true">Sau &raquo;</span>
+                            </a>
+                          </li>
+                        </ul>
+                      </nav>
+                    <% } %>
                     <% } %>
       </div>
     </div>

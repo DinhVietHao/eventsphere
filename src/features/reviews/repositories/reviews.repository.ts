@@ -37,11 +37,21 @@ export class ReviewsRepository {
     );
   }
 
-  async findByEvent(eventId: string) {
+  async findByEvent(eventId: string, page = 1, limit = 5) {
+    const skip = (page - 1) * limit;
+
     return ReviewModel.find({ eventId: new Types.ObjectId(eventId) } as any)
       .populate("userId", "name avatar")
       .sort({ reviewedAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .lean();
+  }
+
+  async countByEvent(eventId: string): Promise<number> {
+    return ReviewModel.countDocuments({
+      eventId: new Types.ObjectId(eventId),
+    } as any);
   }
 
   async hasReviewBeenEdited(reviewId: string): Promise<boolean> {
