@@ -52,18 +52,29 @@
                       <li><a class="dropdown-item" href="/organizer/dashboard"><i
                             class="bi bi-speedometer2 me-2"></i>Quản lý</a></li>
                       <% } %>
-                        <li>
-                          <hr class="dropdown-divider">
-                        </li>
-                        <li><a class="dropdown-item text-danger" href="/logout"><i
-                              class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a></li>
+                        <% if (user.role==='admin' || user.role==='organizer' ) { %>
+                          <li><a class="dropdown-item" href="/organizer/dashboard"><i
+                                class="bi bi-speedometer2 me-2"></i>Quản
+                              lý</a></li>
+                          <% } %>
+                            <% if (user.role==='admin' ) { %>
+                              <li><a class="dropdown-item" href="/admin/dashboard"><i
+                                    class="bi bi-shield-check me-2"></i>Admin
+                                  Panel</a></li>
+                              <% } %>
+                                <li>
+                                  <hr class="dropdown-divider">
+                                </li>
+                                <li><a class="dropdown-item text-danger" href="/logout"><i
+                                      class="bi bi-box-arrow-right me-2"></i>Đăng xuất</a></li>
               </ul>
             </div>
-            <% } else { %>
-              <a href="/login" class="btn btn-outline-white text-white me-2 border-white">Đăng nhập</a>
-              <a href="/register" class="btn btn-light text-primary fw-bold">Đăng ký</a>
-              <% } %>
       </div>
+      <% } else { %>
+        <a href="/login" class="btn btn-outline-white text-white me-2 border-white">Đăng nhập</a>
+        <a href="/register" class="btn btn-light text-primary fw-bold">Đăng ký</a>
+        <% } %>
     </div>
+  </div>
   </div>
 </nav>

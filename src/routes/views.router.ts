@@ -7,6 +7,7 @@ import eventsViewsRouter from "./views.events.router";
 import reviewsViewsRouter from "./views.reviews.router";
 import organizerViewsRouter from "./views.organizer.router";
 import ticketsViewsRouter from "./views.ticket.router";
+import adminViewsRouter from "./views.admin.router";
 
 const viewsRouter = Router();
 
@@ -29,5 +30,6 @@ viewsRouter.use("/", reviewsViewsRouter);
 viewsRouter.use("/", eventsViewsRouter);
 viewsRouter.use("/", organizerViewsRouter);
 viewsRouter.use("/", ticketsViewsRouter);
+viewsRouter.use("/", adminViewsRouter);
 
 export default viewsRouter;
