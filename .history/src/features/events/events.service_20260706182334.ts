@@ -7,7 +7,9 @@ import { Types } from "mongoose";
 import { RegistrationRepository } from "../tickets/repositories/registration.repository";
 
 const eventRepository = new EventRepository();
+
 const registrationRepository = new RegistrationRepository();
+
 
 export class EventService {
   // UC01 - Danh sách event công khai
@@ -267,21 +269,18 @@ export class EventService {
     }
 
     // 1. Kiểm tra xem sự kiện (eventId) có tồn tại hay không
-    const event = await eventRepository.findById(eventId);
+    const event = await eventRepository.findById(eventId)
     if (!event) {
       throw new AppError("Sự kiện không tồn tại", 404);
     }
 
     // 2. Kiểm tra xem người đang gọi API có đúng là chủ sở hữu của sự kiện này hay không
     if (event.organizerId.toString() !== organizerId) {
-      throw new AppError(
-        "Bạn không có quyền quản lý nhân sự cho sự kiện này",
-        403,
-      );
+      throw new AppError("Bạn không có quyền quản lý nhân sự cho sự kiện này", 403);
     }
 
     // 3. Kiểm tra xem tài khoản chuẩn bị thêm có tồn tại và đúng role là staff hay không
-    const staff = (await eventRepository.findUserByEmail(email)) as any;
+    const staff = await eventRepository.findUserByEmail(email) as any;
     if (!staff) {
       throw new AppError("Không tìm thấy tài khoản với email này", 404);
     }
@@ -291,27 +290,16 @@ export class EventService {
     }
 
     // 4. Kiểm tra xem Staff này đã được thêm vào sự kiện trước đó chưa (tránh trùng lặp)
-    const isAssigned = await eventRepository.checkStaffAssigned(
-      eventId,
-      staff._id.toString(),
-    );
+    const isAssigned = await eventRepository.checkStaffAssigned(eventId, staff._id.toString());
     if (isAssigned) {
       throw new AppError("Nhân viên này đã được phân công vào sự kiện", 400);
     }
 
     // 5. Nếu tất cả điều kiện thỏa mãn, gọi xuống Repository để thêm mới
-    return eventRepository.addStaffToEvent(
-      eventId,
-      staff._id.toString(),
-      organizerId,
-    );
+    return eventRepository.addStaffToEvent(eventId, staff._id.toString(), organizerId);
   }
 
-  async removeStaffFromEvent(
-    eventId: string,
-    staffId: string,
-    organizerId: string,
-  ) {
+  async removeStaffFromEvent(eventId: string, staffId: string, organizerId: string) {
     if (!Types.ObjectId.isValid(eventId) || !Types.ObjectId.isValid(staffId)) {
       throw new AppError("ID không hợp lệ", 400);
     }
@@ -324,10 +312,7 @@ export class EventService {
 
     // 2. Kiểm tra quyền sở hữu
     if (event.organizerId.toString() !== organizerId) {
-      throw new AppError(
-        "Bạn không có quyền quản lý nhân sự cho sự kiện này",
-        403,
-      );
+      throw new AppError("Bạn không có quyền quản lý nhân sự cho sự kiện này", 403);
     }
 
     // 3. Gọi xuống Repository để xóa staff
@@ -347,49 +332,14 @@ export class EventService {
 
     // 2. Kiểm tra quyền sở hữu (Chỉ chủ sự kiện mới được xem danh sách staff của họ)
     if (event.organizerId.toString() !== requesterId) {
-      throw new AppError(
-        "Bạn không có quyền xem danh sách nhân sự của sự kiện này",
-        403,
-      );
+      throw new AppError("Bạn không có quyền xem danh sách nhân sự của sự kiện này", 403);
     }
 
     // 3. Gọi repository lấy dữ liệu
     return eventRepository.getStaffsByEventId(eventId);
   }
 
-  // ───── UC15 — Xem danh sách đăng ký (Organizer) ─────
-  async getRegistrationsByEvent(
-    eventId: string,
-    organizerId: string,
-    role: string,
-    page: number,
-    limit: number,
-  ) {
-    if (!Types.ObjectId.isValid(eventId)) {
-      throw new AppError("ID sự kiện không hợp lệ", 400);
-    }
-
-    const event = await eventRepository.findById(eventId);
-    if (!event) throw new AppError("Sự kiện không tồn tại", 404);
-
-    if (role !== "admin" && event.organizerId.toString() !== organizerId) {
-      throw new AppError("Bạn không có quyền xem danh sách đăng ký này", 403);
-    }
-
-    const [rawList, total] = await Promise.all([
-      registrationRepository.findByEventId(eventId, page, limit),
-      registrationRepository.countByEventId(eventId),
-    ]);
-
-    const registrations = rawList.map((reg: any) => ({
-      attendeeName: reg.userId?.name ?? "Không rõ",
-      attendeeEmail: reg.userId?.email ?? "Không rõ",
-      ticketType: reg.ticketTypeId?.name ?? "Standard",
-      createdAt: reg.createdAt,
-      status: reg.status,
-      paymentStatus: reg.paymentStatus,
-    }));
-
-    return { registrations, total, page, limit };
-  }
 }
+
+
+

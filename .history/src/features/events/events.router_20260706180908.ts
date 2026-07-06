@@ -39,29 +39,23 @@ eventsRouter.delete(
 );
 
 // ───── UC17 — Quản lý nhân viên check-in (Organizer) ─────
-eventsRouter.post(
-  "/:id/staffs",
-  authMiddleware,
-  roleMiddleware("organizer", "admin"),
-  eventController.addStaff,
-);
+eventsRouter.post("/:id/staffs",
+    authMiddleware,
+    roleMiddleware("organizer", "admin"),
+    eventController.addStaff
+)
 
 eventsRouter.delete(
-  "/:id/staffs/:staffId",
-  authMiddleware,
-  roleMiddleware("organizer", "admin"),
-  eventController.removeStaff,
-);
+    "/:id/staffs/:staffId",
+    authMiddleware,
+    roleMiddleware("organizer", "admin"),
+    eventController.removeStaff
+)
 
 // ───── Placeholder ─────
-// ───── UC15 — Xem danh sách đăng ký ─────
-eventsRouter.get(
-  "/:id/registrations",
-  authMiddleware,
-  roleMiddleware("organizer", "admin"),
-  eventController.getRegistrations,
+eventsRouter.get("/:id/registrations", (req, res) =>
+  res.json({ message: "UC15 - View registration list" }),
 );
-
 eventsRouter.get("/:id/export", (req, res) =>
   res.json({ message: "UC18 - Export attendee CSV" }),
 );

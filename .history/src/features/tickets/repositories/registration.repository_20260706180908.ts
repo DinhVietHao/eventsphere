@@ -6,7 +6,7 @@ export class RegistrationRepository {
   // Tim registration con hieu luc cua attendee trong mot event.
   async findActiveByAttendeeAndEvent(
     attendeeId: string,
-    eventId: string,
+    eventId: string
   ): Promise<IRegistration | null> {
     return Registration.findOne({
       userId: new Types.ObjectId(attendeeId),
@@ -39,7 +39,7 @@ export class RegistrationRepository {
     });
   }
 
-  // Tao registration moi trong transaction
+  // Tao registration moi trong transaction 
   async create(data: IRegistration): Promise<IRegistration> {
     const registration = new Registration(data);
     return await registration.save();
@@ -80,7 +80,9 @@ export class RegistrationRepository {
     );
   }
 
-  async findAttendanceByEventAndUser(eventId: string, userId: string) {
+  async findAttendanceByEventAndUser(
+    eventId: string, userId: string
+  ) {
     const eventObjectId = new Types.ObjectId(eventId);
     const userObjectId = new Types.ObjectId(userId);
     return Registration.findOne({
@@ -88,26 +90,6 @@ export class RegistrationRepository {
       userId: userObjectId,
       status: { $nin: ["cancelled", "payment_failed"] },
       paymentStatus: { $in: ["paid", "free"] },
-    });
-  }
-  
-  async findByEventId(
-    eventId: string,
-    page: number,
-    limit: number,
-  ): Promise<any[]> {
-    return Registration.find({ eventId: new Types.ObjectId(eventId) })
-      .populate("userId", "name email")
-      .populate("ticketTypeId", "name")
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean();
-  }
-
-  async countByEventId(eventId: string): Promise<number> {
-    return Registration.countDocuments({
-      eventId: new Types.ObjectId(eventId),
-    });
+    })
   }
 }

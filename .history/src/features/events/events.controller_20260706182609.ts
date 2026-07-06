@@ -3,7 +3,7 @@ import { AppError } from "../../shared/errors/AppError";
 import { sendSuccess } from "../../shared/utils/response.util";
 import type { Request, Response, NextFunction } from "express";
 import { CreateEventSchema, UpdateEventSchema } from "./dto/event.dto";
-import { AddStaffSchema } from "./dto/add-staff.dto";
+import {AddStaffSchema} from "./dto/add-staff.dto";
 
 const eventService = new EventService();
 
@@ -151,30 +151,32 @@ export class EventController {
     }
   };
 
+
   // ───── UC17 — Quản lý nhân viên check-in (Organizer) ─────
 
   async addStaff(req: Request, res: Response, next: NextFunction) {
     try {
-      const { error, value } = AddStaffSchema.validate(req.body, {
+      const {error, value} = AddStaffSchema.validate(req.body, {
         abortEarly: false,
-      });
+      })
       if (error) {
         throw new AppError(error.details.map((d) => d.message).join(", "), 400);
       }
       const eventId = req.params.id as string;
       const organizerId = req.user!.id;
-      const { email } = value;
+      const {email} = value;
 
       const result = await eventService.addStaffToEvent(
-        eventId,
-        email,
-        organizerId,
+          eventId,
+          email,
+          organizerId,
       );
       sendSuccess(res, result, "Thêm nhân viên thành công", 201);
     } catch (error) {
       next(error);
     }
   }
+
 
   async removeStaff(req: Request, res: Response, next: NextFunction) {
     try {
@@ -193,7 +195,7 @@ export class EventController {
     }
   }
 
-  // UC15 — Organizer xem danh sách người đăng ký
+    // UC15 — Organizer xem danh sách người đăng ký
   async getRegistrations(req: Request, res: Response, next: NextFunction) {
     try {
       const page = Number(req.query.page) || 1;
@@ -210,4 +212,7 @@ export class EventController {
       next(error);
     }
   }
+
 }
+
+

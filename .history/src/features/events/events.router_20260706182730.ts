@@ -39,19 +39,18 @@ eventsRouter.delete(
 );
 
 // ───── UC17 — Quản lý nhân viên check-in (Organizer) ─────
-eventsRouter.post(
-  "/:id/staffs",
-  authMiddleware,
-  roleMiddleware("organizer", "admin"),
-  eventController.addStaff,
-);
+eventsRouter.post("/:id/staffs",
+    authMiddleware,
+    roleMiddleware("organizer", "admin"),
+    eventController.addStaff
+)
 
 eventsRouter.delete(
-  "/:id/staffs/:staffId",
-  authMiddleware,
-  roleMiddleware("organizer", "admin"),
-  eventController.removeStaff,
-);
+    "/:id/staffs/:staffId",
+    authMiddleware,
+    roleMiddleware("organizer", "admin"),
+    eventController.removeStaff
+)
 
 // ───── Placeholder ─────
 // ───── UC15 — Xem danh sách đăng ký ─────

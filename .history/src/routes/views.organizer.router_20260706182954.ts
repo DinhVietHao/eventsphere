@@ -94,52 +94,13 @@ organizerViewsRouter.get(
   },
 );
 
-// POST /organizer/events — tạo event mới + loại vé
+// POST /organizer/events — tạo event mới
 organizerViewsRouter.post(
   "/organizer/events",
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
-      // Validate các trường bắt buộc của event
-      const missing: string[] = [];
-      if (!req.body.title?.trim())       missing.push("Tên sự kiện");
-      if (!req.body.description?.trim()) missing.push("Mô tả chi tiết");
-      if (!req.body.category)            missing.push("Danh mục");
-      if (!req.body.location?.trim())    missing.push("Địa điểm");
-      if (!req.body.startDate)           missing.push("Ngày bắt đầu");
-      if (!req.body.endDate)             missing.push("Ngày kết thúc");
-      if (missing.length > 0) {
-        throw new Error(`Vui lòng điền đầy đủ: ${missing.join(", ")}`);
-      }
-
-      // Validate: phải có ít nhất 1 loại vé
-      const names = [req.body.ticketName].flat().filter(Boolean);
-      if (names.length === 0) {
-        throw new Error("Vui lòng thêm ít nhất 1 loại vé");
-      }
-
-      // Tạo event trước
-      const event = await eventService.createEvent(req.user!.id, req.body);
-
-      // Tạo từng loại vé
-      const prices       = [req.body.ticketPrice].flat();
-      const quotas       = [req.body.ticketQuota].flat();
-      const descriptions = [req.body.ticketDescription].flat();
-
-      for (let i = 0; i < names.length; i++) {
-        await ticketTypeService.createTicketType(
-          (event._id as any).toString(),
-          req.user!.id,
-          {
-            name:        names[i],
-            price:       Number(prices[i]) || 0,
-            quota:       Number(quotas[i]) || 1,
-            description: descriptions[i] || "",
-          },
-        );
-      }
-
-      (req as any).flash("success", "Tạo sự kiện và loại vé thành công!");
+      await eventService.createEvent(req.user!.id, req.body);
       res.redirect("/organizer/events");
     } catch (err: any) {
       res.render("organizer/events/create", {
@@ -147,12 +108,12 @@ organizerViewsRouter.post(
         user: req.user,
         error: err.message || "Tạo sự kiện thất bại",
         old: {
-          title:       req.body.title,
+          title: req.body.title,
           description: req.body.description,
-          category:    req.body.category,
-          location:    req.body.location,
-          startDate:   req.body.startDate,
-          endDate:     req.body.endDate,
+          category: req.body.category,
+          location: req.body.location,
+          startDate: req.body.startDate,
+          endDate: req.body.endDate,
         },
       });
     }
