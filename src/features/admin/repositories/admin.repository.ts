@@ -1,6 +1,6 @@
 import { Event } from "../../events/models/event.model";
 import { User } from "../../auth/models/user.model";
-import { RegistrationModel } from "../../tickets/models/registration.model";
+import { Registration } from "../../tickets/models/registration.model";
 import { CheckinLogModel } from "../../checkin/models/checkinLog.model";
 
 export class AdminRepository {
@@ -18,7 +18,7 @@ export class AdminRepository {
 
   // Tổng số registrations paid
   async countPaidRegistrations(): Promise<number> {
-    return RegistrationModel.countDocuments({ paymentStatus: "paid" });
+    return Registration.countDocuments({ paymentStatus: "paid" });
   }
 
   // Tổng check-in toàn hệ thống

@@ -39,6 +39,21 @@ export class TicketsController {
         }
     };
 
+    async viewAttendanceHistory(
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ) {
+        try {
+            const attendeeId = req.user!.id;
+            const tickets = await this.ticketsService.getAttendanceHistory(attendeeId);
+
+            sendSuccess(res, tickets, "Lich su ve cua toi", 200);
+        } catch (error) {
+            next(error);
+        }
+    };
+
     async viewTicketDetail(
         req: Request,
         res: Response,

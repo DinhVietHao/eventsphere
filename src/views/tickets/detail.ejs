@@ -1,7 +1,7 @@
 <% const event=ticket.eventId || {}; const ticketType=ticket.ticketTypeId || {}; const
   registration=ticket.registrationId || {}; const status=String(ticket.status || "ISSUED" ).toLowerCase(); const
-  statusMeta={ issued: { label: "Issued" , className: "bg-success" }, checked_in: { label: "Checked In" ,
-  className: "bg-primary" }, expired: { label: "Expired" , className: "bg-danger" }, cancelled: { label: "Cancelled" ,
+  statusMeta={ issued: { label: "Đã phát hành" , className: "bg-success" }, checked_in: { label: "Đã check-in" ,
+  className: "bg-primary" }, expired: { label: "Đã hết hạn" , className: "bg-danger" }, cancelled: { label: "Đã hủy" ,
   className: "bg-secondary" }, }[status] || { label: ticket.status, className: "bg-secondary" }; const
   price=Number(ticketType.price || 0); %>
 
@@ -12,9 +12,9 @@
           <div class="card-body p-4 p-md-5">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-4">
               <div>
-                <p class="text-uppercase text-muted small fw-bold mb-1">Ticket Details</p>
+                <p class="text-uppercase text-muted small fw-bold mb-1">Chi tiết vé</p>
                 <h1 class="h3 fw-bold mb-0">
-                  <%= event.title || "Event ticket" %>
+                  <%= event.title || "Vé sự kiện" %>
                 </h1>
               </div>
               <span class="badge <%= statusMeta.className %> px-3 py-2">
@@ -25,33 +25,33 @@
             <div class="bg-light rounded-3 border p-3 p-md-4 mb-4">
               <div class="row g-3">
                 <div class="col-sm-6">
-                  <div class="text-muted small">Ticket type</div>
+                  <div class="text-muted small">Loại vé</div>
                   <div class="fw-semibold">
-                    <%= ticketType.name || "Standard" %>
+                    <%= ticketType.name || "Vé tiêu chuẩn" %>
                   </div>
                 </div>
                 <div class="col-sm-6">
-                  <div class="text-muted small">Price</div>
+                  <div class="text-muted small">Giá vé</div>
                   <div class="fw-semibold">
-                    <%= price> 0 ? price.toLocaleString("vi-VN") + " VND" : "Free" %>
+                    <%= price> 0 ? price.toLocaleString("vi-VN") + " VND" : "Miễn phí" %>
                   </div>
                 </div>
                 <div class="col-sm-6">
-                  <div class="text-muted small">Start time</div>
+                  <div class="text-muted small">Thời gian bắt đầu</div>
                   <div class="fw-semibold">
-                    <%= event.startDate ? new Date(event.startDate).toLocaleString("vi-VN") : "Updating" %>
+                    <%= event.startDate ? new Date(event.startDate).toLocaleString("vi-VN") : "Đang cập nhật" %>
                   </div>
                 </div>
                 <div class="col-sm-6">
-                  <div class="text-muted small">End time</div>
+                  <div class="text-muted small">Thời gian kết thúc</div>
                   <div class="fw-semibold">
-                    <%= event.endDate ? new Date(event.endDate).toLocaleString("vi-VN") : "Updating" %>
+                    <%= event.endDate ? new Date(event.endDate).toLocaleString("vi-VN") : "Đang cập nhật" %>
                   </div>
                 </div>
                 <div class="col-12">
-                  <div class="text-muted small">Location</div>
+                  <div class="text-muted small">Địa điểm</div>
                   <div class="fw-semibold">
-                    <%= event.location || "Updating" %>
+                    <%= event.location || "Đang cập nhật" %>
                   </div>
                 </div>
               </div>
@@ -62,21 +62,21 @@
                 <img src="<%= ticket.qrCode %>" alt="Ticket QR Code" class="img-fluid"
                   style="width: 240px; max-width: 100%;">
               </div>
-              <p class="text-muted small mt-3 mb-0">Show this QR code at check-in.</p>
+              <p class="text-muted small mt-3 mb-0">Vui lòng xuất trình mã QR này khi check-in.</p>
             </div>
 
             <div class="d-flex flex-wrap justify-content-center gap-2">
               <a href="/events" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i>Back to events
+                <i class="bi bi-arrow-left me-1"></i>Quay lại sự kiện
               </a>
-              <a href="/api/v1/tickets/history/me" class="btn btn-primary">
-                <i class="bi bi-clock-history me-1"></i>Ticket history
+              <a href="/tickets" class="btn btn-primary">
+                <i class="bi bi-clock-history me-1"></i>Vé của tôi
               </a>
             </div>
 
             <% if (registration.status) { %>
               <p class="text-center text-muted small mt-3 mb-0">
-                Registration status: <span class="fw-semibold">
+                Trạng thái đăng ký: <span class="fw-semibold">
                   <%= registration.status %>
                 </span>
               </p>

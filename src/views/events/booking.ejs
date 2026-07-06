@@ -50,9 +50,14 @@
                             <p class="mb-0">Vé QR đã được tạo và gửi đến email của bạn.</p>
                           </div>
                         </div>
-                        <div> <a href="/tickets/<%= registrationResult.ticket._id %>" class="btn btn-primary">
-                            <i class="bi bi-ticket-perforated me-1"></i>Xem chi tiết vé
-                          </a></div>
+                        <div class="ms-md-3 mt-3 mt-md-0 flex-shrink-0">
+                          <a href="/tickets/<%= registrationResult.ticket._id %>"
+                            class="btn btn-light text-success border-0 shadow-sm fw-semibold px-3">
+                            <i class="bi bi-ticket-perforated-fill me-1"></i>
+                            Xem chi tiết vé
+                            <i class="bi bi-arrow-right-short ms-1"></i>
+                          </a>
+                        </div>
                       </div>
 
                       <div class="text-center bg-light rounded p-4 border">
