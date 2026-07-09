@@ -807,35 +807,35 @@ repositories/
 
 Hệ thống được phân rã thành **26 Use Cases (UC)** chia cho 5 thành viên:
 
-| Mã UC    | Tên chức năng                      | Actor            | Thư mục                    | Người phụ trách   | Trạng thái        |
-|----------|------------------------------------|------------------|----------------------------|-------------------|-------------------|
-| **UC01** | Xem danh sách sự kiện              | Guest            | `features/events/`         | Hào               | ✅ Done          |
-| **UC02** | Xem chi tiết sự kiện               | Guest            | `features/events/`         | Hào               | ✅ Done          |
-| **UC03** | Tìm kiếm sự kiện (full-text)       | Guest            | `features/events/`         | Hào               | ✅ Done          |
-| **UC04** | Lọc sự kiện (category, date)       | Guest            | `features/events/`         | Lượng             | ✅ Done          |
-| **UC05** | Đăng ký tài khoản                  | Guest            | `features/auth/`           | **Hào**           | ✅ Done          |
-| **UC06** | Đăng nhập                          | Registered User  | `features/auth/`           | **Hào**           | ✅ Done          |
-| **UC07** | Đăng ký tham dự sự kiện            | Attendee         | `features/tickets/`        | **Kha**           | 🔄 In Progress   |
-| **UC08** | Thanh toán vé (VNPay/Stripe)       | Attendee         | `features/tickets/`        | **Kha**           | ⏳ Pending       |
-| **UC09** | Xem chi tiết vé + QR Code          | Attendee         | `features/tickets/`        | **Kha**           | ⏳ Pending       |
-| **UC10** | Thêm sự kiện vào Google Calendar   | Attendee         | `features/tickets/`        | **Kha**           | ⏳ Pending       |
-| **UC11** | Đánh giá & chấm điểm sự kiện       | Attendee         | `features/reviews/`        | Core team         | ⏳ Pending       |
-| **UC12** | Xem lịch sử tham dự                | Attendee         | `features/tickets/`        | **Kha**           | ⏳ Pending       |
-| **UC13** | Quản lý sự kiện (CRUD + Banner)    | Organizer        | `features/events/`         | **Hào**           | ✅ Done          |
-| **UC14** | Quản lý loại vé                    | Organizer        | `features/events/`         | **Lượng**         | ✅ Done        |
-| **UC15** | Xem danh sách đăng ký              | Organizer        | `features/events/`         | **Lượng**         | ⏳ Pending       |
-| **UC16** | Gửi thông báo hàng loạt            | Organizer        | `features/notifications/`  | **Danh**          | ⏳ Pending       |
-| **UC17** | Phân công nhân viên check-in       | Organizer        | `features/events/`         | **Trọng**         | ⏳ Pending       |
-| **UC18** | Xuất danh sách attendee (CSV)      | Organizer        | `features/events/`         | **Lượng**         | ⏳ Pending       |
-| **UC19** | Báo cáo tổng kết sự kiện           | Organizer        | `features/events/`         | **Danh**          | ⏳ Pending       |
-| **UC20** | Dashboard realtime check-in        | Organizer        | `features/events/`         | **Danh · Trọng**  | ⏳ Pending       |
-| **UC21** | Quét QR check-in                   | Staff            | `features/checkin/`        | **Trọng**         | ⏳ Pending       |
-| **UC22** | Check-in thủ công (tên/email)      | Staff            | `features/checkin/`        | **Trọng**         | ⏳ Pending       |
-| **UC23** | Phê duyệt / Từ chối sự kiện        | Admin            | `features/admin/`          | **Hào**           | 🔄 In Progress   |
-| **UC24** | Quản lý tài khoản (khóa/mở)        | Admin            | `features/admin/`          | Core team         | ⏳ Pending       |
-| **UC25** | Dashboard tổng quan hệ thống       | Admin            | `features/admin/`          | **Danh · Trọng**  | ⏳ Pending       |
-| **UC26** | Báo cáo doanh thu toàn nền tảng    | Admin            | `features/admin/`          | **Danh · Trọng**  | ⏳ Pending       |
- 
+| Mã UC    | Tên chức năng                    | Actor           | Thư mục                   | Người phụ trách  | Trạng thái     |
+| -------- | -------------------------------- | --------------- | ------------------------- | ---------------- | -------------- |
+| **UC01** | Xem danh sách sự kiện            | Guest           | `features/events/`        | Hào              | ✅ Done        |
+| **UC02** | Xem chi tiết sự kiện             | Guest           | `features/events/`        | Hào              | ✅ Done        |
+| **UC03** | Tìm kiếm sự kiện (full-text)     | Guest           | `features/events/`        | Hào              | ✅ Done        |
+| **UC04** | Lọc sự kiện (category, date)     | Guest           | `features/events/`        | Lượng            | ✅ Done        |
+| **UC05** | Đăng ký tài khoản                | Guest           | `features/auth/`          | **Hào**          | ✅ Done        |
+| **UC06** | Đăng nhập                        | Registered User | `features/auth/`          | **Hào**          | ✅ Done        |
+| **UC07** | Đăng ký tham dự sự kiện          | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done        |
+| **UC08** | Thanh toán vé (VNPay/Stripe)     | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done        |
+| **UC09** | Xem chi tiết vé + QR Code        | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done        |
+| **UC10** | Thêm sự kiện vào Google Calendar | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done        |
+| **UC11** | Đánh giá & chấm điểm sự kiện     | Attendee        | `features/reviews/`       | **Kha**          | ✅ Done        |
+| **UC12** | Xem lịch sử tham dự              | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done        |
+| **UC13** | Quản lý sự kiện (CRUD + Banner)  | Organizer       | `features/events/`        | **Hào**          | ✅ Done        |
+| **UC14** | Quản lý loại vé                  | Organizer       | `features/events/`        | **Lượng**        | ✅ Done        |
+| **UC15** | Xem danh sách đăng ký            | Organizer       | `features/events/`        | **Lượng**        | ⏳ Pending     |
+| **UC16** | Gửi thông báo hàng loạt          | Organizer       | `features/notifications/` | **Danh**         | ⏳ Pending     |
+| **UC17** | Phân công nhân viên check-in     | Organizer       | `features/events/`        | **Trọng**        | ⏳ Pending     |
+| **UC18** | Xuất danh sách attendee (CSV)    | Organizer       | `features/events/`        | **Lượng**        | ⏳ Pending     |
+| **UC19** | Báo cáo tổng kết sự kiện         | Organizer       | `features/events/`        | **Danh**         | ⏳ Pending     |
+| **UC20** | Dashboard realtime check-in      | Organizer       | `features/events/`        | **Danh · Trọng** | ⏳ Pending     |
+| **UC21** | Quét QR check-in                 | Staff           | `features/checkin/`       | **Trọng**        | ⏳ Pending     |
+| **UC22** | Check-in thủ công (tên/email)    | Staff           | `features/checkin/`       | **Trọng**        | ⏳ Pending     |
+| **UC23** | Phê duyệt / Từ chối sự kiện      | Admin           | `features/admin/`         | **Hào**          | 🔄 In Progress |
+| **UC24** | Quản lý tài khoản (khóa/mở)      | Admin           | `features/admin/`         | Core team        | ⏳ Pending     |
+| **UC25** | Dashboard tổng quan hệ thống     | Admin           | `features/admin/`         | **Danh · Trọng** | ⏳ Pending     |
+| **UC26** | Báo cáo doanh thu toàn nền tảng  | Admin           | `features/admin/`         | **Danh · Trọng** | ⏳ Pending     |
+
 ---
 
 ## 7. Quản lý thư viện
@@ -843,37 +843,37 @@ Hệ thống được phân rã thành **26 Use Cases (UC)** chia cho 5 thành v
 Chiến lược: **cài đến đâu dùng đến đó** — tránh cài thư viện chưa cần, giữ dự án gọn nhẹ.
 
 ### Thư viện hiện có (Core Stack)
- 
-| Thư viện                 | Vai trò                                            | Dùng ở đâu                           |
-|--------------------------|----------------------------------------------------|--------------------------------------|
-| `express`                | HTTP framework, định tuyến API                     | `app.ts`, tất cả router              |
-| `mongoose`               | ODM kết nối MongoDB, định nghĩa Schema             | Tất cả `models/`, `repositories/`    |
-| `dotenv`                 | Đọc file `.env` vào `process.env`                  | `server.ts` (import đầu tiên)        |
-| `cors`                   | Cho phép frontend khác domain gọi API              | `app.ts`                             |
-| `joi`                    | Validate dữ liệu đầu vào (DTO Layer)               | Tất cả `dto/`                        |
-| `bcrypt`                 | Hash + verify mật khẩu một chiều                   | `features/auth/auth.service.ts`      |
-| `jsonwebtoken`           | Tạo và verify JWT access/refresh token             | `shared/utils/jwt.util.ts`           |
-| `ejs`                    | Template engine render giao diện server-side       | `src/views/`                         |
-| `express-ejs-layouts`    | Layout engine cho EJS (dùng `<%- body %>`)         | `app.ts`                             |
-| `connect-flash`          | Flash message một lần (success/error qua redirect) | `app.ts`, `views.*.router.ts`        |
-| `express-session`        | Lưu session phía server, cần cho `connect-flash`   | `app.ts`                             |
-| `cookie-parser`          | Đọc cookie (`accessToken`, `refreshToken`)         | `app.ts`, view routers               |
-| `typescript`             | Ngôn ngữ chính, type safety                        | Toàn dự án                           |
-| `nodemon` (dev)          | Tự restart server khi file thay đổi                | `npm run dev`                        |
-| `ts-node` (dev)          | Chạy TypeScript trực tiếp (không build)            | `npm run dev`                        |
- 
+
+| Thư viện              | Vai trò                                            | Dùng ở đâu                        |
+| --------------------- | -------------------------------------------------- | --------------------------------- |
+| `express`             | HTTP framework, định tuyến API                     | `app.ts`, tất cả router           |
+| `mongoose`            | ODM kết nối MongoDB, định nghĩa Schema             | Tất cả `models/`, `repositories/` |
+| `dotenv`              | Đọc file `.env` vào `process.env`                  | `server.ts` (import đầu tiên)     |
+| `cors`                | Cho phép frontend khác domain gọi API              | `app.ts`                          |
+| `joi`                 | Validate dữ liệu đầu vào (DTO Layer)               | Tất cả `dto/`                     |
+| `bcrypt`              | Hash + verify mật khẩu một chiều                   | `features/auth/auth.service.ts`   |
+| `jsonwebtoken`        | Tạo và verify JWT access/refresh token             | `shared/utils/jwt.util.ts`        |
+| `ejs`                 | Template engine render giao diện server-side       | `src/views/`                      |
+| `express-ejs-layouts` | Layout engine cho EJS (dùng `<%- body %>`)         | `app.ts`                          |
+| `connect-flash`       | Flash message một lần (success/error qua redirect) | `app.ts`, `views.*.router.ts`     |
+| `express-session`     | Lưu session phía server, cần cho `connect-flash`   | `app.ts`                          |
+| `cookie-parser`       | Đọc cookie (`accessToken`, `refreshToken`)         | `app.ts`, view routers            |
+| `typescript`          | Ngôn ngữ chính, type safety                        | Toàn dự án                        |
+| `nodemon` (dev)       | Tự restart server khi file thay đổi                | `npm run dev`                     |
+| `ts-node` (dev)       | Chạy TypeScript trực tiếp (không build)            | `npm run dev`                     |
+
 ### Thư viện sẽ cài khi phát triển tính năng tiếp theo
- 
-| Thư viện               | Cài khi nào                            | Phục vụ UC nào           |
-|------------------------|----------------------------------------|--------------------------|
-| `socket.io`            | Bắt đầu làm UC20 (Dashboard)           | UC20, UC21 — Realtime    |
-| `bull` + `ioredis`     | Bắt đầu làm UC16 (Notifications)       | UC16 — Async job queue   |
-| `nodemailer`           | Bắt đầu làm UC09 (Gửi vé)              | UC05, UC09 — Email       |
-| `cloudinary`           | Bắt đầu làm UC13 (Upload ảnh banner)   | UC13 — File upload       |
-| `firebase-admin`       | Bắt đầu làm UC16 (Push notification)   | UC16 — FCM               |
-| `multer`               | Cùng lúc với cloudinary                | UC13 — Xử lý multipart   |
-| `axios` (nếu cần)      | Khi gọi API bên ngoài (VNPay)          | UC08 — Payment           |
- 
+
+| Thư viện           | Cài khi nào                          | Phục vụ UC nào         |
+| ------------------ | ------------------------------------ | ---------------------- |
+| `socket.io`        | Bắt đầu làm UC20 (Dashboard)         | UC20, UC21 — Realtime  |
+| `bull` + `ioredis` | Bắt đầu làm UC16 (Notifications)     | UC16 — Async job queue |
+| `nodemailer`       | Bắt đầu làm UC09 (Gửi vé)            | UC05, UC09 — Email     |
+| `cloudinary`       | Bắt đầu làm UC13 (Upload ảnh banner) | UC13 — File upload     |
+| `firebase-admin`   | Bắt đầu làm UC16 (Push notification) | UC16 — FCM             |
+| `multer`           | Cùng lúc với cloudinary              | UC13 — Xử lý multipart |
+| `axios` (nếu cần)  | Khi gọi API bên ngoài (VNPay)        | UC08 — Payment         |
+
 ---
 
 ## 8. Hướng dẫn khởi động dự án
@@ -962,178 +962,195 @@ GET http://localhost:3000/api/v1/events
 ---
 
 ## 9. Hướng dẫn sử dụng Middleware phân quyền
- 
+
 Dự án có 2 middleware dùng chung tại `src/shared/middlewares/`.
- 
+
 ### 9.1 `authMiddleware` — Xác thực JWT
- 
+
 Kiểm tra `Authorization: Bearer <token>` trong header **hoặc** cookie `accessToken` (cho browser/EJS clients). Nếu hợp lệ, gắn `req.user = { id, role, name }` vào request và gọi `next()`. Nếu không có token hoặc token sai/hết hạn → trả `401`.
- 
+
 ```ts
-import { authMiddleware } from '../../shared/middlewares/auth.middleware';
- 
-router.get('/profile', authMiddleware, controller.getProfile);
+import { authMiddleware } from "../../shared/middlewares/auth.middleware";
+
+router.get("/profile", authMiddleware, controller.getProfile);
 ```
- 
+
 > **Lưu ý:** Trong view routes (`views.organizer.router.ts`), thay vì dùng `authMiddleware` gốc (trả JSON khi lỗi), dự án dùng `requireLogin` + `requireRole` riêng để **redirect** về `/login` hoặc render trang `errors/403.ejs` thay vì trả JSON — phù hợp với trải nghiệm web.
- 
+
 ### 9.2 `roleMiddleware` — Phân quyền theo Role
- 
+
 Phải dùng **sau** `authMiddleware`. Nhận danh sách role được phép, nếu `req.user.role` không nằm trong danh sách → trả `403`.
- 
+
 ```ts
-import { authMiddleware } from '../../shared/middlewares/auth.middleware';
-import { roleMiddleware } from '../../shared/middlewares/role.middleware';
- 
-router.post('/', authMiddleware, roleMiddleware('organizer', 'admin'), controller.create);
-router.patch('/:id/approve', authMiddleware, roleMiddleware('admin'), controller.approve);
-router.post('/checkin', authMiddleware, roleMiddleware('staff', 'admin'), controller.checkin);
+import { authMiddleware } from "../../shared/middlewares/auth.middleware";
+import { roleMiddleware } from "../../shared/middlewares/role.middleware";
+
+router.post(
+  "/",
+  authMiddleware,
+  roleMiddleware("organizer", "admin"),
+  controller.create,
+);
+router.patch(
+  "/:id/approve",
+  authMiddleware,
+  roleMiddleware("admin"),
+  controller.approve,
+);
+router.post(
+  "/checkin",
+  authMiddleware,
+  roleMiddleware("staff", "admin"),
+  controller.checkin,
+);
 ```
- 
+
 ### 9.3 Bảng phân quyền chi tiết theo từng Role
- 
+
 #### 🔓 Guest — Không cần token
- 
-| Method | Endpoint                    | Chức năng                    | UC         |
-|--------|-----------------------------|------------------------------|------------|
-| `POST` | `/api/v1/auth/register`     | Đăng ký tài khoản            | UC05       |
-| `POST` | `/api/v1/auth/login`        | Đăng nhập                    | UC06       |
-| `GET`  | `/api/v1/events`            | Xem danh sách / lọc event    | UC01, UC04 |
-| `GET`  | `/api/v1/events/search`     | Tìm kiếm event               | UC03       |
-| `GET`  | `/api/v1/events/:id`        | Xem chi tiết event           | UC02       |
- 
+
+| Method | Endpoint                | Chức năng                 | UC         |
+| ------ | ----------------------- | ------------------------- | ---------- |
+| `POST` | `/api/v1/auth/register` | Đăng ký tài khoản         | UC05       |
+| `POST` | `/api/v1/auth/login`    | Đăng nhập                 | UC06       |
+| `GET`  | `/api/v1/events`        | Xem danh sách / lọc event | UC01, UC04 |
+| `GET`  | `/api/v1/events/search` | Tìm kiếm event            | UC03       |
+| `GET`  | `/api/v1/events/:id`    | Xem chi tiết event        | UC02       |
+
 #### 🎫 Attendee — `authMiddleware`
- 
-| Method | Endpoint                       | Chức năng                   | UC   |
-|--------|--------------------------------|---------------------------- |------|
-| `POST` | `/api/v1/auth/logout`          | Đăng xuất (Done)            | UC06 |
-| `POST` | `/api/v1/tickets`              | Đăng ký tham dự event       | UC07 |
-| `GET`  | `/api/v1/tickets/:id`          | Xem chi tiết vé + QR        | UC09 |
-| `GET`  | `/api/v1/tickets/history`      | Lịch sử tham dự             | UC12 |
-| `POST` | `/api/v1/reviews`              | Đánh giá sự kiện            | UC11 |
- 
+
+| Method | Endpoint                  | Chức năng             | UC   |
+| ------ | ------------------------- | --------------------- | ---- |
+| `POST` | `/api/v1/auth/logout`     | Đăng xuất (Done)      | UC06 |
+| `POST` | `/api/v1/tickets`         | Đăng ký tham dự event | UC07 |
+| `GET`  | `/api/v1/tickets/:id`     | Xem chi tiết vé + QR  | UC09 |
+| `GET`  | `/api/v1/tickets/history` | Lịch sử tham dự       | UC12 |
+| `POST` | `/api/v1/reviews`         | Đánh giá sự kiện      | UC11 |
+
 #### 🏢 Organizer — `authMiddleware` + `roleMiddleware('organizer', 'admin')`
- 
-| Method   | Endpoint                                 | Chức năng                    |  UC  |
-|----------|------------------------------------------|----------------------------- |------|
-| `GET`    | `/api/v1/events/my`                      | Danh sách event của mình     | UC13 |
-| `POST`   | `/api/v1/events`                         | Tạo event mới                | UC13 |
-| `PUT`    | `/api/v1/events/:id`                     | Cập nhật event               | UC13 |
-| `DELETE` | `/api/v1/events/:id`                     | Xóa event (DRAFT/REJECTED)   | UC13 |
-| `GET`    | `/api/v1/events/:id/registrations`       | Xem danh sách đăng ký        | UC15 |
-| `GET`    | `/api/v1/events/:id/export`              | Xuất CSV attendee            | UC18 |
-| `POST`   | `/api/v1/notifications`                  | Gửi thông báo hàng loạt      | UC16 |
- 
+
+| Method   | Endpoint                           | Chức năng                  | UC   |
+| -------- | ---------------------------------- | -------------------------- | ---- |
+| `GET`    | `/api/v1/events/my`                | Danh sách event của mình   | UC13 |
+| `POST`   | `/api/v1/events`                   | Tạo event mới              | UC13 |
+| `PUT`    | `/api/v1/events/:id`               | Cập nhật event             | UC13 |
+| `DELETE` | `/api/v1/events/:id`               | Xóa event (DRAFT/REJECTED) | UC13 |
+| `GET`    | `/api/v1/events/:id/registrations` | Xem danh sách đăng ký      | UC15 |
+| `GET`    | `/api/v1/events/:id/export`        | Xuất CSV attendee          | UC18 |
+| `POST`   | `/api/v1/notifications`            | Gửi thông báo hàng loạt    | UC16 |
+
 #### 👷 Staff — `authMiddleware` + `roleMiddleware('staff', 'admin')`
- 
-| Method | Endpoint                       | Chức năng                 | UC   |
-|--------|--------------------------------|---------------------------|------|
-| `POST` | `/api/v1/checkin/qr`           | Quét QR check-in          | UC21 |
-| `POST` | `/api/v1/checkin/manual`       | Check-in thủ công         | UC22 |
- 
+
+| Method | Endpoint                 | Chức năng         | UC   |
+| ------ | ------------------------ | ----------------- | ---- |
+| `POST` | `/api/v1/checkin/qr`     | Quét QR check-in  | UC21 |
+| `POST` | `/api/v1/checkin/manual` | Check-in thủ công | UC22 |
+
 #### 👑 Admin — `authMiddleware` + `roleMiddleware('admin')`
- 
-| Method  | Endpoint                                 | Chức năng                  | UC   |
-|---------|------------------------------------------|----------------------------|------|
-| `PATCH` | `/api/v1/admin/events/:id/approve`       | Duyệt sự kiện              | UC23 |
-| `PATCH` | `/api/v1/admin/events/:id/reject`        | Từ chối sự kiện            | UC23 |
-| `GET`   | `/api/v1/admin/users`                    | Quản lý tài khoản          | UC24 |
-| `PATCH` | `/api/v1/admin/users/:id/status`         | Khóa / mở tài khoản        | UC24 |
-| `GET`   | `/api/v1/admin/dashboard`                | Dashboard hệ thống         | UC25 |
-| `GET`   | `/api/v1/admin/revenue`                  | Báo cáo doanh thu          | UC26 |
- 
+
+| Method  | Endpoint                           | Chức năng           | UC   |
+| ------- | ---------------------------------- | ------------------- | ---- |
+| `PATCH` | `/api/v1/admin/events/:id/approve` | Duyệt sự kiện       | UC23 |
+| `PATCH` | `/api/v1/admin/events/:id/reject`  | Từ chối sự kiện     | UC23 |
+| `GET`   | `/api/v1/admin/users`              | Quản lý tài khoản   | UC24 |
+| `PATCH` | `/api/v1/admin/users/:id/status`   | Khóa / mở tài khoản | UC24 |
+| `GET`   | `/api/v1/admin/dashboard`          | Dashboard hệ thống  | UC25 |
+| `GET`   | `/api/v1/admin/revenue`            | Báo cáo doanh thu   | UC26 |
+
 ### 9.4 Import chuẩn cho mọi router file
- 
+
 ```ts
-import { authMiddleware } from '../../shared/middlewares/auth.middleware';
-import { roleMiddleware } from '../../shared/middlewares/role.middleware';
+import { authMiddleware } from "../../shared/middlewares/auth.middleware";
+import { roleMiddleware } from "../../shared/middlewares/role.middleware";
 ```
- 
+
 ### 9.5 Luồng xử lý khi có lỗi
- 
+
 ```
 Không có token             → authMiddleware     → 401 "Bạn chưa đăng nhập"
 Token sai/hết hạn          → authMiddleware     → 401 "Token không hợp lệ hoặc đã hết hạn"
 Sai role                   → roleMiddleware     → 403 "Bạn không có quyền thực hiện hành động này"
 refreshToken không hợp lệ  → AuthService.logout → 401 "Phiên đăng nhập không hợp lệ hoặc đã hết hạn"
- 
+
 # Riêng view routes (organizer/admin pages):
 Chưa login    → requireLogin → redirect /login
 Sai role      → requireRole  → render errors/403.ejs (status 403)
 ```
- 
+
 ---
- 
+
 ## 10. Tiến độ phát triển
- 
+
 > Cập nhật lần cuối: 2026 — Hào
- 
+
 ### ✅ Đã hoàn thành
- 
-| Tính năng                       | Mô tả                                                                     | Nhánh                           |
-|---------------------------------|---------------------------------------------------------------------------|---------------------------------|
-| UC01-04 — Event Browsing API    | Xem danh sách, chi tiết, tìm kiếm, lọc event                              | `feat/uc01-04-events-browse`    |
-| UC05 — Register                 | Đăng ký tài khoản với bcrypt + JWT                                        | `feat/uc05-06-auth-core`        |
-| UC06 — Login                    | Đăng nhập, cấp access token + refresh token                               | `feat/uc05-06-auth-core`        |
-| UC06 — Logout                   | Đăng xuất, xóa refresh token khỏi DB                                      | `feat/uc05-06-auth-core`        |
-| Auth Middleware                 | `authMiddleware` + `roleMiddleware` dùng chung toàn app                   | `feat/uc05-06-auth-core`        |
-| EJS — Event Browsing Views      | Giao diện web UC01-04: danh sách, chi tiết, tìm kiếm                      | `feat/ejs-views`                |
-| EJS — Layout & Partials         | main.ejs, navbar, footer, flash-message, event-card, pagination           | `feat/ejs-views`                |
-| EJS — Auth Pages                | login.ejs, register.ejs với error handling, retain input, toggle password | `feat/ejs-views`                |
-| EJS — Organizer Dashboard       | layouts/organizer.ejs, dashboard, events CRUD, registrations views        | `feat/ejs-views`                |
-| UC13 — Event Management API     | Organizer CRUD event: tạo, sửa, xóa, gửi duyệt + view routes              | `feat/uc13-events-manage`       |
- 
+
+| Tính năng                    | Mô tả                                                                     | Nhánh                        |
+| ---------------------------- | ------------------------------------------------------------------------- | ---------------------------- |
+| UC01-04 — Event Browsing API | Xem danh sách, chi tiết, tìm kiếm, lọc event                              | `feat/uc01-04-events-browse` |
+| UC05 — Register              | Đăng ký tài khoản với bcrypt + JWT                                        | `feat/uc05-06-auth-core`     |
+| UC06 — Login                 | Đăng nhập, cấp access token + refresh token                               | `feat/uc05-06-auth-core`     |
+| UC06 — Logout                | Đăng xuất, xóa refresh token khỏi DB                                      | `feat/uc05-06-auth-core`     |
+| Auth Middleware              | `authMiddleware` + `roleMiddleware` dùng chung toàn app                   | `feat/uc05-06-auth-core`     |
+| EJS — Event Browsing Views   | Giao diện web UC01-04: danh sách, chi tiết, tìm kiếm                      | `feat/ejs-views`             |
+| EJS — Layout & Partials      | main.ejs, navbar, footer, flash-message, event-card, pagination           | `feat/ejs-views`             |
+| EJS — Auth Pages             | login.ejs, register.ejs với error handling, retain input, toggle password | `feat/ejs-views`             |
+| EJS — Organizer Dashboard    | layouts/organizer.ejs, dashboard, events CRUD, registrations views        | `feat/ejs-views`             |
+| UC13 — Event Management API  | Organizer CRUD event: tạo, sửa, xóa, gửi duyệt + view routes              | `feat/uc13-events-manage`    |
+
 ### 🔄 Đang thực hiện
- 
-| Tính năng                  | Người phụ trách | Nhánh                          |
-|----------------------------|-----------------|--------------------------------|
-| UC07 — Ticket Registration | Kha             | `feat/uc07-tickets-register`   |
- 
+
+| Tính năng                  | Người phụ trách | Nhánh                        |
+| -------------------------- | --------------- | ---------------------------- |
+| UC07 — Ticket Registration | Kha             | `feat/uc07-tickets-register` |
+
 ### ⏳ Chưa bắt đầu
- 
+
 UC08–UC12, UC14–UC26 · EJS Admin Dashboard
- 
+
 ### 📝 Planned Features
- 
-| Tính năng                    | Mô tả                                                                       |
-|------------------------------|-----------------------------------------------------------------------------|
-| Cloudinary banner upload     | Upload và lưu URL ảnh banner cho event                                      |
-| Quên mật khẩu                | Reset mật khẩu qua email (Nodemailer)                                       |
-| Xác thực email               | Gửi email xác thực sau khi đăng ký                                          |
-| Staff invite link            | Organizer/Admin tạo invite link gắn với event cụ thể để tạo tài khoản staff |
- 
+
+| Tính năng                | Mô tả                                                                       |
+| ------------------------ | --------------------------------------------------------------------------- |
+| Cloudinary banner upload | Upload và lưu URL ảnh banner cho event                                      |
+| Quên mật khẩu            | Reset mật khẩu qua email (Nodemailer)                                       |
+| Xác thực email           | Gửi email xác thực sau khi đăng ký                                          |
+| Staff invite link        | Organizer/Admin tạo invite link gắn với event cụ thể để tạo tài khoản staff |
+
 ---
- 
+
 ## 11. Hướng dẫn tích hợp EJS Views
- 
+
 Dự án dùng **Hướng song song** — giữ nguyên API routes (`/api/v1/...`), thêm view routes riêng render EJS.
- 
+
 ### 11.1 Cấu hình trong `app.ts`
- 
+
 ```ts
-const ejsLayouts = require('express-ejs-layouts');
- 
+const ejsLayouts = require("express-ejs-layouts");
+
 app.use(cookieParser());
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'eventsphere-secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { httpOnly: true, sameSite: 'lax', maxAge: 24 * 60 * 60 * 1000 },
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "eventsphere-secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { httpOnly: true, sameSite: "lax", maxAge: 24 * 60 * 60 * 1000 },
+  }),
+);
 app.use(flash());
- 
+
 app.use(express.urlencoded({ extended: true }));
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
 app.use(ejsLayouts);
-app.set('layout', 'layouts/main');
- 
-app.use('/', viewsRouter);
-app.use('/api/v1/auth', authRouter);
+app.set("layout", "layouts/main");
+
+app.use("/", viewsRouter);
+app.use("/api/v1/auth", authRouter);
 ```
- 
+
 ### 11.2 Cấu trúc views router — tách theo nhóm chức năng
- 
+
 ```
 src/routes/
 ├── views.router.ts           # Mount điểm chính: optional auth middleware + mount 3 router con
@@ -1141,7 +1158,7 @@ src/routes/
 ├── views.events.router.ts    # UC01-04 public events
 └── views.organizer.router.ts # Organizer dashboard + UC13
 ```
- 
+
 ```ts
 // views.router.ts
 viewsRouter.use((req, res, next) => {
@@ -1156,92 +1173,96 @@ viewsRouter.use((req, res, next) => {
   }
   next();
 });
- 
+
 viewsRouter.use("/", authViewsRouter);
 viewsRouter.use("/", eventsViewsRouter);
 viewsRouter.use("/", organizerViewsRouter);
 ```
- 
+
 ### 11.3 Nguyên tắc thiết kế view router
- 
+
 ```ts
 // ✅ Đúng — tái sử dụng Service
 const eventService = new EventService();
-viewsRouter.get('/events', async (req, res) => {
+viewsRouter.get("/events", async (req, res) => {
   const events = await eventService.getPublishedEvents(page, limit);
-  res.render('events/index', { events, user: req.user || null });
+  res.render("events/index", { events, user: req.user || null });
 });
- 
+
 // ❌ Sai — query thẳng MongoDB trong router
-viewsRouter.get('/events', async (req, res) => {
-  const events = await Event.find({ status: 'APPROVED' });
+viewsRouter.get("/events", async (req, res) => {
+  const events = await Event.find({ status: "APPROVED" });
 });
 ```
- 
+
 `views.organizer.router.ts` dùng 2 guard riêng:
- 
+
 ```ts
 const requireLogin = (req, res, next) => {
-  if (!req.user) return res.redirect('/login');
+  if (!req.user) return res.redirect("/login");
   next();
 };
- 
-const requireRole = (...roles: string[]) => (req, res, next) => {
-  if (!req.user || !roles.includes(req.user.role)) {
-    return res.status(403).render('errors/403', { layout: false, user: req.user || null });
-  }
-  next();
-};
- 
-const organizerGuard = [requireLogin, requireRole('organizer', 'admin')];
+
+const requireRole =
+  (...roles: string[]) =>
+  (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res
+        .status(403)
+        .render("errors/403", { layout: false, user: req.user || null });
+    }
+    next();
+  };
+
+const organizerGuard = [requireLogin, requireRole("organizer", "admin")];
 ```
- 
+
 ### 11.4 Truyền data vào EJS
- 
+
 ```ts
-res.render('events/index', {
+res.render("events/index", {
   events,
   pagination: { currentPage: 1, totalPages: 5, limit: 9 },
   user: req.user || null,
 });
 ```
- 
+
 ```ts
 // Khi đăng nhập thất bại — render thẳng với error
-res.render('auth/login', {
+res.render("auth/login", {
   layout: false,
-  error: err.message || 'Đăng nhập thất bại',
+  error: err.message || "Đăng nhập thất bại",
   success: null,
 });
- 
+
 // Khi đăng ký thất bại — giữ lại data cũ trừ password
-res.render('auth/register', {
+res.render("auth/register", {
   layout: false,
-  error: err.message || 'Đăng ký thất bại',
+  error: err.message || "Đăng ký thất bại",
   old: { name: req.body.name, email: req.body.email, role: req.body.role },
 });
- 
+
 // Khi đăng ký thành công — dùng flash vì có redirect
-(req as any).flash('success', 'Đăng ký thành công! Vui lòng đăng nhập.');
-res.redirect('/login');
+(req as any).flash("success", "Đăng ký thành công! Vui lòng đăng nhập.");
+res.redirect("/login");
 ```
- 
+
 Các thao tác organizer (xóa, gửi duyệt) cũng dùng flash vì luôn redirect.
- 
+
 ### 11.5 Lưu ý quan trọng — Thứ tự route
- 
+
 ```ts
 // ✅ Đúng thứ tự
 viewsRouter.get('/events/search', ...);
 viewsRouter.get('/events/:id', ...);
- 
+
 // ❌ Sai — Express sẽ match 'search' vào :id
 viewsRouter.get('/events/:id', ...);
 viewsRouter.get('/events/search', ...);
 ```
- 
+
 ### 11.6 Layout cho từng nhóm trang
- 
+
 ```ts
 res.render('events/index', { ... });
 res.render('organizer/dashboard', { layout: 'layouts/organizer', ... });
@@ -1249,24 +1270,34 @@ res.render('admin/dashboard', { layout: 'layouts/admin', ... });
 res.render('auth/login', { layout: false, ... });
 res.render('errors/403', { layout: false, ... });
 ```
- 
+
 ### 11.7 Mẫu form HTML — tránh lồng form
- 
+
 HTML không cho phép `<form>` lồng trong `<form>`. Dùng thuộc tính `form="id"` để liên kết button với form nằm ngoài:
- 
+
 ```html
-<form action="/organizer/events/<%= event._id %>/edit" method="POST" id="editForm">
+<form
+  action="/organizer/events/<%= event._id %>/edit"
+  method="POST"
+  id="editForm"
+>
   <!-- input fields -->
 </form>
- 
+
 <div class="d-flex gap-2">
-  <button type="submit" form="editForm" class="btn btn-success">Cập nhật thay đổi</button>
-  <form action="/organizer/events/<%= event._id %>/submit" method="POST" class="d-inline">
+  <button type="submit" form="editForm" class="btn btn-success">
+    Cập nhật thay đổi
+  </button>
+  <form
+    action="/organizer/events/<%= event._id %>/submit"
+    method="POST"
+    class="d-inline"
+  >
     <button type="submit" class="btn btn-primary">Gửi duyệt</button>
   </form>
 </div>
 ```
- 
+
 ---
- 
-*EventSphere Backend Team · 2026*
+
+_EventSphere Backend Team · 2026_
