@@ -24,4 +24,7 @@ adminRouter.get("/reports/revenue", ...adminGuard, (req, res) =>
   res.json({ message: "UC26 - Revenue report" }),
 );
 
+// --- UC26: VIEW REVENUE REPORT (BÁO CÁO DOANH THU TOÀN NỀN TẢNG) ---
+adminRouter.get("/reports/revenue", ...adminGuard, adminController.getRevenueReport);
+
 export default adminRouter;
