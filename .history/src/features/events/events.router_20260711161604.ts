@@ -69,6 +69,7 @@ eventsRouter.get(
   eventController.exportRegistrations,
 );
 
+
 eventsRouter.get(
   "/:id/report",
   authMiddleware,

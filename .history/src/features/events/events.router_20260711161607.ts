@@ -68,7 +68,6 @@ eventsRouter.get(
   roleMiddleware("organizer", "admin"),
   eventController.exportRegistrations,
 );
-
 eventsRouter.get(
   "/:id/report",
   authMiddleware,

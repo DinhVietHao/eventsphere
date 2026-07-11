@@ -90,7 +90,7 @@ export class RegistrationRepository {
       paymentStatus: { $in: ["paid", "free"] },
     });
   }
-
+  
   async findByEventId(
     eventId: string,
     page: number,
@@ -112,10 +112,11 @@ export class RegistrationRepository {
   }
 
   async findAllByEventId(eventId: string): Promise<any[]> {
-    return Registration.find({ eventId: new Types.ObjectId(eventId) })
-      .populate("userId", "name email phone")
-      .populate("ticketTypeId", "name price")
-      .sort({ createdAt: -1 })
-      .lean();
-  }
+  return Registration.find({ eventId: new Types.ObjectId(eventId) })
+    .populate("userId", "name email phone")
+    .populate("ticketTypeId", "name price")
+    .sort({ createdAt: -1 })
+    .lean();
+}
+
 }
