@@ -90,7 +90,7 @@
               <td><span class="badge bg-light text-dark text-uppercase"><%= event.category %></span></td>
               <td><small class="text-muted"><%= new Date(event.createdAt).toLocaleDateString('vi-VN') %></small></td>
               <td class="pe-3 text-end">
-                <a href="/admin/events/<%= event._id %>/detail" class="btn btn-sm btn-outline-primary">Xem</a>
+                <a href="/admin/events/<%= event._id %>" class="btn btn-sm btn-outline-primary">Xem</a>
               </td>
             </tr>
             <% }) %>

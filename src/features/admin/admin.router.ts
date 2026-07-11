@@ -7,24 +7,21 @@ const adminRouter = Router();
 
 const adminGuard = [authMiddleware, roleMiddleware("admin")];
 
-// UC25 — Dashboard tổng quan hệ thống
+// UC25 - Dashboard tong quan he thong
 adminRouter.get("/dashboard", ...adminGuard, adminController.getDashboard);
 
-// Placeholder — UC23, UC24, UC26 implement sau
-adminRouter.patch("/events/:id/approve", ...adminGuard, (req, res) =>
-  res.json({ message: "UC23 - Approve event" }),
-);
-adminRouter.patch("/events/:id/reject", ...adminGuard, (req, res) =>
-  res.json({ message: "UC23 - Reject event" }),
-);
+// UC23 - Approve Event
+adminRouter.get("/events/pending", ...adminGuard, adminController.getPendingEvents);
+adminRouter.patch("/events/:eventId/approve", ...adminGuard, adminController.approveEvent);
+adminRouter.patch("/events/:eventId/reject", ...adminGuard, adminController.rejectEvent);
+adminRouter.get("/events/:eventId", ...adminGuard, adminController.getEventReviewDetail);
+
+// Placeholder - UC24, UC26 implement sau
 adminRouter.get("/users", ...adminGuard, (req, res) =>
   res.json({ message: "UC24 - Manage accounts" }),
 );
-adminRouter.get("/reports/revenue", ...adminGuard, (req, res) =>
-  res.json({ message: "UC26 - Revenue report" }),
-);
 
-// --- UC26: VIEW REVENUE REPORT (BÁO CÁO DOANH THU TOÀN NỀN TẢNG) ---
+// UC26 - View revenue report
 adminRouter.get("/reports/revenue", ...adminGuard, adminController.getRevenueReport);
 
 export default adminRouter;

@@ -13,6 +13,8 @@ export interface IEvent extends Document {
   avgRating       : number;
   attendeeCount   : number;
   rejectionReason?: string;
+  reviewedBy     ?: Schema.Types.ObjectId;
+  reviewedAt     ?: Date;
   createdAt       : Date;
   updatedAt       : Date;
 }
@@ -39,6 +41,8 @@ const eventSchema = new Schema<IEvent>(
     avgRating      : { type: Number, default: 0 },
     attendeeCount  : { type: Number, default: 0 },
     rejectionReason: { type: String, default: null },
+    reviewedBy     : { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    reviewedAt     : { type: Date, default: null },
   },
   { timestamps: true, collection: 'events' }
 );

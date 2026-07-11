@@ -1,7 +1,18 @@
 import { Request, Response, NextFunction } from "express";
 import { adminService } from "./admin.service";
 import { sendSuccess } from "../../shared/utils/response.util";
-import {IRevenueReportQueryDto, RevenueReportQuerySchema} from "./dto/revenue-report.dto";
+import { IRevenueReportQueryDto, RevenueReportQuerySchema } from "./dto/revenue-report.dto";
+import {
+  IEventIdParamDto,
+  IPendingEventQueryDto,
+  IRejectEventDto,
+} from "./dto/admin.dto";
+import {
+  EventIdParamSchema,
+  PendingEventQuerySchema,
+  RejectEventSchema,
+} from "./validators/admin.validator";
+import { AppError } from "../../shared/errors/AppError";
 
 export class AdminController {
   // UC25 — Dashboard tổng quan hệ thống
@@ -19,11 +30,11 @@ export class AdminController {
     try {
       // 1. Nhận và Validate dữ liệu từ URL Query Parameters
       const validateQuery: IRevenueReportQueryDto = await RevenueReportQuerySchema.validateAsync(
-          req.query,
-          {
-            abortEarly: false, // Gom tất cả lỗi lại rồi mới báo một lần, không báo lắt nhắt
-            stripUnknown: true, // Lọc bỏ những query param "rác" không có trong DTO
-          }
+        req.query,
+        {
+          abortEarly: false, // Gom tất cả lỗi lại rồi mới báo một lần, không báo lắt nhắt
+          stripUnknown: true, // Lọc bỏ những query param "rác" không có trong DTO
+        }
       );
       // 2. Chuyển cục dữ liệu "sạch" này xuống tầng Service xử lý
       const data = await adminService.getRevenueReport(validateQuery);
@@ -33,6 +44,132 @@ export class AdminController {
       next(err);
     }
   }
+
+  /**
+   * UC23 - API: get pending events for review.
+   */
+  getPendingEvents = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validatedQuery: IPendingEventQueryDto =
+        await PendingEventQuerySchema.validateAsync(req.query, {
+          abortEarly: false,
+          stripUnknown: true,
+        });
+
+      const data = await adminService.getPendingEvents(validatedQuery);
+
+      sendSuccess(
+        res,
+        data,
+        "Lấy danh sách sự kiện chờ duyệt thành công",
+      );
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  /**
+   * UC23 - API: get event detail for review.
+   */
+  getEventReviewDetail = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const validatedParams: IEventIdParamDto =
+        await EventIdParamSchema.validateAsync(req.params, {
+          abortEarly: false,
+          stripUnknown: true,
+        });
+
+      const data = await adminService.getEventReviewDetail(
+        validatedParams.eventId,
+      );
+
+      sendSuccess(res, data, "Lấy chi tiết sự kiện thành công");
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  /**
+   * UC23 - API: approve pending event.
+   */
+  approveEvent = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validatedParams: IEventIdParamDto =
+        await EventIdParamSchema.validateAsync(req.params, {
+          abortEarly: false,
+          stripUnknown: true,
+        });
+      const adminId = req.user?.id;
+
+      if (!adminId) {
+        throw new AppError(
+          "Không xác định được tài khoản quản trị viên",
+          401,
+        );
+      }
+
+      const data = await adminService.approveEvent(
+        validatedParams.eventId,
+        adminId,
+      );
+
+      sendSuccess(
+        res,
+        data,
+        data.emailSent
+          ? "Duyệt sự kiện thành công"
+          : "Duyệt sự kiện thành công nhưng email chưa gửi được",
+      );
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  /**
+   * UC23 - API: reject pending event.
+   */
+  rejectEvent = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validatedParams: IEventIdParamDto =
+        await EventIdParamSchema.validateAsync(req.params, {
+          abortEarly: false,
+          stripUnknown: true,
+        });
+      const validatedBody: IRejectEventDto =
+        await RejectEventSchema.validateAsync(req.body, {
+          abortEarly: false,
+          stripUnknown: true,
+        });
+      const adminId = req.user?.id;
+
+      if (!adminId) {
+        throw new AppError(
+          "Không xác định được tài khoản quản trị viên",
+          401,
+        );
+      }
+
+      const data = await adminService.rejectEvent(
+        validatedParams.eventId,
+        adminId,
+        validatedBody.rejectionReason,
+      );
+
+      sendSuccess(
+        res,
+        data,
+        data.emailSent
+          ? "Từ chối sự kiện thành công"
+          : "Từ chối sự kiện thành công nhưng email chưa gửi được",
+      );
+    } catch (err) {
+      next(err);
+    }
+  };
 }
 
 export const adminController = new AdminController();

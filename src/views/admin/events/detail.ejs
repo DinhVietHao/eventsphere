@@ -1,0 +1,238 @@
+<%
+  const formatDateTime = (value) => value ? new Date(value).toLocaleString('vi-VN') : 'Chưa có';
+  const organizer = event.organizerId || {};
+  const isPending = event.status === 'PENDING';
+%>
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="/admin/dashboard">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="/admin/events/pending">Duyệt sự kiện</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><%= event.title %></li>
+  </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <a href="/admin/events/pending" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+  <% if (isPending) { %>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#approveModal">
+        <i class="bi bi-check-circle me-1"></i>Duyệt sự kiện
+      </button>
+      <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
+        <i class="bi bi-x-circle me-1"></i>Từ chối
+      </button>
+    </div>
+  <% } %>
+</div>
+
+<% if (typeof messages !== 'undefined') { %>
+  <% if (messages.success && messages.success.length > 0) { %>
+    <% messages.success.forEach(message => { %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= message %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <% }) %>
+  <% } %>
+  <% if (messages.warning && messages.warning.length > 0) { %>
+    <% messages.warning.forEach(message => { %>
+      <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <%= message %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <% }) %>
+  <% } %>
+  <% if (messages.error && messages.error.length > 0) { %>
+    <% messages.error.forEach(message => { %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <%= message %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <% }) %>
+  <% } %>
+<% } %>
+
+<% if (!isPending) { %>
+  <div class="alert alert-warning">
+    Sự kiện đã được xử lý và không còn ở trạng thái chờ duyệt.
+  </div>
+<% } %>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm overflow-hidden mb-4">
+      <% if (event.bannerUrl) { %>
+        <img src="<%= event.bannerUrl %>" alt="<%= event.title %>" class="w-100 object-fit-cover" style="height: 320px;">
+      <% } else { %>
+        <div class="bg-light border-bottom d-flex align-items-center justify-content-center text-muted" style="height: 260px;">
+          <div class="text-center">
+            <i class="bi bi-image fs-1 d-block mb-2"></i>
+            <span>Chưa có banner</span>
+          </div>
+        </div>
+      <% } %>
+      <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+          <h1 class="h3 fw-bold text-dark mb-0"><%= event.title %></h1>
+          <span class="badge <%= isPending ? 'bg-warning text-dark' : event.status === 'APPROVED' ? 'bg-success' : 'bg-secondary' %>">
+            <%= event.status %>
+          </span>
+        </div>
+        <p class="text-muted mb-0" style="white-space: pre-line;"><%= event.description %></p>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3">
+        <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-info-circle text-primary me-2"></i>Thông tin chi tiết</h2>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="text-muted small">Danh mục</div>
+            <div class="fw-semibold text-uppercase"><%= event.category %></div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Địa điểm</div>
+            <div class="fw-semibold"><%= event.location %></div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Ngày bắt đầu</div>
+            <div class="fw-semibold"><%= formatDateTime(event.startDate) %></div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Ngày kết thúc</div>
+            <div class="fw-semibold"><%= formatDateTime(event.endDate) %></div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Ngày tạo</div>
+            <div class="fw-semibold"><%= formatDateTime(event.createdAt) %></div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Ngày cập nhật</div>
+            <div class="fw-semibold"><%= formatDateTime(event.updatedAt) %></div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Trạng thái</div>
+            <div class="fw-semibold"><%= event.status %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <% if (event.rejectionReason) { %>
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+          <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-exclamation-circle text-danger me-2"></i>Lý do từ chối trước đó</h2>
+        </div>
+        <div class="card-body">
+          <p class="mb-0" style="white-space: pre-line;"><%= event.rejectionReason %></p>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3">
+        <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-person-badge text-primary me-2"></i>Organizer</h2>
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 48px; height: 48px;">
+            <%= organizer.name ? organizer.name.charAt(0).toUpperCase() : 'O' %>
+          </div>
+          <div>
+            <div class="fw-bold text-dark"><%= organizer.name || 'Không rõ' %></div>
+            <div class="text-muted small"><%= organizer.email || 'Không có email' %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white py-3">
+        <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-ticket-perforated text-success me-2"></i>Loại vé</h2>
+      </div>
+      <div class="list-group list-group-flush">
+        <% if (ticketTypes && ticketTypes.length > 0) { %>
+          <% ticketTypes.forEach(ticketType => { %>
+            <div class="list-group-item">
+              <div class="d-flex justify-content-between gap-2">
+                <div>
+                  <div class="fw-semibold"><%= ticketType.name %></div>
+                  <% if (ticketType.description) { %>
+                    <small class="text-muted"><%= ticketType.description %></small>
+                  <% } %>
+                </div>
+                <div class="text-end flex-shrink-0">
+                  <div class="fw-bold text-success">
+                    <%= new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(ticketType.price) %>
+                  </div>
+                  <small class="text-muted"><%= ticketType.sold %>/<%= ticketType.quota %></small>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="list-group-item text-center text-muted py-4">Chưa có loại vé.</div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if (isPending) { %>
+  <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="/admin/events/<%= event._id %>/approve">
+          <div class="modal-header">
+            <h5 class="modal-title" id="approveModalLabel">Duyệt sự kiện</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            Bạn có chắc chắn muốn duyệt sự kiện này không?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+            <button type="submit" class="btn btn-success">Duyệt sự kiện</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="/admin/events/<%= event._id %>/reject">
+          <div class="modal-header">
+            <h5 class="modal-title" id="rejectModalLabel">Từ chối sự kiện</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <label for="rejectionReason" class="form-label fw-semibold">Lý do từ chối</label>
+            <textarea
+              id="rejectionReason"
+              name="rejectionReason"
+              class="form-control"
+              rows="5"
+              minlength="10"
+              maxlength="500"
+              required
+            ></textarea>
+            <div class="form-text">Vui lòng nhập lý do từ 10 đến 500 ký tự.</div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+            <button type="submit" class="btn btn-danger">Từ chối</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% } %>

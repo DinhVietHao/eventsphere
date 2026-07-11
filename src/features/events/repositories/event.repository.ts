@@ -1,13 +1,13 @@
 import { IEvent, Event } from "../models/event.model";
-import {User} from "../../auth/models/user.model";
+import { User } from "../../auth/models/user.model";
 import mongoose, { Types } from "mongoose";
-
+import { IEventWithOrganizer } from "../../admin/dto/admin.dto";
 import { TicketType } from "../models/ticketType.model";
 import { Registration } from "../../tickets/models/registration.model";
 import { CheckinLogModel } from "../../checkin/models/checkinLog.model";
 import { ReviewModel } from "../../reviews/models/review.model";
-import e from "cors";
-import {EventStaffModel} from "../models/eventStaff.model";
+import { EventStaffModel } from "../models/eventStaff.model";
+import { escapeRegex } from "../../../shared/utils/regex.util";
 
 export class EventRepository {
   // UC01 - Danh sách event công khai, có phân trang
@@ -107,6 +107,118 @@ export class EventRepository {
       { $inc: { attendeeCount: 1 } }
     );
   }
+
+  /**
+   * Find pending events for admin review with pagination.
+   */
+  async findPendingForAdmin(options: {
+    page: number;
+    limit: number;
+    keyword?: string;
+    organizerIds?: string[];
+  }): Promise<{
+    events: IEventWithOrganizer[];
+    totalItems: number;
+  }> {
+    const skip = (options.page - 1) * options.limit;
+    const filter: Record<string, unknown> = { status: "PENDING" };
+    const keyword = options.keyword?.trim();
+
+    if (keyword) {
+      const regex = new RegExp(escapeRegex(keyword), "i");
+      filter.$or = [
+        { title: regex },
+        {
+          organizerId: {
+            $in: (options.organizerIds || []).map((id) => new Types.ObjectId(id)),
+          },
+        },
+      ];
+    }
+
+    const [events, totalItems] = await Promise.all([
+      Event.find(filter)
+        .populate("organizerId", "name email")
+        .sort({ updatedAt: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(options.limit),
+      Event.countDocuments(filter),
+    ]);
+
+    return {
+      events: events as unknown as IEventWithOrganizer[],
+      totalItems,
+    };
+  }
+
+  /**
+   * Find one event for admin review and include organizer information.
+   */
+  async findEventForAdminReview(eventId: string): Promise<IEventWithOrganizer | null> {
+    return Event.findById(eventId)
+      .populate("organizerId", "name email")
+      .then((event) => event as IEventWithOrganizer | null);
+  }
+
+  /**
+   * Atomically approve a pending event.
+   */
+  async approvePendingEvent(
+    eventId: string,
+    adminId: string,
+  ): Promise<IEventWithOrganizer | null> {
+    return Event.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(eventId),
+        status: "PENDING",
+      },
+      {
+        $set: {
+          status: "APPROVED",
+          rejectionReason: null,
+          reviewedBy: new Types.ObjectId(adminId),
+          reviewedAt: new Date(),
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    )
+      .populate("organizerId", "name email")
+      .then((event) => event as unknown as IEventWithOrganizer | null);
+  }
+
+  /**
+   * Atomically reject a pending event and move it back to draft.
+   */
+  async rejectPendingEvent(
+    eventId: string,
+    adminId: string,
+    rejectionReason: string,
+  ): Promise<IEventWithOrganizer | null> {
+    return Event.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(eventId),
+        status: "PENDING",
+      },
+      {
+        $set: {
+          status: "DRAFT",
+          rejectionReason,
+          reviewedBy: new Types.ObjectId(adminId),
+          reviewedAt: new Date(),
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    )
+      .populate("organizerId", "name email")
+      .then((event) => event as unknown as IEventWithOrganizer | null);
+  }
+
   //UC-19-20
 
   // Đếm registrations đã paid theo từng ticketTypeId
@@ -161,7 +273,7 @@ export class EventRepository {
 
   // Tìm thông tin User thông qua email
   async findUserByEmail(email: string) {
-    return User.findOne({email}).lean();
+    return User.findOne({ email }).lean();
   }
   // Kiểm tra xem nhân viên đã được gán vào sự kiện này chưa
   async checkStaffAssigned(eventId: string, staffId: string) {
@@ -193,7 +305,7 @@ export class EventRepository {
     const staffAssignments = await EventStaffModel.find({
       eventId: new Types.ObjectId(eventId),
     } as any).populate('staffId', 'name email') // Lấy thêm trường name và email từ User collection
-        .lean();
+      .lean();
     // Mapping lại mảng dữ liệu cho phẳng (phù hợp với cấu trúc EJS đang cần)
     return staffAssignments.map((assignment: any) => {
       const user = assignment.staffId;
