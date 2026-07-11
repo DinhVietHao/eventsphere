@@ -1,4 +1,5 @@
 import { adminRepository } from "./repositories/admin.repository";
+import {IRevenueReportQueryDto} from "./dto/revenue-report.dto";
 
 export class AdminService {
   async getSystemDashboard() {
@@ -63,6 +64,32 @@ export class AdminService {
       recentUsers,
     };
   }
+
+  // --- UC26: VIEW REVENUE REPORT (BÁO CÁO DOANH THU TOÀN NỀN TẢNG) ---
+  async getRevenueReport(query: IRevenueReportQueryDto) {
+      const { groupBy = "day", ...filters } = query;
+
+      const rawReport = await adminRepository.getRevenueReport(filters, groupBy);
+
+      const totalPeriodRevenue = rawReport.reduce((sum, item) => sum + item.totalRevenue, 0)
+      const totalPeriodTickets = rawReport.reduce((sum, item) => sum + item.totalTicketSold, 0)
+
+
+    return {
+        groupBy,
+      filters,
+      totalPeriodRevenue,
+      totalPeriodTickets,
+      chartData: rawReport
+    }
+  }
+
+  // Lấy danh sách organizer cho bộ lọc
+  async getOrganizersList() {
+    return adminRepository.getOrganizersList();
+  }
+
+
 }
 
 export const adminService = new AdminService();
