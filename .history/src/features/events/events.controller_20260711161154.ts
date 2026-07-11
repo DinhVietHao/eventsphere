@@ -211,7 +211,7 @@ export class EventController {
     }
   }
 
-  // UC18 -- CSV
+  // UC18 -- 
   async exportRegistrations(req: Request, res: Response, next: NextFunction) {
     try {
       const csv = await eventService.exportRegistrationsCSV(

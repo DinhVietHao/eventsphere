@@ -27,6 +27,7 @@
       <a href="/api/v1/events/<%= event._id %>/export" class="btn btn-outline-success fw-bold">
         <i class="bi bi-filetype-csv me-2"></i>Xuất file CSV
       </a>
+
     </div>
   </div>
 </div>
@@ -111,4 +112,29 @@
     </ul>
   </nav>
   <% } %>
-   
+
+    <script>
+      // Logic Front-End xuất danh sách table hiện tại thành tệp tin CSV nhanh chóng
+      function exportToCSV() {
+        let csv = [];
+        const rows = document.querySelectorAll("#registrationTable tr");
+
+        for (let i = 0; i < rows.length; i++) {
+          let row = [],
+            cols = rows[i].querySelectorAll("td, th");
+          for (let j = 0; j < cols.length; j++) {
+            row.push('"' + cols[j].innerText.trim() + '"');
+          }
+          csv.push(row.join(","));
+        }
+
+        const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + csv.join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "Danh_sach_dang_ky_eventsphere.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    </script>

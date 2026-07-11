@@ -211,23 +211,20 @@ export class EventController {
     }
   }
 
-  // UC18 -- CSV
   async exportRegistrations(req: Request, res: Response, next: NextFunction) {
-    try {
-      const csv = await eventService.exportRegistrationsCSV(
-        req.params.id as string,
-        req.user!.id,
-        req.user!.role,
-      );
-      const filename = `attendees_${req.params.id}.csv`;
-      res.setHeader("Content-Type", "text/csv; charset=utf-8");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${filename}"`,
-      );
-      res.send("\uFEFF" + csv);
-    } catch (error) {
-      next(error);
-    }
+  try {
+    const csv = await eventService.exportRegistrationsCSV(
+      req.params.id as string,
+      req.user!.id,
+      req.user!.role,
+    );
+    const filename = `attendees_${req.params.id}.csv`;
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send("\uFEFF" + csv);
+  } catch (error) {
+    next(error);
   }
+}
+
 }

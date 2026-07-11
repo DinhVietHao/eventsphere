@@ -61,12 +61,8 @@ eventsRouter.get(
   eventController.getRegistrations,
 );
 
-// ───── UC18 — Xuất danh sách attendee (CSV) ─────
-eventsRouter.get(
-  "/:id/export",
-  authMiddleware,
-  roleMiddleware("organizer", "admin"),
-  eventController.exportRegistrations,
+eventsRouter.get("/:id/export", (req, res) =>
+  res.json({ message: "UC18 - Export attendee CSV" }),
 );
 
 eventsRouter.get(
