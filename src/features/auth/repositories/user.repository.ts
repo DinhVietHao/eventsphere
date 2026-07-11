@@ -1,3 +1,4 @@
+import { escapeRegex } from '../../../shared/utils/regex.util';
 import { User, IUser } from '../models/user.model';
 
 export class UserRepository {
@@ -9,6 +10,21 @@ export class UserRepository {
   // Tìm user theo ID (dùng cho các middleware xác thực sau này)
   async findById(id: string): Promise<IUser | null> {
     return User.findById(id).lean();
+  }
+
+  /**
+   * Find organizer IDs matching a keyword by name or email.
+   */
+  async findOrganizerIdsByKeyword(keyword: string): Promise<string[]> {
+    const regex = new RegExp(escapeRegex(keyword), "i");
+    const organizers = await User.find({
+      role: "organizer",
+      $or: [{ name: regex }, { email: regex }],
+    })
+      .select("_id")
+      .lean();
+
+    return organizers.map((organizer) => organizer._id.toString());
   }
 
   // Ghi user mới vào Database

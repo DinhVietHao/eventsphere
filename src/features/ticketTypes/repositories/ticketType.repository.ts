@@ -9,7 +9,7 @@ export class TicketTypeRepository {
   async findByEventId(eventId: string): Promise<ITicketType[]> {
     return TicketType.find({
       eventId: new Types.ObjectId(eventId),
-    } as any);
+    } as any).sort({ price: 1 });
   }
 
   // Tìm 1 loại vé theo id (dùng khi sửa/xóa)
