@@ -53,17 +53,36 @@ export class EventService {
 
   // ───── UC13 — Organizer CRUD ─────
 
+  // Lấy events đã approved của organizer — dùng cho dropdown gửi thông báo
+  async getApprovedEvents(organizerId: string): Promise<IEvent[]> {
+    return eventRepository.findApprovedByOrganizer(organizerId);
+  }
+
   // Lấy danh sách events của organizer
   async getMyEvents(
     organizerId: string,
     page: number,
     limit: number,
-  ): Promise<{ events: IEvent[]; total: number }> {
+  ): Promise<{
+    events: (IEvent & { registrationsCount: number })[];
+    total: number;
+  }> {
     const [events, total] = await Promise.all([
       eventRepository.findByOrganizer(organizerId, page, limit),
       eventRepository.countByOrganizer(organizerId),
     ]);
-    return { events, total };
+
+    // Đếm số đăng ký thực tế cho tất cả event trong 1 query aggregate
+    const eventIds = events.map((e: any) => e._id.toString());
+    const countMap =
+      await eventRepository.countRegistrationsByEventIds(eventIds);
+
+    const eventsWithCount = events.map((e: any) => ({
+      ...(e.toObject ? e.toObject() : e),
+      registrationsCount: countMap.get(e._id.toString()) ?? 0,
+    }));
+
+    return { events: eventsWithCount, total };
   }
 
   // Tạo event mới
@@ -182,12 +201,13 @@ export class EventService {
     }
 
     // 2. Lấy dữ liệu song song (Promise.all = nhanh hơn gọi tuần tự)
-    const [ticketTypes, regStats, totalCheckedIn, totalReviews] =
+    const [ticketTypes, regStats, totalCheckedIn, totalReviews, avgRating] =
       await Promise.all([
         eventRepository.getTicketTypes(eventId),
         eventRepository.getRegistrationStats(eventId),
         eventRepository.getCheckinCount(eventId),
         eventRepository.getReviewCount(eventId),
+        eventRepository.getAvgRating(eventId),
       ]);
 
     // 3. Build map: ticketTypeId → số đã bán (từ aggregate)
@@ -228,7 +248,7 @@ export class EventService {
       totalCheckedIn,
       attendanceRate,
       totalRevenue,
-      avgRating: event.avgRating,
+      avgRating,
       totalReviews,
       ticketBreakdown,
     };
@@ -447,7 +467,4 @@ export class EventService {
     // Chỉ lấy những sự kiện đang mở (APPROVED hoặc ONGOING) để nhân viên soát vé
     return eventRepository.getEventsByStaffId(staffId);
   }
-
-
-
 }

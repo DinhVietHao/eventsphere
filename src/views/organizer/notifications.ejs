@@ -41,11 +41,9 @@
             <option value="">-- Chọn sự kiện để gửi thông báo --</option>
             <% if (events && events.length > 0) { %>
             <% events.forEach(event => { %>
-            <% if (event.status === 'APPROVED' || event.status === 'ONGOING' || event.status === 'ENDED') { %>
             <option value="<%= event._id %>" data-count="<%= event.registrationsCount || 0 %>">
-              <%= event.title %> (<%= event.status %>) — <%= event.registrationsCount || 0 %> người đăng ký
+              <%= event.title %> (<%= event.status %>)
             </option>
-            <% } %>
             <% }) %>
             <% } %>
           </select>
