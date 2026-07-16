@@ -436,4 +436,18 @@ export class EventService {
 
     return [header.join(","), ...lines].join("\n");
   }
+
+  // Lấy danh sách sự kiện mà Staff được phân công (Phục vụ UC21-22 Soát vé)
+  async getEventsByStaffId(staffId: string): Promise<IEvent[]> {
+    if (!Types.ObjectId.isValid(staffId)) {
+      throw new AppError("ID nhân viên không hợp lệ", 400);
+    }
+
+    // Gọi xuống repository lấy danh sách sự kiện
+    // Chỉ lấy những sự kiện đang mở (APPROVED hoặc ONGOING) để nhân viên soát vé
+    return eventRepository.getEventsByStaffId(staffId);
+  }
+
+
+
 }

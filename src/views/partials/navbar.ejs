@@ -24,7 +24,7 @@
 
       <div class="d-flex align-items-center">
         <% if (typeof user !=='undefined' && user) { %>
-          <% const displayName=user.name || 'User' ; %>
+          <% const displayName=user.name || 'Lỗi' ; %>
             <div class="dropdown">
               <a class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" href="#"
                 role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -48,6 +48,13 @@
                     </a>
                   </li>
                   <% } %>
+                <% if (user.role==='staff' || user.role==='admin' ) { %>
+                  <li>
+                    <a class="dropdown-item" href="/staff/checkin">
+                      <i class="bi bi-qr-code-scan me-2"></i>Soát vé (Check-in)
+                    </a>
+                  </li>
+                <% } %>
                     <% if (user.role==='admin' || user.role==='organizer' ) { %>
                       <li><a class="dropdown-item" href="/organizer/dashboard"><i
                             class="bi bi-speedometer2 me-2"></i>Quản lý</a></li>

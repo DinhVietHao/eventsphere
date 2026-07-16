@@ -8,6 +8,7 @@ import reviewsViewsRouter from "./views.reviews.router";
 import organizerViewsRouter from "./views.organizer.router";
 import ticketsViewsRouter from "./views.ticket.router";
 import adminViewsRouter from "./views.admin.router";
+import checkinViewsRouter from "./views.checkin.router";
 
 const viewsRouter = Router();
 
@@ -31,5 +32,6 @@ viewsRouter.use("/", eventsViewsRouter);
 viewsRouter.use("/", organizerViewsRouter);
 viewsRouter.use("/", ticketsViewsRouter);
 viewsRouter.use("/", adminViewsRouter);
+viewsRouter.use("/", checkinViewsRouter);
 
 export default viewsRouter;
