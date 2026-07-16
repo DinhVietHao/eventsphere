@@ -318,4 +318,30 @@ export class EventRepository {
     });
   }
 
+  //uc21 22
+  /**
+   * Lấy danh sách sự kiện dựa vào ID của nhân viên (Staff)
+   * Sử dụng bảng trung gian EventStaff
+   */
+  async getEventsByStaffId(staffId: string) {
+    // Bước 1: Tìm tất cả các bản ghi phân công của Staff này trong bảng event_staff
+    const assignments = await EventStaffModel.find({
+      staffId: staffId as any
+    }).select('eventId');
+
+    if (assignments.length === 0) {
+      return [];
+    }
+
+    // FIX TẠI ĐÂY: Thêm .toString() để chuyển mảng ObjectId thành mảng String
+    const eventIds = assignments.map(assignment => assignment.eventId.toString());
+
+    // Bước 2: Query bình thường, Mongoose tự động ép chuỗi về lại ObjectId
+    return Event.find({
+      _id: { $in: eventIds }, // Hết lỗi đỏ ngay lập tức!
+      status: { $in: ["APPROVED", "ONGOING"] }
+    })
+        .select('_id title startDate endDate status')
+        .sort({ startDate: 1 }); // Sắp xếp sự kiện gần nhất lên đầu
+  }
 }
