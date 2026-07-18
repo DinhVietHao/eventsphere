@@ -1,4 +1,4 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 
 export interface IUser extends Document {
   name                   : string;
@@ -8,6 +8,11 @@ export interface IUser extends Document {
   phone                 ?: string;
   avatar                ?: string;
   isActive               : boolean;
+  lockedReason          ?: string | null;
+  lockedAt              ?: Date | null;
+  lockedBy              ?: Types.ObjectId | IUser | null;
+  unlockedAt            ?: Date | null;
+  unlockedBy            ?: Types.ObjectId | IUser | null;
   emailVerified          : boolean;
   emailVerificationToken?: string;
   googleAccessToken     ?: string;
@@ -29,6 +34,11 @@ const userSchema = new Schema<IUser>(
     phone                 : { type: String, default: null },
     avatar                : { type: String, default: null },
     isActive              : { type: Boolean, default: true },
+    lockedReason          : { type: String, default: null, trim: true },
+    lockedAt              : { type: Date, default: null },
+    lockedBy              : { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    unlockedAt            : { type: Date, default: null },
+    unlockedBy            : { type: Schema.Types.ObjectId, ref: 'User', default: null },
     emailVerified         : { type: Boolean, default: false },
     emailVerificationToken: { type: String, select: false, default: null },
     googleAccessToken     : { type: String, select: false, default: null },

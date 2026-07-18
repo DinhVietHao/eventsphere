@@ -823,18 +823,19 @@ Hệ thống được phân rã thành **26 Use Cases (UC)** chia cho 5 thành v
 | **UC12** | Xem lịch sử tham dự              | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done        |
 | **UC13** | Quản lý sự kiện (CRUD + Banner)  | Organizer       | `features/events/`        | **Hào**          | ✅ Done        |
 | **UC14** | Quản lý loại vé                  | Organizer       | `features/events/`        | **Lượng**        | ✅ Done        |
-| **UC15** | Xem danh sách đăng ký            | Organizer       | `features/events/`        | **Lượng**        | ✅ Done     |
+| **UC15** | Xem danh sách đăng ký            | Organizer       | `features/events/`        | **Lượng**        | ✅ Done        |
 | **UC16** | Gửi thông báo hàng loạt          | Organizer       | `features/notifications/` | **Danh**         | ⏳ Pending     |
-| **UC17** | Phân công nhân viên check-in     | Organizer       | `features/events/`        | **Trọng**        | ✅ Done     |
+| **UC17** | Phân công nhân viên check-in     | Organizer       | `features/events/`        | **Trọng**        | ✅ Done        |
 | **UC18** | Xuất danh sách attendee (CSV)    | Organizer       | `features/events/`        | **Lượng**        | ⏳ Pending     |
 | **UC19** | Báo cáo tổng kết sự kiện         | Organizer       | `features/events/`        | **Danh**         | ⏳ Pending     |
-| **UC20** | Dashboard realtime check-in      | Organizer       | `features/events/`        | **Danh · Trọng** | ✅ Done     |
-| **UC21** | Quét QR check-in                 | Staff           | `features/checkin/`       | **Trọng**        | 🔄 In Progress     |
-| **UC22** | Check-in thủ công (tên/email)    | Staff           | `features/checkin/`       | **Trọng**        | 🔄 In Progress     |
-| **UC23** | Phê duyệt / Từ chối sự kiện      | Admin           | `features/admin/`         | **Hào**          | 🔄 In Progress |
-| **UC24** | Quản lý tài khoản (khóa/mở)      | Admin           | `features/admin/`         | Core team        | ⏳ Pending     |
-| **UC25** | Dashboard tổng quan hệ thống     | Admin           | `features/admin/`         | **Danh · Trọng** | ✅ Done     |
-| **UC26** | Báo cáo doanh thu toàn nền tảng  | Admin           | `features/admin/`         | **Danh · Trọng** | ✅ Done     |
+| **UC20** | Dashboard realtime check-in      | Organizer       | `features/events/`        | **Danh · Trọng** | ✅ Done        |
+| **UC21** | Quét QR check-in                 | Staff           | `features/checkin/`       | **Trọng**        | 🔄 In Progress |
+| **UC22** | Check-in thủ công (tên/email)    | Staff           | `features/checkin/`       | **Trọng**        | 🔄 In Progress |
+| **UC23** | Phê duyệt / Từ chối sự kiện      | Admin           | `features/admin/`         | **Hào**          | ✅ Done        |
+| **UC24** | Quản lý tài khoản (khóa/mở)      | Admin           | `features/admin/`         | Core team        | ✅ Done        |
+| **UC25** | Dashboard tổng quan hệ thống     | Admin           | `features/admin/`         | **Danh · Trọng** | ✅ Done        |
+| **UC26** | Báo cáo doanh thu toàn nền tảng  | Admin           | `features/admin/`         | **Danh · Trọng** | ✅ Done        |
+
 ---
 
 ## 7. Quản lý thư viện

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../shared/utils/jwt.util";
+import { UserRepository } from "../features/auth/repositories/user.repository";
 
 import authViewsRouter from "./views.auth.router";
 import eventsViewsRouter from "./views.events.router";
@@ -11,17 +12,24 @@ import adminViewsRouter from "./views.admin.router";
 import checkinViewsRouter from "./views.checkin.router";
 
 const viewsRouter = Router();
+const userRepository = new UserRepository();
 
-// Middleware đọc user từ cookie — optional, không block request
-viewsRouter.use((req: Request, res: Response, next: NextFunction) => {
+viewsRouter.use(async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = req.cookies?.accessToken;
     if (token) {
       const payload = verifyAccessToken(token);
-      req.user = { id: payload.id, role: payload.role, name: payload.name };
+      const user = await userRepository.findById(payload.id);
+
+      if (user && user.isActive) {
+        req.user = { id: user._id.toString(), role: user.role, name: user.name };
+      } else {
+        res.clearCookie("accessToken");
+        res.clearCookie("refreshToken");
+      }
     }
   } catch (_) {
-    // Token hết hạn hoặc invalid → bỏ qua, user = null
+    // Invalid or expired token is ignored for public views.
   }
   next();
 });

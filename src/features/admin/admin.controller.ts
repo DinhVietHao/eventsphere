@@ -3,14 +3,20 @@ import { adminService } from "./admin.service";
 import { sendSuccess } from "../../shared/utils/response.util";
 import { IRevenueReportQueryDto, RevenueReportQuerySchema } from "./dto/revenue-report.dto";
 import {
+  IAccountListQueryDto,
   IEventIdParamDto,
+  ILockAccountDto,
   IPendingEventQueryDto,
   IRejectEventDto,
+  IUserIdParamDto,
 } from "./dto/admin.dto";
 import {
+  AccountListQuerySchema,
   EventIdParamSchema,
+  LockAccountSchema,
   PendingEventQuerySchema,
   RejectEventSchema,
+  UserIdParamSchema,
 } from "./validators/admin.validator";
 import { AppError } from "../../shared/errors/AppError";
 
@@ -44,6 +50,110 @@ export class AdminController {
       next(err);
     }
   }
+
+  getAccounts = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validatedQuery: IAccountListQueryDto =
+        await AccountListQuerySchema.validateAsync(req.query, {
+          abortEarly: false,
+          stripUnknown: true,
+        });
+
+      const data = await adminService.getAccounts(validatedQuery);
+
+      sendSuccess(res, data, "Lay danh sach tai khoan thanh cong");
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getAccountDetail = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validatedParams: IUserIdParamDto =
+        await UserIdParamSchema.validateAsync(req.params, {
+          abortEarly: false,
+          stripUnknown: true,
+        });
+
+      const data = await adminService.getAccountDetail(validatedParams.userId);
+
+      sendSuccess(res, data, "Lay thong tin tai khoan thanh cong");
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  lockAccount = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validatedParams: IUserIdParamDto =
+        await UserIdParamSchema.validateAsync(req.params, {
+          abortEarly: false,
+          stripUnknown: true,
+        });
+      const validatedBody: ILockAccountDto =
+        await LockAccountSchema.validateAsync(req.body, {
+          abortEarly: false,
+          stripUnknown: true,
+        });
+      const adminId = req.user?.id;
+
+      if (!adminId) {
+        throw new AppError(
+          "Khong xac dinh duoc tai khoan quan tri vien",
+          401,
+        );
+      }
+
+      const data = await adminService.lockAccount(
+        validatedParams.userId,
+        adminId,
+        validatedBody.reason,
+      );
+
+      sendSuccess(
+        res,
+        data,
+        data.emailSent
+          ? "Khoa tai khoan thanh cong"
+          : "Khoa tai khoan thanh cong nhung email chua gui duoc",
+      );
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  unlockAccount = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validatedParams: IUserIdParamDto =
+        await UserIdParamSchema.validateAsync(req.params, {
+          abortEarly: false,
+          stripUnknown: true,
+        });
+      const adminId = req.user?.id;
+
+      if (!adminId) {
+        throw new AppError(
+          "Khong xac dinh duoc tai khoan quan tri vien",
+          401,
+        );
+      }
+
+      const data = await adminService.unlockAccount(
+        validatedParams.userId,
+        adminId,
+      );
+
+      sendSuccess(
+        res,
+        data,
+        data.emailSent
+          ? "Mo khoa tai khoan thanh cong"
+          : "Mo khoa tai khoan thanh cong nhung email chua gui duoc",
+      );
+    } catch (err) {
+      next(err);
+    }
+  };
 
   /**
    * UC23 - API: get pending events for review.

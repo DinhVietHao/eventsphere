@@ -1,0 +1,185 @@
+<%
+  const roleLabels = {
+    admin: 'Admin',
+    organizer: 'Organizer',
+    staff: 'Staff',
+    attendee: 'Attendee',
+  };
+  const roleBadgeClasses = {
+    admin: 'bg-danger',
+    organizer: 'bg-primary',
+    staff: 'bg-info text-dark',
+    attendee: 'bg-secondary',
+  };
+  const formatDate = (value) => value ? new Date(value).toLocaleDateString('vi-VN') : 'Chưa có';
+  const buildPageUrl = (page) => {
+    const params = new URLSearchParams();
+    params.set('page', page);
+    params.set('limit',  filters.limit || 10);
+    if (filters.keyword) params.set('keyword', filters.keyword);
+    if (filters.role) params.set('role', filters.role);
+    if (filters.status) params.set('status', filters.status);
+    if (filters.sort) params.set('sort', filters.sort);
+    return `/admin/accounts?${params.toString()}`;
+  };
+%>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <div>
+    <h1 class="h3 fw-bold text-dark mb-1">
+      <i class="bi bi-people text-primary me-2"></i>Quản lý tài khoản
+    </h1>
+    <p class="text-muted mb-0">Có <%= totalItems %> tài khoản trong hệ thống.</p>
+  </div>
+</div>
+
+<% if (typeof messages !== 'undefined') { %>
+  <% ['success', 'warning', 'error'].forEach(type => { %>
+    <% if (messages[type] && messages[type].length > 0) { %>
+      <% messages[type].forEach(message => { %>
+        <div class="alert alert-<%= type === 'error' ? 'danger' : type %> alert-dismissible fade show" role="alert">
+          <%= message %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <% }) %>
+    <% } %>
+  <% }) %>
+<% } %>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <form action="/admin/accounts" method="GET" class="row g-3 align-items-end">
+      <div class="col-12 col-lg-4">
+        <label for="keyword" class="form-label small fw-semibold text-muted">Tìm kiếm</label>
+        <div class="input-group">
+          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+          <input
+            id="keyword"
+            type="search"
+            name="keyword"
+            value="<%= filters.keyword %>"
+            class="form-control"
+            placeholder="Tên hoặc email"
+          >
+        </div>
+      </div>
+      <div class="col-6 col-lg-2">
+        <label for="role" class="form-label small fw-semibold text-muted">Role</label>
+        <select id="role" name="role" class="form-select">
+          <option value="">Tất cả</option>
+          <% Object.keys(roleLabels).forEach(role => { %>
+            <option value="<%= role %>" <%= filters.role === role ? 'selected' : '' %>><%= roleLabels[role] %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="col-6 col-lg-2">
+        <label for="status" class="form-label small fw-semibold text-muted">Trạng thái</label>
+        <select id="status" name="status" class="form-select">
+          <option value="">Tất cả</option>
+          <option value="active" <%= filters.status === 'active' ? 'selected' : '' %>>Đang hoạt động</option>
+          <option value="locked" <%= filters.status === 'locked' ? 'selected' : '' %>>Đã khóa</option>
+        </select>
+      </div>
+      <div class="col-12 col-lg-2">
+        <label for="sort" class="form-label small fw-semibold text-muted">Sắp xếp</label>
+        <select id="sort" name="sort" class="form-select">
+          <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Mới nhất</option>
+          <option value="oldest" <%= filters.sort === 'oldest' ? 'selected' : '' %>>Cũ nhất</option>
+          <option value="name_asc" <%= filters.sort === 'name_asc' ? 'selected' : '' %>>Tên A-Z</option>
+          <option value="name_desc" <%= filters.sort === 'name_desc' ? 'selected' : '' %>>Tên Z-A</option>
+        </select>
+      </div>
+      <div class="col-12 col-lg-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-fill">
+          <i class="bi bi-funnel me-1"></i>Lọc
+        </button>
+        <a href="/admin/accounts" class="btn btn-outline-secondary" title="Xóa bộ lọc">
+          <i class="bi bi-x-circle"></i>
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light text-muted small text-uppercase">
+        <tr>
+          <th class="ps-3">Avatar</th>
+          <th>Tên</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Trạng thái</th>
+          <th>Ngày tạo</th>
+          <th class="pe-3 text-end">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (users && users.length > 0) { %>
+          <% users.forEach(account => { %>
+            <tr>
+              <td class="ps-3">
+                <% if (account.avatar) { %>
+                  <img src="<%= account.avatar %>" alt="<%= account.name %>" class="rounded-circle object-fit-cover" style="width: 44px; height: 44px;">
+                <% } else { %>
+                  <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 44px; height: 44px;">
+                    <%= account.name ? account.name.charAt(0).toUpperCase() : 'U' %>
+                  </div>
+                <% } %>
+              </td>
+              <td class="fw-semibold text-dark"><%= account.name %></td>
+              <td class="text-muted"><%= account.email %></td>
+              <td>
+                <span class="badge <%= roleBadgeClasses[account.role] || 'bg-secondary' %>"><%= roleLabels[account.role] || account.role %></span>
+              </td>
+              <td>
+                <% if (account.isActive) { %>
+                  <span class="badge bg-success">Đang hoạt động</span>
+                <% } else { %>
+                  <span class="badge bg-danger">Đã khóa</span>
+                <% } %>
+              </td>
+              <td><%= formatDate(account.createdAt) %></td>
+              <td class="pe-3 text-end">
+                <a href="/admin/accounts/<%= account._id %>" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-eye me-1"></i>Xem chi tiết
+                </a>
+              </td>
+            </tr>
+          <% }) %>
+        <% } else { %>
+          <tr>
+            <td colspan="7" class="text-center py-5">
+              <div class="text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                <div class="fw-semibold">Không tìm thấy tài khoản</div>
+                <div class="small">Thử thay đổi từ khóa hoặc xóa bộ lọc.</div>
+              </div>
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <% if (totalPages > 1) { %>
+    <div class="card-footer bg-white">
+      <nav aria-label="Phân trang tài khoản">
+        <ul class="pagination justify-content-end mb-0">
+          <li class="page-item <%= currentPage <= 1 ? 'disabled' : '' %>">
+            <a class="page-link" href="<%= buildPageUrl(currentPage - 1) %>">Trước</a>
+          </li>
+          <% for (let page = 1; page <= totalPages; page++) { %>
+            <li class="page-item <%= page === currentPage ? 'active' : '' %>">
+              <a class="page-link" href="<%= buildPageUrl(page) %>"><%= page %></a>
+            </li>
+          <% } %>
+          <li class="page-item <%= currentPage >= totalPages ? 'disabled' : '' %>">
+            <a class="page-link" href="<%= buildPageUrl(currentPage + 1) %>">Sau</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  <% } %>
+</div>

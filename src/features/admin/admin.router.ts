@@ -16,10 +16,11 @@ adminRouter.patch("/events/:eventId/approve", ...adminGuard, adminController.app
 adminRouter.patch("/events/:eventId/reject", ...adminGuard, adminController.rejectEvent);
 adminRouter.get("/events/:eventId", ...adminGuard, adminController.getEventReviewDetail);
 
-// Placeholder - UC24, UC26 implement sau
-adminRouter.get("/users", ...adminGuard, (req, res) =>
-  res.json({ message: "UC24 - Manage accounts" }),
-);
+// UC24 - Manage Accounts
+adminRouter.get("/accounts", ...adminGuard, adminController.getAccounts);
+adminRouter.get("/accounts/:userId", ...adminGuard, adminController.getAccountDetail);
+adminRouter.post("/accounts/:userId/lock", ...adminGuard, adminController.lockAccount);
+adminRouter.post("/accounts/:userId/unlock", ...adminGuard, adminController.unlockAccount);
 
 // UC26 - View revenue report
 adminRouter.get("/reports/revenue", ...adminGuard, adminController.getRevenueReport);

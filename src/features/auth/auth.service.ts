@@ -67,15 +67,15 @@ export class AuthService {
     const user = await this.userRepository.findByEmail(dto.email);
     if (!user) throw new AppError("Email hoặc mật khẩu không chính xác", 401);
 
-    if (!user.isActive)
-      throw new AppError("Tài khoản của bạn đã bị khóa bởi quản trị viên", 403);
-
     const isPasswordMatch = await bcrypt.compare(
       dto.password,
       user.passwordHash,
     );
     if (!isPasswordMatch)
       throw new AppError("Email hoặc mật khẩu không chính xác", 401);
+
+    if (!user.isActive)
+      throw new AppError("Tai khoan cua ban da bi khoa. Vui long lien he quan tri vien.", 403);
 
     const userId = (user as any)._id.toString();
 

@@ -1,0 +1,196 @@
+<%
+  const roleLabels = {
+    admin: 'Admin',
+    organizer: 'Organizer',
+    staff: 'Staff',
+    attendee: 'Attendee',
+  };
+  const formatDateTime = (value) => value ? new Date(value).toLocaleString('vi-VN') : 'Chưa có';
+  const lockedBy = account.lockedBy && typeof account.lockedBy === 'object' ? account.lockedBy : null;
+  const isSelf = user && user.id && account._id && user.id.toString() === account._id.toString();
+%>
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="/admin/dashboard">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="/admin/accounts">Quản lý tài khoản</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><%= account.name %></li>
+  </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <a href="/admin/accounts" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+  <div class="d-flex gap-2">
+    <% if (!isSelf && account.isActive) { %>
+      <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#lockModal">
+        <i class="bi bi-lock me-1"></i>Khóa tài khoản
+      </button>
+    <% } %>
+    <% if (!account.isActive) { %>
+      <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#unlockModal">
+        <i class="bi bi-unlock me-1"></i>Mở khóa tài khoản
+      </button>
+    <% } %>
+  </div>
+</div>
+
+<% if (typeof messages !== 'undefined') { %>
+  <% ['success', 'warning', 'error'].forEach(type => { %>
+    <% if (messages[type] && messages[type].length > 0) { %>
+      <% messages[type].forEach(message => { %>
+        <div class="alert alert-<%= type === 'error' ? 'danger' : type %> alert-dismissible fade show" role="alert">
+          <%= message %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <% }) %>
+    <% } %>
+  <% }) %>
+<% } %>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center p-4">
+        <% if (account.avatar) { %>
+          <img src="<%= account.avatar %>" alt="<%= account.name %>" class="rounded-circle object-fit-cover mb-3" style="width: 112px; height: 112px;">
+        <% } else { %>
+          <div class="bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center fw-bold mb-3" style="width: 112px; height: 112px; font-size: 2.5rem;">
+            <%= account.name ? account.name.charAt(0).toUpperCase() : 'U' %>
+          </div>
+        <% } %>
+        <h1 class="h4 fw-bold text-dark mb-1"><%= account.name %></h1>
+        <div class="text-muted mb-3"><%= account.email %></div>
+        <span class="badge bg-dark"><%= roleLabels[account.role] || account.role %></span>
+        <% if (account.isActive) { %>
+          <span class="badge bg-success">Đang hoạt động</span>
+        <% } else { %>
+          <span class="badge bg-danger">Đã khóa</span>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3">
+        <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-person-lines-fill text-primary me-2"></i>Thông tin tài khoản</h2>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="text-muted small">Tên</div>
+            <div class="fw-semibold"><%= account.name %></div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Email</div>
+            <div class="fw-semibold"><%= account.email %></div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Role</div>
+            <div class="fw-semibold"><%= roleLabels[account.role] || account.role %></div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Xác minh email</div>
+            <div class="fw-semibold"><%= account.emailVerified ? 'Đã xác minh' : 'Chưa xác minh' %></div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Ngày tạo</div>
+            <div class="fw-semibold"><%= formatDateTime(account.createdAt) %></div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-muted small">Ngày cập nhật</div>
+            <div class="fw-semibold"><%= formatDateTime(account.updatedAt) %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white py-3">
+        <h2 class="h5 fw-bold text-dark mb-0"><i class="bi bi-shield-lock text-danger me-2"></i>Trạng thái khóa</h2>
+      </div>
+      <div class="card-body">
+        <% if (!account.isActive) { %>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="text-muted small">Thời gian khóa</div>
+              <div class="fw-semibold"><%= formatDateTime(account.lockedAt) %></div>
+            </div>
+            <div class="col-md-6">
+              <div class="text-muted small">Admin đã khóa</div>
+              <div class="fw-semibold"><%= lockedBy && lockedBy.name ? lockedBy.name : 'Chưa có' %></div>
+              <% if (lockedBy && lockedBy.email) { %>
+                <div class="small text-muted"><%= lockedBy.email %></div>
+              <% } %>
+            </div>
+            <div class="col-12">
+              <div class="text-muted small">Lý do khóa</div>
+              <div class="border rounded bg-light p-3" style="white-space: pre-line;"><%= account.lockedReason || 'Chưa có lý do' %></div>
+            </div>
+          </div>
+        <% } else { %>
+          <div class="text-muted">Tài khoản đang hoạt động bình thường.</div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if (!isSelf && account.isActive) { %>
+  <div class="modal fade" id="lockModal" tabindex="-1" aria-labelledby="lockModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="/admin/accounts/<%= account._id %>/lock">
+          <div class="modal-header">
+            <h5 class="modal-title" id="lockModalLabel">Khóa tài khoản</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-warning">
+              Sau khi khóa, người dùng sẽ không thể đăng nhập hoặc sử dụng các chức năng yêu cầu xác thực.
+            </div>
+            <label for="reason" class="form-label fw-semibold">Lý do khóa</label>
+            <textarea
+              id="reason"
+              name="reason"
+              class="form-control"
+              rows="5"
+              minlength="10"
+              maxlength="500"
+              required
+            ></textarea>
+            <div class="form-text">Vui lòng nhập lý do từ 10 đến 500 ký tự. Lý do này sẽ được gửi qua email cho người dùng.</div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+            <button type="submit" class="btn btn-danger">Xác nhận khóa</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% } %>
+
+<% if (!account.isActive) { %>
+  <div class="modal fade" id="unlockModal" tabindex="-1" aria-labelledby="unlockModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="POST" action="/admin/accounts/<%= account._id %>/unlock">
+          <div class="modal-header">
+            <h5 class="modal-title" id="unlockModalLabel">Mở khóa tài khoản</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            Bạn có chắc chắn muốn mở khóa tài khoản này không?
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+            <button type="submit" class="btn btn-success">Xác nhận mở khóa</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% } %>

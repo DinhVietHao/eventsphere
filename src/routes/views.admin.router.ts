@@ -2,14 +2,20 @@ import { Router, Request, Response, NextFunction } from "express";
 import { adminService } from "../features/admin/admin.service";
 import { RevenueReportQuerySchema } from "../features/admin/dto/revenue-report.dto";
 import {
+  AccountListQuerySchema,
   EventIdParamSchema,
+  LockAccountSchema,
   PendingEventQuerySchema,
   RejectEventSchema,
+  UserIdParamSchema,
 } from "../features/admin/validators/admin.validator";
 import {
+  IAccountListQueryDto,
   IEventIdParamDto,
+  ILockAccountDto,
   IPendingEventQueryDto,
   IRejectEventDto,
+  IUserIdParamDto,
 } from "../features/admin/dto/admin.dto";
 import { AppError } from "../shared/errors/AppError";
 
@@ -230,12 +236,158 @@ adminViewsRouter.get(
   },
 );
 
+adminViewsRouter.get(
+  "/admin/accounts",
+  ...adminGuard,
+  async (req: Request, res: Response) => {
+    try {
+      const validatedQuery: IAccountListQueryDto =
+        await AccountListQuerySchema.validateAsync(req.query, {
+          abortEarly: false,
+          stripUnknown: true,
+        });
+      const accountData = await adminService.getAccounts(validatedQuery);
+      const messages = req.flash();
+
+      res.render("admin/accounts/index", {
+        layout: "layouts/admin",
+        user: req.user,
+        messages,
+        ...accountData,
+      });
+    } catch (err) {
+      console.error("Khong the tai danh sach tai khoan:", err);
+      res.status(500).send("Khong the tai danh sach tai khoan luc nay.");
+    }
+  },
+);
+
+adminViewsRouter.get(
+  "/admin/accounts/:userId",
+  ...adminGuard,
+  async (req: Request, res: Response) => {
+    try {
+      const validatedParams: IUserIdParamDto =
+        await UserIdParamSchema.validateAsync(req.params, {
+          abortEarly: false,
+          stripUnknown: true,
+        });
+      const accountData = await adminService.getAccountDetail(
+        validatedParams.userId,
+      );
+      const messages = req.flash();
+
+      res.render("admin/accounts/detail", {
+        layout: "layouts/admin",
+        user: req.user,
+        messages,
+        ...accountData,
+      });
+    } catch (err) {
+      req.flash(
+        "error",
+        err instanceof Error
+          ? err.message
+          : "Khong the tai thong tin tai khoan.",
+      );
+
+      return res.redirect("/admin/accounts");
+    }
+  },
+);
+
+adminViewsRouter.post(
+  "/admin/accounts/:userId/lock",
+  ...adminGuard,
+  async (req: Request, res: Response) => {
+    try {
+      const validatedParams: IUserIdParamDto =
+        await UserIdParamSchema.validateAsync(req.params, {
+          abortEarly: false,
+          stripUnknown: true,
+        });
+      const validatedBody: ILockAccountDto =
+        await LockAccountSchema.validateAsync(req.body, {
+          abortEarly: false,
+          stripUnknown: true,
+        });
+      const adminId = req.user?.id;
+
+      if (!adminId) {
+        throw new AppError("Khong xac dinh duoc tai khoan quan tri vien", 401);
+      }
+
+      const result = await adminService.lockAccount(
+        validatedParams.userId,
+        adminId,
+        validatedBody.reason,
+      );
+
+      req.flash(
+        result.emailSent ? "success" : "warning",
+        result.emailSent
+          ? "Khoa tai khoan thanh cong."
+          : "Tai khoan da bi khoa nhung email thong bao chua gui duoc.",
+      );
+
+      return res.redirect(`/admin/accounts/${validatedParams.userId}`);
+    } catch (err) {
+      req.flash(
+        "error",
+        err instanceof Error
+          ? err.message
+          : "Khong the khoa tai khoan luc nay.",
+      );
+
+      return res.redirect(`/admin/accounts/${req.params.userId}`);
+    }
+  },
+);
+
+adminViewsRouter.post(
+  "/admin/accounts/:userId/unlock",
+  ...adminGuard,
+  async (req: Request, res: Response) => {
+    try {
+      const validatedParams: IUserIdParamDto =
+        await UserIdParamSchema.validateAsync(req.params, {
+          abortEarly: false,
+          stripUnknown: true,
+        });
+      const adminId = req.user?.id;
+
+      if (!adminId) {
+        throw new AppError("Khong xac dinh duoc tai khoan quan tri vien", 401);
+      }
+
+      const result = await adminService.unlockAccount(
+        validatedParams.userId,
+        adminId,
+      );
+
+      req.flash(
+        result.emailSent ? "success" : "warning",
+        result.emailSent
+          ? "Mo khoa tai khoan thanh cong."
+          : "Tai khoan da duoc mo khoa nhung email thong bao chua gui duoc.",
+      );
+
+      return res.redirect(`/admin/accounts/${validatedParams.userId}`);
+    } catch (err) {
+      req.flash(
+        "error",
+        err instanceof Error
+          ? err.message
+          : "Khong the mo khoa tai khoan luc nay.",
+      );
+
+      return res.redirect(`/admin/accounts/${req.params.userId}`);
+    }
+  },
+);
+
 adminViewsRouter.get("/admin/users", ...adminGuard, (req, res) => {
-  res.render("errors/403", {
-    layout: false,
-    user: req.user,
-    message: "UC24 — Coming soon",
-  });
+  res.redirect("/admin/accounts");
 });
 
 export default adminViewsRouter;
