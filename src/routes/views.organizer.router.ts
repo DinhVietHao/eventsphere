@@ -8,7 +8,7 @@ const eventService = new EventService();
 const notificationService = new NotificationService();
 const ticketTypeService = new TicketTypeService();
 
-const LIMIT = 9;
+const LIMIT = 10;
 
 // Middleware guard cho view — redirect
 const requireLogin = (req: Request, res: Response, next: NextFunction) => {
@@ -102,12 +102,12 @@ organizerViewsRouter.post(
     try {
       // Validate các trường bắt buộc của event
       const missing: string[] = [];
-      if (!req.body.title?.trim())       missing.push("Tên sự kiện");
+      if (!req.body.title?.trim()) missing.push("Tên sự kiện");
       if (!req.body.description?.trim()) missing.push("Mô tả chi tiết");
-      if (!req.body.category)            missing.push("Danh mục");
-      if (!req.body.location?.trim())    missing.push("Địa điểm");
-      if (!req.body.startDate)           missing.push("Ngày bắt đầu");
-      if (!req.body.endDate)             missing.push("Ngày kết thúc");
+      if (!req.body.category) missing.push("Danh mục");
+      if (!req.body.location?.trim()) missing.push("Địa điểm");
+      if (!req.body.startDate) missing.push("Ngày bắt đầu");
+      if (!req.body.endDate) missing.push("Ngày kết thúc");
       if (missing.length > 0) {
         throw new Error(`Vui lòng điền đầy đủ: ${missing.join(", ")}`);
       }
@@ -122,8 +122,8 @@ organizerViewsRouter.post(
       const event = await eventService.createEvent(req.user!.id, req.body);
 
       // Tạo từng loại vé
-      const prices       = [req.body.ticketPrice].flat();
-      const quotas       = [req.body.ticketQuota].flat();
+      const prices = [req.body.ticketPrice].flat();
+      const quotas = [req.body.ticketQuota].flat();
       const descriptions = [req.body.ticketDescription].flat();
 
       for (let i = 0; i < names.length; i++) {
@@ -131,9 +131,9 @@ organizerViewsRouter.post(
           (event._id as any).toString(),
           req.user!.id,
           {
-            name:        names[i],
-            price:       Number(prices[i]) || 0,
-            quota:       Number(quotas[i]) || 1,
+            name: names[i],
+            price: Number(prices[i]) || 0,
+            quota: Number(quotas[i]) || 1,
             description: descriptions[i] || "",
           },
         );
@@ -147,12 +147,12 @@ organizerViewsRouter.post(
         user: req.user,
         error: err.message || "Tạo sự kiện thất bại",
         old: {
-          title:       req.body.title,
+          title: req.body.title,
           description: req.body.description,
-          category:    req.body.category,
-          location:    req.body.location,
-          startDate:   req.body.startDate,
-          endDate:     req.body.endDate,
+          category: req.body.category,
+          location: req.body.location,
+          startDate: req.body.startDate,
+          endDate: req.body.endDate,
         },
       });
     }
@@ -264,12 +264,28 @@ organizerViewsRouter.post(
   },
 );
 
-// GET /organizer/events/:id/report — UC19
+// GET /organizer/events/:id/report — UC19 (chỉ khi ENDED hoặc endDate đã qua)
 organizerViewsRouter.get(
   "/organizer/events/:id/report",
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
+      const event = await eventService.getEventById(req.params.id as string);
+
+      // Kiểm tra sự kiện đã kết thúc chưa — theo status hoặc endDate
+      const isEnded =
+        event.status === "ENDED" ||
+        event.status === "CANCELLED" ||
+        new Date(event.endDate) < new Date();
+
+      if (!isEnded) {
+        (req as any).flash(
+          "error",
+          "Báo cáo tổng kết chỉ khả dụng sau khi sự kiện kết thúc.",
+        );
+        return res.redirect("/organizer/events");
+      }
+
       const report = await eventService.getEventReport(
         req.params.id as string,
         req.user!.id,
@@ -344,13 +360,16 @@ organizerViewsRouter.get(
   ...organizerGuard,
   async (req: any, res: Response) => {
     try {
-      const { events } = await eventService.getMyEvents(req.user!.id, 1, 100);
-      const messages = req.flash();
+      const events = await eventService.getApprovedEvents(req.user!.id);
+      const [messages, sentHistory] = [
+        req.flash(),
+        await notificationService.getSentHistory(req.user!.id),
+      ];
       res.render("organizer/notifications", {
         layout: "layouts/organizer",
         user: req.user,
         events,
-        sentHistory: [], // Có thể mở rộng sau để lưu lịch sử
+        sentHistory,
         messages: { success: messages.success, error: messages.error },
         old: null,
       });
@@ -418,6 +437,7 @@ organizerViewsRouter.post(
         eventId,
         subject,
         message,
+        req.user!.id,
       );
       req.flash(
         "success",

@@ -3,7 +3,7 @@ import { User } from "../../auth/models/user.model";
 import { Registration } from "../../tickets/models/registration.model";
 import { CheckinLogModel } from "../../checkin/models/checkinLog.model";
 import mongoose from "mongoose";
-import {Payment} from "../../payment/model/payment.model";
+import { Payment } from "../../payment/model/payment.model";
 
 export class AdminRepository {
   // Tổng số users theo role
@@ -18,9 +18,12 @@ export class AdminRepository {
     ]);
   }
 
-  // Tổng số registrations paid
+  // Tổng số vé đã bán (paid, status confirmed)
   async countPaidRegistrations(): Promise<number> {
-    return Registration.countDocuments({ paymentStatus: "paid" });
+    return Registration.countDocuments({
+      paymentStatus: { $in: ["paid"] },
+      status: "confirmed",
+    });
   }
 
   // Tổng check-in toàn hệ thống
@@ -28,19 +31,19 @@ export class AdminRepository {
     return CheckinLogModel.countDocuments();
   }
 
-  // 5 sự kiện mới nhất đang pending
+  //sự kiện mới nhất đang pending
   async getRecentPendingEvents() {
     return Event.find({ status: "PENDING" })
       .sort({ createdAt: -1 })
-      .limit(5)
+      .limit(10)
       .lean();
   }
 
-  // 5 user mới đăng ký gần nhất
+  //user mới đăng ký gần nhất
   async getRecentUsers() {
     return User.find()
       .sort({ createdAt: -1 })
-      .limit(5)
+      .limit(10)
       .select("name email role createdAt isActive")
       .lean();
   }
@@ -53,13 +56,13 @@ export class AdminRepository {
     // 1. MATCH - BƯỚC 1: Lọc hóa đơn đã thanh toán và theo khoảng thời gian
     const initialMatch: any = { status: "paid" };
     if (filters.startDate || filters.endDate) {
-        initialMatch.paidAt = {};
-        if (filters.startDate) {
-          initialMatch.paidAt.$gte = new Date(filters.startDate);
-        }
-        if (filters.endDate) {
-          initialMatch.paidAt.$lte = new Date(filters.endDate);
-        }
+      initialMatch.paidAt = {};
+      if (filters.startDate) {
+        initialMatch.paidAt.$gte = new Date(filters.startDate);
+      }
+      if (filters.endDate) {
+        initialMatch.paidAt.$lte = new Date(filters.endDate);
+      }
     }
 
     pipeline.push({
@@ -76,23 +79,27 @@ export class AdminRepository {
       },
     });
     pipeline.push({
-      $unwind: "$event"
-    })
+      $unwind: "$event",
+    });
     pipeline.push({
       $lookup: {
         from: "users", // Tên collection của Schema User trong DB
         localField: "event.organizerId", // Lấy ID organizer từ sự kiện
-        foreignField: "_id",             // So khớp với _id trong bảng user
-        as: "organizerData",             // Lưu kết quả vào biến organizerData
+        foreignField: "_id", // So khớp với _id trong bảng user
+        as: "organizerData", // Lưu kết quả vào biến organizerData
       },
     });
     // Phá mảng organizerData ra thành object (giữ lại null nếu lỡ event bị mất chủ)
-    pipeline.push({ $unwind: { path: "$organizerData", preserveNullAndEmptyArrays: true } });
+    pipeline.push({
+      $unwind: { path: "$organizerData", preserveNullAndEmptyArrays: true },
+    });
 
     // 3. MATCH BƯỚC 2: Lọc theo organizerId và category (nếu có truyền lên)
     const eventMatch: any = {};
     if (filters.organizerId) {
-      eventMatch["event.organizerId"] = new mongoose.Types.ObjectId(filters.organizerId);
+      eventMatch["event.organizerId"] = new mongoose.Types.ObjectId(
+        filters.organizerId,
+      );
     }
     if (filters.category) {
       eventMatch["event.category"] = filters.category;
@@ -100,9 +107,8 @@ export class AdminRepository {
     if (Object.keys(eventMatch).length > 0) {
       pipeline.push({
         $match: eventMatch,
-      })
+      });
     }
-
 
     // 4. CHUẨN BỊ ĐIỀU KIỆN GROUP ($group _id)
     let groupId: any = null;
@@ -111,7 +117,10 @@ export class AdminRepository {
         groupId = { $dateToString: { format: "%Y-%m-%d", date: "$paidAt" } };
         break;
       case "week":
-        groupId = { year: { $isoWeekYear: "$paidAt" }, week: { $isoWeek: "$paidAt" } };
+        groupId = {
+          year: { $isoWeekYear: "$paidAt" },
+          week: { $isoWeek: "$paidAt" },
+        };
         break;
       case "month":
         groupId = { $dateToString: { format: "%Y-%m", date: "$paidAt" } };
@@ -132,20 +141,18 @@ export class AdminRepository {
         _id: groupId,
         totalRevenue: { $sum: "$amount" },
         totalTicketSold: { $sum: 1 },
-      }
-    })
+      },
+    });
 
     pipeline.push({
       $sort: { _id: 1 },
-    })
+    });
     return Payment.aggregate(pipeline);
   }
 
   async getOrganizersList() {
     return User.find({ role: "organizer" }).select("_id name").lean();
   }
-
-
 }
 
 export const adminRepository = new AdminRepository();

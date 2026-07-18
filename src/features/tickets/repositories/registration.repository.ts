@@ -76,7 +76,7 @@ export class RegistrationRepository {
         paymentStatus,
         ...(paymentRef ? { paymentRef } : {}),
       },
-      { new: true },
+      { returnDocument: "after" },
     );
   }
 

@@ -1,10 +1,10 @@
-import { escapeRegex } from '../../../shared/utils/regex.util';
-import { User, IUser } from '../models/user.model';
+import { escapeRegex } from "../../../shared/utils/regex.util";
+import { User, IUser } from "../models/user.model";
 
 export class UserRepository {
   // Tìm user theo email phục vụ đăng nhập - Ép lấy thêm trường passwordHash để so sánh bcrypt
   async findByEmail(email: string): Promise<IUser | null> {
-    return User.findOne({ email }).select('+passwordHash').lean();
+    return User.findOne({ email }).select("+passwordHash").lean();
   }
 
   // Tìm user theo ID (dùng cho các middleware xác thực sau này)
@@ -35,7 +35,37 @@ export class UserRepository {
   }
 
   // Cập nhật trạng thái kích hoạt tài khoản hoặc xác thực email
-  async updateStatus(id: string, updateData: { isActive?: boolean; emailVerified?: boolean }): Promise<IUser | null> {
-    return User.findByIdAndUpdate(id, { $set: updateData }, { new: true }).lean();
+  async updateStatus(
+    id: string,
+    updateData: { isActive?: boolean; emailVerified?: boolean },
+  ): Promise<IUser | null> {
+    return User.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true },
+    ).lean();
+  }
+
+  // Cập nhật thông tin profile — chỉ cho phép sửa name, phone, avatar
+  async updateProfile(
+    id: string,
+    updateData: { name?: string; phone?: string; avatar?: string },
+  ): Promise<IUser | null> {
+    return User.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true },
+    ).lean();
+    //                                                          ↑ new: true = trả document sau khi update
+  }
+
+  // Lấy passwordHash để kiểm tra mật khẩu cũ khi đổi password
+  async findByIdWithPassword(id: string): Promise<IUser | null> {
+    return User.findById(id).select("+passwordHash").lean();
+  }
+
+  // Cập nhật mật khẩu mới (chỉ lưu hash, không bao giờ lưu plain text)
+  async updatePassword(id: string, passwordHash: string): Promise<void> {
+    await User.findByIdAndUpdate(id, { $set: { passwordHash } });
   }
 }

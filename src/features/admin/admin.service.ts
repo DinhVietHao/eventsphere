@@ -15,7 +15,6 @@ import {
 } from "./dto/admin.dto";
 
 export class AdminService {
-
   private eventRepository = new EventRepository();
   private userRepository = new UserRepository();
   private ticketTypeRepository = new TicketTypeRepository();
@@ -93,17 +92,22 @@ export class AdminService {
 
     const rawReport = await adminRepository.getRevenueReport(filters, groupBy);
 
-    const totalPeriodRevenue = rawReport.reduce((sum, item) => sum + item.totalRevenue, 0)
-    const totalPeriodTickets = rawReport.reduce((sum, item) => sum + item.totalTicketSold, 0)
-
+    const totalPeriodRevenue = rawReport.reduce(
+      (sum, item) => sum + item.totalRevenue,
+      0,
+    );
+    const totalPeriodTickets = rawReport.reduce(
+      (sum, item) => sum + item.totalTicketSold,
+      0,
+    );
 
     return {
       groupBy,
       filters,
       totalPeriodRevenue,
       totalPeriodTickets,
-      chartData: rawReport
-    }
+      chartData: rawReport,
+    };
   }
 
   // Lấy danh sách organizer cho bộ lọc
@@ -140,7 +144,9 @@ export class AdminService {
   /**
    * UC23 - Get one event and ticket types for review.
    */
-  async getEventReviewDetail(eventId: string): Promise<IEventReviewDetailResult> {
+  async getEventReviewDetail(
+    eventId: string,
+  ): Promise<IEventReviewDetailResult> {
     const event = await this.eventRepository.findEventForAdminReview(eventId);
     if (!event) {
       throw new AppError("Không tìm thấy sự kiện", 404);
@@ -159,7 +165,10 @@ export class AdminService {
   ): Promise<IEventReviewResult> {
     const currentEvent = await this.getPendingEventOrThrow(eventId);
     const organizer = this.getOrganizerOrThrow(currentEvent);
-    const updatedEvent = await this.eventRepository.approvePendingEvent(eventId, adminId);
+    const updatedEvent = await this.eventRepository.approvePendingEvent(
+      eventId,
+      adminId,
+    );
 
     if (!updatedEvent) {
       throw new AppError("Sự kiện này không còn ở trạng thái chờ duyệt", 409);
@@ -211,7 +220,9 @@ export class AdminService {
     return { event: updatedEvent, emailSent };
   }
 
-  private async getPendingEventOrThrow(eventId: string): Promise<IEventWithOrganizer> {
+  private async getPendingEventOrThrow(
+    eventId: string,
+  ): Promise<IEventWithOrganizer> {
     const event = await this.eventRepository.findEventForAdminReview(eventId);
     if (!event) {
       throw new AppError("Không tìm thấy sự kiện", 404);
@@ -237,7 +248,9 @@ export class AdminService {
     return organizer;
   }
 
-  private async sendEmailSafely(sendEmail: () => Promise<void>): Promise<boolean> {
+  private async sendEmailSafely(
+    sendEmail: () => Promise<void>,
+  ): Promise<boolean> {
     try {
       await sendEmail();
       return true;
@@ -251,7 +264,6 @@ export class AdminService {
     const baseUrl = process.env.APP_BASE_URL || process.env.BASE_URL || "";
     return `${baseUrl}/organizer/events/${eventId}/edit`;
   }
-
 }
 
 export const adminService = new AdminService();
