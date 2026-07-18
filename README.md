@@ -818,7 +818,7 @@ Hệ thống được phân rã thành **26 Use Cases (UC)** chia cho 5 thành v
 | **UC07** | Đăng ký tham dự sự kiện          | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done    |
 | **UC08** | Thanh toán vé (VNPay/Stripe)     | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done    |
 | **UC09** | Xem chi tiết vé + QR Code        | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done    |
-| **UC10** | Thêm sự kiện vào Google Calendar | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done    |
+| **UC10** | Thêm sự kiện vào Google Calendar | Attendee        | `features/tickets/`       | **Kha**          | ❌ Cancel  |
 | **UC11** | Đánh giá & chấm điểm sự kiện     | Attendee        | `features/reviews/`       | **Kha**          | ✅ Done    |
 | **UC12** | Xem lịch sử tham dự              | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done    |
 | **UC13** | Quản lý sự kiện (CRUD + Banner)  | Organizer       | `features/events/`        | **Hào**          | ✅ Done    |
