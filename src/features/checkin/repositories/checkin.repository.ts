@@ -24,7 +24,7 @@ export class CheckinRepository {
     return TicketModel.findByIdAndUpdate(
       ticketId,
       { status: "CHECKED_IN" },
-      { new: true },
+      { returnDocument: "after" },
     ) // Trả về document sau khi đã update
       .populate("attendeeId", "name email avatar") // Thêm dòng này để gọi data User
       .populate("ticketTypeId", "name"); // Thêm dòng này để lấy loại vé
@@ -97,6 +97,20 @@ export class CheckinRepository {
       eventId: new Types.ObjectId(eventId),
       status: { $in: ["ISSUED", "CHECKED_IN"] },
     });
+  }
+
+  /**
+   * Lấy N lần check-in gần nhất của sự kiện — hiển thị sẵn khi load dashboard
+   */
+  async getRecentCheckins(eventId: string, limit = 20) {
+    return CheckinLogModel.find({ eventId: new Types.ObjectId(eventId) } as any)
+      .sort({ checkedAt: -1 })
+      .limit(limit)
+      .populate({
+        path: "ticketId",
+        populate: { path: "attendeeId", select: "name email" },
+      })
+      .lean();
   }
 }
 

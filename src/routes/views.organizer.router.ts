@@ -264,12 +264,28 @@ organizerViewsRouter.post(
   },
 );
 
-// GET /organizer/events/:id/report — UC19
+// GET /organizer/events/:id/report — UC19 (chỉ khi ENDED hoặc endDate đã qua)
 organizerViewsRouter.get(
   "/organizer/events/:id/report",
   ...organizerGuard,
   async (req: Request, res: Response) => {
     try {
+      const event = await eventService.getEventById(req.params.id as string);
+
+      // Kiểm tra sự kiện đã kết thúc chưa — theo status hoặc endDate
+      const isEnded =
+        event.status === "ENDED" ||
+        event.status === "CANCELLED" ||
+        new Date(event.endDate) < new Date();
+
+      if (!isEnded) {
+        (req as any).flash(
+          "error",
+          "Báo cáo tổng kết chỉ khả dụng sau khi sự kiện kết thúc.",
+        );
+        return res.redirect("/organizer/events");
+      }
+
       const report = await eventService.getEventReport(
         req.params.id as string,
         req.user!.id,
@@ -344,14 +360,16 @@ organizerViewsRouter.get(
   ...organizerGuard,
   async (req: any, res: Response) => {
     try {
-      // Chỉ lấy events đã được duyệt — không cần filter thêm ở view
       const events = await eventService.getApprovedEvents(req.user!.id);
-      const messages = req.flash();
+      const [messages, sentHistory] = [
+        req.flash(),
+        await notificationService.getSentHistory(req.user!.id),
+      ];
       res.render("organizer/notifications", {
         layout: "layouts/organizer",
         user: req.user,
         events,
-        sentHistory: [],
+        sentHistory,
         messages: { success: messages.success, error: messages.error },
         old: null,
       });
@@ -419,6 +437,7 @@ organizerViewsRouter.post(
         eventId,
         subject,
         message,
+        req.user!.id,
       );
       req.flash(
         "success",

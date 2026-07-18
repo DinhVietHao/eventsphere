@@ -54,8 +54,17 @@ export class EventService {
   // ───── UC13 — Organizer CRUD ─────
 
   // Lấy events đã approved của organizer — dùng cho dropdown gửi thông báo
-  async getApprovedEvents(organizerId: string): Promise<IEvent[]> {
-    return eventRepository.findApprovedByOrganizer(organizerId);
+  async getApprovedEvents(organizerId: string) {
+    const events = await eventRepository.findApprovedByOrganizer(organizerId);
+
+    const eventIds = events.map((e: any) => e._id.toString());
+    const countMap =
+      await eventRepository.countRegistrationsByEventIds(eventIds);
+
+    return events.map((e: any) => ({
+      ...(e.toObject ? e.toObject() : e),
+      registrationsCount: countMap.get(e._id.toString()) ?? 0,
+    }));
   }
 
   // Lấy danh sách events của organizer
@@ -262,10 +271,25 @@ export class EventService {
     const event = await eventRepository.findById(eventId);
     if (!event) throw new AppError("Sự kiện không tồn tại", 404);
 
-    const [totalRegistered, totalCheckedIn] = await Promise.all([
-      eventRepository.getRegistrationCount(eventId),
-      eventRepository.getCheckinCount(eventId),
-    ]);
+    const { CheckinRepository } =
+      await import("../checkin/repositories/checkin.repository");
+    const checkinRepo = new CheckinRepository();
+
+    const [totalRegistered, totalCheckedIn, recentCheckins] = await Promise.all(
+      [
+        eventRepository.getRegistrationCount(eventId),
+        eventRepository.getCheckinCount(eventId),
+        checkinRepo.getRecentCheckins(eventId, 20),
+      ],
+    );
+
+    // Map thành format gọn cho view
+    const recentCheckinList = recentCheckins.map((log: any) => ({
+      name: log.ticketId?.attendeeId?.name || "Không rõ",
+      email: log.ticketId?.attendeeId?.email || "",
+      checkedAt: log.checkedAt,
+      method: log.method,
+    }));
 
     return {
       eventId,
@@ -276,6 +300,7 @@ export class EventService {
         totalRegistered > 0
           ? parseFloat(((totalCheckedIn / totalRegistered) * 100).toFixed(1))
           : 0,
+      recentCheckins: recentCheckinList,
     };
   }
 

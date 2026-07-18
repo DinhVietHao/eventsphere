@@ -77,10 +77,28 @@
   </div>
 
   <div id="liveFeed" style="max-height: 320px; overflow-y: auto;">
+    <% if (snapshot.recentCheckins && snapshot.recentCheckins.length > 0) { %>
+      <% snapshot.recentCheckins.forEach(c => { %>
+      <div class="d-flex align-items-center p-2 mb-2 bg-light rounded border feed-item">
+        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width:36px;height:36px;font-weight:bold;">
+          <%= c.name.charAt(0).toUpperCase() %>
+        </div>
+        <div class="flex-grow-1">
+          <div class="fw-semibold text-dark small"><%= c.name %></div>
+          <div class="text-muted" style="font-size:0.75rem;"><%= c.email %></div>
+        </div>
+        <div class="text-end">
+          <div class="text-muted" style="font-size:0.75rem;"><%= new Date(c.checkedAt).toLocaleTimeString('vi-VN') %></div>
+          <span class="badge bg-light text-muted border" style="font-size:0.65rem;"><%= c.method === 'qr_scan' ? 'QR' : 'Thủ công' %></span>
+        </div>
+      </div>
+      <% }) %>
+    <% } else { %>
     <div class="text-center py-4 text-muted" id="feedEmpty">
       <i class="bi bi-hourglass-split display-6 d-block mb-2"></i>
       <p class="small mb-0">Đang chờ check-in đầu tiên...</p>
     </div>
+    <% } %>
   </div>
 </div>
 
@@ -89,7 +107,6 @@
 <script>
   const eventId   = '<%= snapshot.eventId %>';
   const socket    = io(window.location.origin);
-  let feedCount   = 0;
   let totalCheckedIn = <%= snapshot.totalCheckedIn %>;
   let totalRegistered = <%= snapshot.totalRegistered %>;
 
@@ -143,10 +160,9 @@
         totalCheckedIn + ' / ' + totalRegistered;
     }
 
-    // Thêm vào live feed
-    feedCount++;
-    document.getElementById('feedCount').textContent = feedCount + ' sự kiện';
-    document.getElementById('feedEmpty').classList.add('d-none');
+    // Ẩn placeholder, thêm item vào live feed
+    const feedEmpty = document.getElementById('feedEmpty');
+    if (feedEmpty) feedEmpty.classList.add('d-none');
 
     const feed = document.getElementById('liveFeed');
     const item = document.createElement('div');
@@ -159,13 +175,20 @@
         <div class="fw-semibold text-dark small">${data.lastCheckedIn?.name || 'Không rõ'}</div>
         <div class="text-muted" style="font-size:0.75rem;">${data.lastCheckedIn?.email || ''}</div>
       </div>
-      <div class="text-muted" style="font-size:0.75rem;">
-        ${new Date(data.lastCheckedIn?.checkedAt || Date.now()).toLocaleTimeString('vi-VN')}
+      <div class="text-end">
+        <div class="text-muted" style="font-size:0.75rem;">
+          ${new Date(data.lastCheckedIn?.checkedAt || Date.now()).toLocaleTimeString('vi-VN')}
+        </div>
+        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.65rem;">Vừa xong</span>
       </div>
     `;
 
     // Thêm vào đầu feed
     feed.insertBefore(item, feed.firstChild);
+
+    // Giới hạn tối đa 50 item trong feed tránh tràn DOM
+    const items = feed.querySelectorAll('.feed-item');
+    if (items.length > 50) items[items.length - 1].remove();
 
     // Animation
     item.style.opacity = '0';

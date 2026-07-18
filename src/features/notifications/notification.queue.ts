@@ -8,10 +8,10 @@ export interface NotificationJobData {
   recipients: { name: string; email: string }[];
 }
 
-// Tạo queue kết nối Redis
+const redisConnection = process.env.REDIS_URL
+  ? { url: process.env.REDIS_URL }
+  : { host: appConfig.redis.host, port: appConfig.redis.port };
+
 export const notificationQueue = new Bull<NotificationJobData>("notification", {
-  redis: {
-    host: appConfig.redis.host,
-    port: appConfig.redis.port,
-  },
+  redis: redisConnection,
 });

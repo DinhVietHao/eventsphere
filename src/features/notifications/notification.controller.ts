@@ -25,10 +25,12 @@ export class NotificationController {
       }
 
       const { eventId, subject, message } = value;
+      const organizerId = req.user!.id;
       const result = await notificationService.sendMassNotification(
         eventId,
         subject,
         message,
+        organizerId,
       );
 
       sendSuccess(

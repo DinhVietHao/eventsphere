@@ -31,7 +31,7 @@ export class AdminRepository {
     return CheckinLogModel.countDocuments();
   }
 
-  // 5 sự kiện mới nhất đang pending
+  //sự kiện mới nhất đang pending
   async getRecentPendingEvents() {
     return Event.find({ status: "PENDING" })
       .sort({ createdAt: -1 })
@@ -39,7 +39,7 @@ export class AdminRepository {
       .lean();
   }
 
-  // 5 user mới đăng ký gần nhất
+  //user mới đăng ký gần nhất
   async getRecentUsers() {
     return User.find()
       .sort({ createdAt: -1 })
