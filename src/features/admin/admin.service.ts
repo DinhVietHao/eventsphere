@@ -6,6 +6,10 @@ import { EventRepository } from "../events/repositories/event.repository";
 import { UserRepository } from "../auth/repositories/user.repository";
 import { TicketTypeRepository } from "../ticketTypes/repositories/ticketType.repository";
 import {
+  IAccountActionResult,
+  IAccountDetailResult,
+  IAccountListQueryDto,
+  IAccountListResult,
   IEventReviewDetailResult,
   IEventReviewResult,
   IEventWithOrganizer,
@@ -113,6 +117,145 @@ export class AdminService {
   // Lấy danh sách organizer cho bộ lọc
   async getOrganizersList() {
     return adminRepository.getOrganizersList();
+  }
+
+  async getAccounts(query: IAccountListQueryDto): Promise<IAccountListResult> {
+    const keyword = query.keyword?.trim() || "";
+    const role = query.role?.trim() || "";
+    const status = query.status?.trim() || "";
+    const sort = query.sort || "newest";
+    const page = query.page;
+    const limit = query.limit;
+
+    const result = await this.userRepository.findAccountsForAdmin({
+      page,
+      limit,
+      keyword,
+      role,
+      status,
+      sort,
+    });
+
+    return {
+      users: result.users,
+      currentPage: page,
+      totalPages: Math.max(1, Math.ceil(result.totalItems / limit)),
+      totalItems: result.totalItems,
+      filters: {
+        keyword,
+        role,
+        status,
+        sort,
+      },
+    };
+  }
+
+  async getAccountDetail(userId: string): Promise<IAccountDetailResult> {
+    const account = await this.userRepository.findAccountForAdmin(userId);
+
+    if (!account) {
+      throw new AppError("Khong tim thay tai khoan", 404);
+    }
+
+    return { account };
+  }
+
+  async lockAccount(
+    userId: string,
+    adminId: string,
+    reason: string,
+  ): Promise<IAccountActionResult> {
+    if (userId === adminId) {
+      throw new AppError("Ban khong the khoa tai khoan dang dang nhap.", 403);
+    }
+
+    const currentUser = await this.userRepository.findAccountForAdmin(userId);
+    if (!currentUser) {
+      throw new AppError("Khong tim thay tai khoan", 404);
+    }
+
+    if (!currentUser.email) {
+      throw new AppError("Tai khoan nguoi dung chua co email", 400);
+    }
+
+    if (!currentUser.isActive) {
+      throw new AppError("Tai khoan nay da bi khoa truoc do.", 409);
+    }
+
+    const trimmedReason = reason.trim();
+    const updatedUser = await this.userRepository.lockAccount(
+      userId,
+      adminId,
+      trimmedReason,
+    );
+
+    if (!updatedUser) {
+      const latestUser = await this.userRepository.findAccountForAdmin(userId);
+      if (!latestUser) {
+        throw new AppError("Khong tim thay tai khoan", 404);
+      }
+
+      if (!latestUser.isActive) {
+        throw new AppError("Tai khoan nay da bi khoa truoc do.", 409);
+      }
+
+      throw new AppError("Trang thai tai khoan da thay doi, vui long thu lai.", 409);
+    }
+
+    const emailSent = await this.sendEmailSafely(() =>
+      emailService.sendAccountLockedEmail({
+        recipientEmail: updatedUser.email,
+        recipientName: updatedUser.name,
+        reason: trimmedReason,
+        lockedAt: updatedUser.lockedAt || new Date(),
+        supportEmail: process.env.SUPPORT_EMAIL,
+      }),
+    );
+
+    return { user: updatedUser, emailSent };
+  }
+
+  async unlockAccount(
+    userId: string,
+    adminId: string,
+  ): Promise<IAccountActionResult> {
+    const currentUser = await this.userRepository.findAccountForAdmin(userId);
+    if (!currentUser) {
+      throw new AppError("Khong tim thay tai khoan", 404);
+    }
+
+    if (!currentUser.email) {
+      throw new AppError("Tai khoan nguoi dung chua co email", 400);
+    }
+
+    if (currentUser.isActive) {
+      throw new AppError("Tai khoan nay hien khong bi khoa.", 409);
+    }
+
+    const updatedUser = await this.userRepository.unlockAccount(userId, adminId);
+
+    if (!updatedUser) {
+      const latestUser = await this.userRepository.findAccountForAdmin(userId);
+      if (!latestUser) {
+        throw new AppError("Khong tim thay tai khoan", 404);
+      }
+
+      if (latestUser.isActive) {
+        throw new AppError("Tai khoan nay hien khong bi khoa.", 409);
+      }
+
+      throw new AppError("Trang thai tai khoan da thay doi, vui long thu lai.", 409);
+    }
+
+    const emailSent = await this.sendEmailSafely(() =>
+      emailService.sendAccountUnlockedEmail({
+        recipientEmail: updatedUser.email,
+        recipientName: updatedUser.name,
+        unlockedAt: updatedUser.unlockedAt || new Date(),
+      }),
+    );
+
+    return { user: updatedUser, emailSent };
   }
 
   /**
@@ -255,7 +398,7 @@ export class AdminService {
       await sendEmail();
       return true;
     } catch (err) {
-      console.error("[AdminService] Failed to send event review email", err);
+      console.error("[AdminService] Failed to send account status email", err);
       return false;
     }
   }

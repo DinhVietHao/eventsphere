@@ -807,34 +807,34 @@ repositories/
 
 Hệ thống được phân rã thành **26 Use Cases (UC)** chia cho 5 thành viên:
 
-| Mã UC    | Tên chức năng                    | Actor           | Thư mục                   | Người phụ trách  | Trạng thái     |
-| -------- | -------------------------------- | --------------- | ------------------------- | ---------------- | -------------- |
-| **UC01** | Xem danh sách sự kiện            | Guest           | `features/events/`        | Hào              | ✅ Done        |
-| **UC02** | Xem chi tiết sự kiện             | Guest           | `features/events/`        | Hào              | ✅ Done        |
-| **UC03** | Tìm kiếm sự kiện (full-text)     | Guest           | `features/events/`        | Hào              | ✅ Done        |
-| **UC04** | Lọc sự kiện (category, date)     | Guest           | `features/events/`        | Lượng            | ✅ Done        |
-| **UC05** | Đăng ký tài khoản                | Guest           | `features/auth/`          | **Hào**          | ✅ Done        |
-| **UC06** | Đăng nhập                        | Registered User | `features/auth/`          | **Hào**          | ✅ Done        |
-| **UC07** | Đăng ký tham dự sự kiện          | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done        |
-| **UC08** | Thanh toán vé (VNPay/Stripe)     | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done        |
-| **UC09** | Xem chi tiết vé + QR Code        | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done        |
-| **UC10** | Thêm sự kiện vào Google Calendar | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done        |
-| **UC11** | Đánh giá & chấm điểm sự kiện     | Attendee        | `features/reviews/`       | **Kha**          | ✅ Done        |
-| **UC12** | Xem lịch sử tham dự              | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done        |
-| **UC13** | Quản lý sự kiện (CRUD + Banner)  | Organizer       | `features/events/`        | **Hào**          | ✅ Done        |
-| **UC14** | Quản lý loại vé                  | Organizer       | `features/events/`        | **Lượng**        | ✅ Done        |
-| **UC15** | Xem danh sách đăng ký            | Organizer       | `features/events/`        | **Lượng**        | ✅ Done        |
-| **UC16** | Gửi thông báo hàng loạt          | Organizer       | `features/notifications/` | **Danh**         | ✅ Pending     |
-| **UC17** | Phân công nhân viên check-in     | Organizer       | `features/events/`        | **Trọng**        | ✅ Done        |
-| **UC18** | Xuất danh sách attendee (CSV)    | Organizer       | `features/events/`        | **Lượng**        | ⏳ Pending     |
-| **UC19** | Báo cáo tổng kết sự kiện         | Organizer       | `features/events/`        | **Danh**         | ✅ Pending     |
-| **UC20** | Dashboard realtime check-in      | Organizer       | `features/events/`        | **Danh · Trọng** | ✅ Done        |
-| **UC21** | Quét QR check-in                 | Staff           | `features/checkin/`       | **Trọng**        | ✅ In Progress |
-| **UC22** | Check-in thủ công (tên/email)    | Staff           | `features/checkin/`       | **Trọng**        | ✅ In Progress |
-| **UC23** | Phê duyệt / Từ chối sự kiện      | Admin           | `features/admin/`         | **Hào**          | 🔄 In Progress |
-| **UC24** | Quản lý tài khoản (khóa/mở)      | Admin           | `features/admin/`         | Core team        | ⏳ Pending     |
-| **UC25** | Dashboard tổng quan hệ thống     | Admin           | `features/admin/`         | **Danh · Trọng** | ✅ Done        |
-| **UC26** | Báo cáo doanh thu toàn nền tảng  | Admin           | `features/admin/`         | **Danh · Trọng** | ✅ Done        |
+| Mã UC    | Tên chức năng                    | Actor           | Thư mục                   | Người phụ trách  | Trạng thái |
+| -------- | -------------------------------- | --------------- | ------------------------- | ---------------- | ---------- |
+| **UC01** | Xem danh sách sự kiện            | Guest           | `features/events/`        | Hào              | ✅ Done    |
+| **UC02** | Xem chi tiết sự kiện             | Guest           | `features/events/`        | Hào              | ✅ Done    |
+| **UC03** | Tìm kiếm sự kiện (full-text)     | Guest           | `features/events/`        | Hào              | ✅ Done    |
+| **UC04** | Lọc sự kiện (category, date)     | Guest           | `features/events/`        | Lượng            | ✅ Done    |
+| **UC05** | Đăng ký tài khoản                | Guest           | `features/auth/`          | **Hào**          | ✅ Done    |
+| **UC06** | Đăng nhập                        | Registered User | `features/auth/`          | **Hào**          | ✅ Done    |
+| **UC07** | Đăng ký tham dự sự kiện          | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done    |
+| **UC08** | Thanh toán vé (VNPay/Stripe)     | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done    |
+| **UC09** | Xem chi tiết vé + QR Code        | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done    |
+| **UC10** | Thêm sự kiện vào Google Calendar | Attendee        | `features/tickets/`       | **Kha**          | ❌ Cancel  |
+| **UC11** | Đánh giá & chấm điểm sự kiện     | Attendee        | `features/reviews/`       | **Kha**          | ✅ Done    |
+| **UC12** | Xem lịch sử tham dự              | Attendee        | `features/tickets/`       | **Kha**          | ✅ Done    |
+| **UC13** | Quản lý sự kiện (CRUD + Banner)  | Organizer       | `features/events/`        | **Hào**          | ✅ Done    |
+| **UC14** | Quản lý loại vé                  | Organizer       | `features/events/`        | **Lượng**        | ✅ Done    |
+| **UC15** | Xem danh sách đăng ký            | Organizer       | `features/events/`        | **Lượng**        | ✅ Done    |
+| **UC16** | Gửi thông báo hàng loạt          | Organizer       | `features/notifications/` | **Danh**         | ✅ Done    |
+| **UC17** | Phân công nhân viên check-in     | Organizer       | `features/events/`        | **Trọng**        | ✅ Done    |
+| **UC18** | Xuất danh sách attendee (CSV)    | Organizer       | `features/events/`        | **Lượng**        | ✅ Done    |
+| **UC19** | Báo cáo tổng kết sự kiện         | Organizer       | `features/events/`        | **Danh**         | ✅ Done    |
+| **UC20** | Dashboard realtime check-in      | Organizer       | `features/events/`        | **Danh · Trọng** | ✅ Done    |
+| **UC21** | Quét QR check-in                 | Staff           | `features/checkin/`       | **Trọng**        | ✅ Done    |
+| **UC22** | Check-in thủ công (tên/email)    | Staff           | `features/checkin/`       | **Trọng**        | ✅ Done    |
+| **UC23** | Phê duyệt / Từ chối sự kiện      | Admin           | `features/admin/`         | **Hào**          | ✅ Done    |
+| **UC24** | Quản lý tài khoản (khóa/mở)      | Admin           | `features/admin/`         | Core team        | ✅ Done    |
+| **UC25** | Dashboard tổng quan hệ thống     | Admin           | `features/admin/`         | **Danh · Trọng** | ✅ Done    |
+| **UC26** | Báo cáo doanh thu toàn nền tảng  | Admin           | `features/admin/`         | **Danh · Trọng** | ✅ Done    |
 
 ---
 

@@ -1,34 +1,53 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../utils/jwt.util";
 import { AppError } from "../errors/AppError";
+import { UserRepository } from "../../features/auth/repositories/user.repository";
 
-export const authMiddleware = (
+const userRepository = new UserRepository();
+
+export const authMiddleware = async (
   req: Request,
   res: Response,
   next: NextFunction,
-): void => {
+): Promise<void> => {
   try {
     let token: string | undefined;
 
-    // Ưu tiên đọc từ Authorization header (API clients)
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
       token = authHeader.split(" ")[1];
     }
 
-    // Fallback: đọc từ cookie (EJS browser clients)
-    if (!token && (req as any).cookies?.accessToken) {
-      token = (req as any).cookies.accessToken;
+    if (!token && req.cookies?.accessToken) {
+      token = req.cookies.accessToken;
     }
 
     if (!token) {
-      throw new AppError("Bạn chưa đăng nhập", 401);
+      throw new AppError("Ban chua dang nhap", 401);
     }
 
     const payload = verifyAccessToken(token);
-    (req as any).user = { id: payload.id, role: payload.role };
+    const user = await userRepository.findById(payload.id);
+
+    if (!user) {
+      throw new AppError("Tai khoan khong ton tai", 401);
+    }
+
+    if (!user.isActive) {
+      throw new AppError(
+        "Tai khoan cua ban da bi khoa. Vui long lien he quan tri vien.",
+        403,
+      );
+    }
+
+    req.user = { id: user._id.toString(), role: user.role, name: user.name };
     next();
   } catch (err) {
-    next(new AppError("Token không hợp lệ hoặc đã hết hạn", 401));
+    if (err instanceof AppError) {
+      next(err);
+      return;
+    }
+
+    next(new AppError("Token khong hop le hoac da het han", 401));
   }
 };
