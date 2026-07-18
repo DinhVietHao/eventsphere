@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tài khoản của tôi - EventSphere</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+      padding-top: 56px;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .page-content {
+      flex: 1;
+    }
+
+    .profile-avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .avatar-placeholder {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #0d6efd, #6610f2);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .tab-pane { animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .nav-pills .nav-link {
+      color: #495057;
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      margin-bottom: 2px;
+    }
+    .nav-pills .nav-link.active {
+      background-color: #0d6efd;
+      color: #fff;
+    }
+    .nav-pills .nav-link:hover:not(.active) {
+      background-color: #e9ecef;
+    }
+
+    .form-control:focus, .form-select:focus {
+      border-color: #0d6efd;
+      box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+    }
+
+    .badge-role {
+      font-size: 0.75rem;
+      padding: 5px 10px;
+      border-radius: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <%- include('../partials/navbar.ejs') %>
+
+  <div class="container py-5 page-content" style="max-width: 960px;">
+
+    <!-- Nút quay về trang chủ -->
+    <div class="mb-4">
+      <a href="/events" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Về trang chủ
+      </a>
+    </div>
+
+    <!-- Header card -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+      <div style="height: 80px; background: linear-gradient(135deg, #0d6efd, #6610f2);"></div>
+      <div class="card-body px-4 pb-4" style="margin-top: -40px;">
+        <div class="d-flex align-items-end gap-3 flex-wrap">
+          <% if (profile.avatar) { %>
+            <img src="<%= profile.avatar %>" alt="Avatar" class="profile-avatar shadow border border-3 border-white">
+          <% } else { %>
+            <div class="avatar-placeholder shadow border border-3 border-white">
+              <%= profile.name.charAt(0).toUpperCase() %>
+            </div>
+          <% } %>
+          <div class="pb-1">
+            <h4 class="fw-bold mb-1"><%= profile.name %></h4>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="text-muted small"><i class="bi bi-envelope me-1"></i><%= profile.email %></span>
+              <%
+                const roleMap = {
+                  attendee  : { label: 'Người tham dự', cls: 'bg-primary-subtle text-primary' },
+                  organizer : { label: 'Ban tổ chức',   cls: 'bg-success-subtle text-success' },
+                  staff     : { label: 'Nhân viên',     cls: 'bg-warning-subtle text-warning' },
+                  admin     : { label: 'Quản trị viên', cls: 'bg-danger-subtle text-danger' },
+                };
+                const roleInfo = roleMap[profile.role] || { label: profile.role, cls: 'bg-secondary-subtle text-secondary' };
+              %>
+              <span class="badge badge-role <%= roleInfo.cls %>"><%= roleInfo.label %></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flash messages -->
+    <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      <div><%= error %></div>
+    </div>
+    <% } %>
+    <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+      <i class="bi bi-check-circle-fill me-2"></i>
+      <div><%= success %></div>
+    </div>
+    <% } %>
+
+    <div class="row g-4">
+      <!-- Sidebar tabs -->
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 p-2">
+          <nav class="nav nav-pills flex-column">
+            <a class="nav-link d-flex align-items-center gap-2 <%= activeTab === 'info' ? 'active' : '' %>"
+               href="/profile?tab=info">
+              <i class="bi bi-person"></i>Thông tin cá nhân
+            </a>
+            <a class="nav-link d-flex align-items-center gap-2 <%= activeTab === 'password' ? 'active' : '' %>"
+               href="/profile?tab=password">
+              <i class="bi bi-shield-lock"></i>Đổi mật khẩu
+            </a>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Main content -->
+      <div class="col-md-9">
+
+        <!-- Tab: Thông tin cá nhân -->
+        <% if (activeTab === 'info') { %>
+        <div class="card border-0 shadow-sm rounded-4">
+          <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h5 class="fw-bold mb-0"><i class="bi bi-person-circle me-2 text-primary"></i>Thông tin cá nhân</h5>
+            <p class="text-muted small mb-0 mt-1">Cập nhật tên hiển thị, số điện thoại và ảnh đại diện</p>
+          </div>
+          <div class="card-body px-4 pb-4">
+            <form action="/profile" method="POST" id="profileForm">
+              <input type="hidden" name="_tab" value="info">
+
+              <div class="mb-3">
+                <label for="name" class="form-label fw-semibold text-secondary small">Họ và tên <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                  <input type="text" class="form-control bg-light border-start-0" id="name" name="name"
+                         value="<%= profile.name %>" required minlength="2" maxlength="50" placeholder="Nguyễn Văn A">
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold text-secondary small">Địa chỉ Email</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                  <input type="email" class="form-control bg-light border-start-0" value="<%= profile.email %>" disabled>
+                </div>
+                <div class="form-text text-muted"><i class="bi bi-lock me-1"></i>Email không thể thay đổi</div>
+              </div>
+
+              <div class="mb-3">
+                <label for="phone" class="form-label fw-semibold text-secondary small">Số điện thoại</label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-telephone"></i></span>
+                  <input type="tel" class="form-control bg-light border-start-0" id="phone" name="phone"
+                         value="<%= profile.phone || '' %>" placeholder="0901 234 567"
+                         maxlength="10" pattern="0[0-9]{9}" title="Số điện thoại phải đúng 10 chữ số và bắt đầu bằng 0">
+                </div>
+                <div class="form-text text-muted">10 chữ số, bắt đầu bằng 0</div>
+              </div>
+
+              <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary px-4 fw-semibold" id="saveBtn">
+                  <span id="saveBtnText"><i class="bi bi-floppy me-2"></i>Lưu thay đổi</span>
+                  <div class="spinner-border spinner-border-sm ms-2 d-none" id="saveSpinner"></div>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <% } %>
+
+        <!-- Tab: Đổi mật khẩu -->
+        <% if (activeTab === 'password') { %>
+        <div class="card border-0 shadow-sm rounded-4">
+          <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <h5 class="fw-bold mb-0"><i class="bi bi-shield-lock me-2 text-primary"></i>Đổi mật khẩu</h5>
+            <p class="text-muted small mb-0 mt-1">Mật khẩu mới phải có ít nhất 6 ký tự</p>
+          </div>
+          <div class="card-body px-4 pb-4">
+            <form action="/profile/change-password" method="POST" id="passwordForm">
+
+              <div class="mb-3">
+                <label for="currentPassword" class="form-label fw-semibold text-secondary small">Mật khẩu hiện tại <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                  <input type="password" class="form-control bg-light border-start-0 border-end-0"
+                         id="currentPassword" name="currentPassword" required placeholder="••••••••">
+                  <button class="input-group-text bg-light border-start-0 text-muted" type="button"
+                          onclick="togglePwd('currentPassword', 'icon0')">
+                    <i class="bi bi-eye" id="icon0"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="newPassword" class="form-label fw-semibold text-secondary small">Mật khẩu mới <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock-fill"></i></span>
+                  <input type="password" class="form-control bg-light border-start-0 border-end-0"
+                         id="newPassword" name="newPassword" required minlength="6" placeholder="Tối thiểu 6 ký tự">
+                  <button class="input-group-text bg-light border-start-0 text-muted" type="button"
+                          onclick="togglePwd('newPassword', 'icon1')">
+                    <i class="bi bi-eye" id="icon1"></i>
+                  </button>
+                </div>
+                <!-- Thanh độ mạnh mật khẩu -->
+                <div class="mt-2 d-none" id="strengthBar">
+                  <div class="progress" style="height: 4px;">
+                    <div class="progress-bar" id="strengthFill" style="width: 0%; transition: width 0.3s;"></div>
+                  </div>
+                  <small id="strengthText" class="text-muted"></small>
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <label for="confirmPassword" class="form-label fw-semibold text-secondary small">Xác nhận mật khẩu mới <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock-fill"></i></span>
+                  <input type="password" class="form-control bg-light border-start-0 border-end-0"
+                         id="confirmPassword" name="confirmPassword" required placeholder="Nhập lại mật khẩu mới">
+                  <button class="input-group-text bg-light border-start-0 text-muted" type="button"
+                          onclick="togglePwd('confirmPassword', 'icon2')">
+                    <i class="bi bi-eye" id="icon2"></i>
+                  </button>
+                </div>
+                <div class="form-text d-none text-danger" id="matchError">
+                  <i class="bi bi-x-circle me-1"></i>Mật khẩu xác nhận không khớp
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary px-4 fw-semibold" id="pwdBtn">
+                  <span id="pwdBtnText"><i class="bi bi-shield-check me-2"></i>Cập nhật mật khẩu</span>
+                  <div class="spinner-border spinner-border-sm ms-2 d-none" id="pwdSpinner"></div>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <% } %>
+
+      </div>
+    </div>
+  </div>
+
+  <%- include('../partials/footer.ejs') %>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // Toggle ẩn/hiện mật khẩu
+    function togglePwd(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon  = document.getElementById(iconId);
+      const isHidden = input.type === 'password';
+      input.type = isHidden ? 'text' : 'password';
+      icon.classList.toggle('bi-eye',       !isHidden);
+      icon.classList.toggle('bi-eye-slash',  isHidden);
+    }
+
+    // Loading state khi submit
+    document.getElementById('profileForm')?.addEventListener('submit', function () {
+      const btn  = document.getElementById('saveBtn');
+      const text = document.getElementById('saveBtnText');
+      const spin = document.getElementById('saveSpinner');
+      btn.disabled = true;
+      text.textContent = 'Đang lưu...';
+      spin.classList.remove('d-none');
+    });
+
+    document.getElementById('passwordForm')?.addEventListener('submit', function (e) {
+      const newPwd  = document.getElementById('newPassword').value;
+      const confPwd = document.getElementById('confirmPassword').value;
+      if (newPwd !== confPwd) {
+        e.preventDefault();
+        document.getElementById('matchError').classList.remove('d-none');
+        return;
+      }
+      const btn  = document.getElementById('pwdBtn');
+      const text = document.getElementById('pwdBtnText');
+      const spin = document.getElementById('pwdSpinner');
+      btn.disabled = true;
+      text.textContent = 'Đang cập nhật...';
+      spin.classList.remove('d-none');
+    });
+
+    // Ẩn lỗi match khi người dùng sửa lại
+    document.getElementById('confirmPassword')?.addEventListener('input', function () {
+      document.getElementById('matchError').classList.add('d-none');
+    });
+
+    // Thanh độ mạnh mật khẩu
+    document.getElementById('newPassword')?.addEventListener('input', function () {
+      const val = this.value;
+      const bar = document.getElementById('strengthBar');
+      const fill = document.getElementById('strengthFill');
+      const text = document.getElementById('strengthText');
+
+      if (!val) { bar.classList.add('d-none'); return; }
+      bar.classList.remove('d-none');
+
+      let score = 0;
+      if (val.length >= 6)  score++;
+      if (val.length >= 10) score++;
+      if (/[A-Z]/.test(val))  score++;
+      if (/[0-9]/.test(val))  score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+
+      const levels = [
+        { pct: '20%', cls: 'bg-danger',  label: 'Rất yếu' },
+        { pct: '40%', cls: 'bg-danger',  label: 'Yếu' },
+        { pct: '60%', cls: 'bg-warning', label: 'Trung bình' },
+        { pct: '80%', cls: 'bg-info',    label: 'Mạnh' },
+        { pct: '100%',cls: 'bg-success', label: 'Rất mạnh' },
+      ];
+      const lvl = levels[Math.min(score, 4)];
+      fill.style.width = lvl.pct;
+      fill.className   = 'progress-bar ' + lvl.cls;
+      text.textContent = 'Độ mạnh: ' + lvl.label;
+      text.className   = 'text-muted small';
+    });
+  </script>
+</body>
+
+</html>

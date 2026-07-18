@@ -1,9 +1,29 @@
 import { Router } from "express";
 import { Request, Response } from "express";
 import { AuthService } from "../features/auth/auth.service";
+import { verifyAccessToken } from "../shared/utils/jwt.util";
 
 const authViewsRouter = Router();
 const authService = new AuthService();
+
+// Middleware bảo vệ route — redirect về /login nếu chưa đăng nhập
+function requireAuth(req: Request, res: Response, next: Function) {
+  const token = (req as any).cookies?.accessToken;
+  if (!token) return res.redirect("/login");
+  try {
+    const payload = verifyAccessToken(token);
+    (req as any).user = {
+      id: payload.id,
+      role: payload.role,
+      name: payload.name,
+    };
+    next();
+  } catch {
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+    res.redirect("/login");
+  }
+}
 
 // Hiển thị form đăng nhập
 authViewsRouter.get("/login", (req: Request, res: Response) => {
@@ -72,5 +92,88 @@ authViewsRouter.get("/logout", async (req: Request, res: Response) => {
     res.redirect("/login");
   }
 });
+
+// ─── Profile ───────────────────────────────────────────────────────────────
+
+// Hiển thị trang profile
+authViewsRouter.get(
+  "/profile",
+  requireAuth,
+  async (req: Request, res: Response) => {
+    const activeTab = (req.query.tab as string) || "info";
+    const messages = (req as any).flash?.() ?? {};
+    try {
+      const profile = await authService.getProfile((req as any).user.id);
+      res.render("auth/profile", {
+        layout: false,
+        user: (req as any).user,
+        profile,
+        activeTab,
+        error: messages.error?.[0] ?? null,
+        success: messages.success?.[0] ?? null,
+      });
+    } catch (err: any) {
+      res.redirect("/login");
+    }
+  },
+);
+
+// Cập nhật thông tin cá nhân
+authViewsRouter.post(
+  "/profile",
+  requireAuth,
+  async (req: Request, res: Response) => {
+    try {
+      const { name, phone, avatar } = req.body;
+      await authService.updateProfile((req as any).user.id, {
+        name: name || undefined,
+        phone: phone || undefined,
+        avatar: avatar || undefined,
+      });
+      (req as any).flash?.("success", "Cập nhật thông tin thành công!");
+      res.redirect("/profile?tab=info");
+    } catch (err: any) {
+      const profile = await authService.getProfile((req as any).user.id);
+      res.render("auth/profile", {
+        layout: false,
+        user: (req as any).user,
+        profile,
+        activeTab: "info",
+        error: err.message || "Cập nhật thất bại",
+        success: null,
+      });
+    }
+  },
+);
+
+// Đổi mật khẩu
+authViewsRouter.post(
+  "/profile/change-password",
+  requireAuth,
+  async (req: Request, res: Response) => {
+    try {
+      const { currentPassword, newPassword, confirmPassword } = req.body;
+      if (newPassword !== confirmPassword) {
+        throw new Error("Mật khẩu xác nhận không khớp");
+      }
+      await authService.changePassword((req as any).user.id, {
+        currentPassword,
+        newPassword,
+      });
+      (req as any).flash?.("success", "Đổi mật khẩu thành công!");
+      res.redirect("/profile?tab=password");
+    } catch (err: any) {
+      const profile = await authService.getProfile((req as any).user.id);
+      res.render("auth/profile", {
+        layout: false,
+        user: (req as any).user,
+        profile,
+        activeTab: "password",
+        error: err.message || "Đổi mật khẩu thất bại",
+        success: null,
+      });
+    }
+  },
+);
 
 export default authViewsRouter;

@@ -120,4 +120,73 @@ export class AuthService {
     }
     await this.tokenRepository.deleteByHash(tokenHash);
   }
+
+  // Lấy thông tin profile của user đang đăng nhập
+  async getProfile(userId: string) {
+    const user = await this.userRepository.findById(userId);
+    if (!user) throw new AppError("Người dùng không tồn tại", 404);
+
+    // Trả về chỉ những field cần thiết, loại bỏ các field nhạy cảm
+    return {
+      id: (user as any)._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone ?? null,
+      avatar: user.avatar ?? null,
+      isActive: user.isActive,
+      emailVerified: user.emailVerified,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
+  }
+
+  // Cập nhật thông tin profile (name, phone, avatar)
+  async updateProfile(
+    userId: string,
+    dto: { name?: string; phone?: string; avatar?: string },
+  ) {
+    const user = await this.userRepository.updateProfile(userId, dto);
+    if (!user) throw new AppError("Người dùng không tồn tại", 404);
+
+    return {
+      id: (user as any)._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone ?? null,
+      avatar: user.avatar ?? null,
+    };
+  }
+
+  // Đổi mật khẩu — kiểm tra mật khẩu cũ trước khi cho phép thay đổi
+  async changePassword(
+    userId: string,
+    dto: { currentPassword: string; newPassword: string },
+  ): Promise<void> {
+    // Lấy user kèm passwordHash (field bị ẩn mặc định)
+    const user = await this.userRepository.findByIdWithPassword(userId);
+    if (!user) throw new AppError("Người dùng không tồn tại", 404);
+
+    // Kiểm tra mật khẩu hiện tại
+    const isMatch = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+    if (!isMatch) throw new AppError("Mật khẩu hiện tại không đúng", 400);
+
+    // Không cho phép đặt lại mật khẩu giống mật khẩu cũ
+    const isSamePassword = await bcrypt.compare(
+      dto.newPassword,
+      user.passwordHash,
+    );
+    if (isSamePassword)
+      throw new AppError(
+        "Mật khẩu mới không được trùng mật khẩu hiện tại",
+        400,
+      );
+
+    const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
+    await this.userRepository.updatePassword(userId, newPasswordHash);
+  }
 }

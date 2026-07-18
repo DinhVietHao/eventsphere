@@ -82,6 +82,17 @@ export class EventRepository {
     } as any);
   }
 
+  // Lấy danh sách events đã approved/ongoing/ended của organizer — dùng cho dropdown gửi thông báo
+  async findApprovedByOrganizer(organizerId: string): Promise<IEvent[]> {
+    return Event.find({
+      organizerId: new Types.ObjectId(organizerId),
+      status: { $in: ["APPROVED", "ONGOING", "ENDED"] },
+    } as any)
+      .sort({ startDate: -1 })
+      .select("_id title status startDate")
+      .lean();
+  }
+
   // Tạo event mới
   async create(data: Partial<IEvent>): Promise<IEvent> {
     return Event.create(data);
@@ -102,10 +113,7 @@ export class EventRepository {
 
   // Update attendeeCount khi có registration mới
   async updateByAttendeeCount(_id: string) {
-    return Event.updateOne(
-      { _id },
-      { $inc: { attendeeCount: 1 } }
-    );
+    return Event.updateOne({ _id }, { $inc: { attendeeCount: 1 } });
   }
 
   /**
@@ -130,7 +138,9 @@ export class EventRepository {
         { title: regex },
         {
           organizerId: {
-            $in: (options.organizerIds || []).map((id) => new Types.ObjectId(id)),
+            $in: (options.organizerIds || []).map(
+              (id) => new Types.ObjectId(id),
+            ),
           },
         },
       ];
@@ -154,7 +164,9 @@ export class EventRepository {
   /**
    * Find one event for admin review and include organizer information.
    */
-  async findEventForAdminReview(eventId: string): Promise<IEventWithOrganizer | null> {
+  async findEventForAdminReview(
+    eventId: string,
+  ): Promise<IEventWithOrganizer | null> {
     return Event.findById(eventId)
       .populate("organizerId", "name email")
       .then((event) => event as IEventWithOrganizer | null);
@@ -262,11 +274,48 @@ export class EventRepository {
     } as any);
   }
 
+  // Tính avgRating trực tiếp từ collection reviews — dùng cho báo cáo
+  async getAvgRating(eventId: string): Promise<number> {
+    const result = await ReviewModel.aggregate([
+      { $match: { eventId: new mongoose.Types.ObjectId(eventId) } },
+      { $group: { _id: null, avg: { $avg: "$rating" } } },
+    ]);
+    return result[0]?.avg ? Number(result[0].avg.toFixed(1)) : 0;
+  }
+
   async getRegistrationCount(eventId: string) {
     return Registration.countDocuments({
       eventId: new mongoose.Types.ObjectId(eventId),
       paymentStatus: "paid",
     } as any);
+  }
+
+  // Đếm số registrations của nhiều event cùng lúc — dùng cho danh sách organizer
+  async countRegistrationsByEventIds(
+    eventIds: string[],
+  ): Promise<Map<string, number>> {
+    const result = await Registration.aggregate([
+      {
+        $match: {
+          eventId: {
+            $in: eventIds.map((id) => new mongoose.Types.ObjectId(id)),
+          },
+          paymentStatus: "paid",
+        },
+      },
+      {
+        $group: {
+          _id: "$eventId",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const map = new Map<string, number>();
+    for (const row of result) {
+      map.set(row._id.toString(), row.count);
+    }
+    return map;
   }
 
   // ───── UC17 — Quản lý nhân viên check-in ─────
@@ -280,7 +329,7 @@ export class EventRepository {
     const count = await EventStaffModel.countDocuments({
       eventId: new Types.ObjectId(eventId),
       staffId: new Types.ObjectId(staffId),
-    } as any)
+    } as any);
     return count > 0;
   }
 
@@ -304,7 +353,8 @@ export class EventRepository {
   async getStaffsByEventId(eventId: string) {
     const staffAssignments = await EventStaffModel.find({
       eventId: new Types.ObjectId(eventId),
-    } as any).populate('staffId', 'name email') // Lấy thêm trường name và email từ User collection
+    } as any)
+      .populate("staffId", "name email") // Lấy thêm trường name và email từ User collection
       .lean();
     // Mapping lại mảng dữ liệu cho phẳng (phù hợp với cấu trúc EJS đang cần)
     return staffAssignments.map((assignment: any) => {
@@ -326,22 +376,24 @@ export class EventRepository {
   async getEventsByStaffId(staffId: string) {
     // Bước 1: Tìm tất cả các bản ghi phân công của Staff này trong bảng event_staff
     const assignments = await EventStaffModel.find({
-      staffId: staffId as any
-    }).select('eventId');
+      staffId: staffId as any,
+    }).select("eventId");
 
     if (assignments.length === 0) {
       return [];
     }
 
     // FIX TẠI ĐÂY: Thêm .toString() để chuyển mảng ObjectId thành mảng String
-    const eventIds = assignments.map(assignment => assignment.eventId.toString());
+    const eventIds = assignments.map((assignment) =>
+      assignment.eventId.toString(),
+    );
 
     // Bước 2: Query bình thường, Mongoose tự động ép chuỗi về lại ObjectId
     return Event.find({
       _id: { $in: eventIds }, // Hết lỗi đỏ ngay lập tức!
-      status: { $in: ["APPROVED", "ONGOING"] }
+      status: { $in: ["APPROVED", "ONGOING"] },
     })
-        .select('_id title startDate endDate status')
-        .sort({ startDate: 1 }); // Sắp xếp sự kiện gần nhất lên đầu
+      .select("_id title startDate endDate status")
+      .sort({ startDate: 1 }); // Sắp xếp sự kiện gần nhất lên đầu
   }
 }
