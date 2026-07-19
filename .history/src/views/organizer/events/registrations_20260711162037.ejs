@@ -1,0 +1,115 @@
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="/organizer/events">Sự kiện của tôi</a></li>
+    <li class="breadcrumb-item active">Danh sách đăng ký tham dự</li>
+  </ol>
+</nav>
+
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body p-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+    <div>
+      <span class="text-muted small text-uppercase fw-bold">Sự kiện theo dõi</span>
+      <h2 class="h4 fw-bold text-dark mb-0 mt-1">
+        <%= event.title %>
+      </h2>
+      <span class="text-muted small">
+        Tổng cộng <strong>
+          <%= pagination.totalPages * pagination.limit - (pagination.limit - registrations.length) %>
+        </strong> đăng ký
+        &nbsp;·&nbsp; Trang <strong>
+          <%= pagination.currentPage %>
+        </strong> / <strong>
+          <%= pagination.totalPages || 1 %>
+        </strong>
+      </span>
+    </div>
+    <div>
+      <a href="/api/v1/events/<%= event._id %>/export" class="btn btn-outline-success fw-bold">
+        <i class="bi bi-filetype-csv me-2"></i>Xuất file CSV
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 text-nowrap" id="registrationTable">
+      <thead class="table-light text-muted small text-uppercase">
+        <tr>
+          <th class="ps-4">STT</th>
+          <th>Tên Attendee</th>
+          <th>Địa chỉ Email</th>
+          <th>Loại vé</th>
+          <th>Ngày đăng ký</th>
+          <th class="pe-4">Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if(registrations && registrations.length> 0) { %>
+          <% registrations.forEach((reg, index)=> { %>
+            <tr>
+              <td class="ps-4 text-muted">
+                <%= (pagination.currentPage - 1) * pagination.limit + index + 1 %>
+              </td>
+              <td class="fw-semibold text-dark">
+                <%= reg.attendeeName %>
+              </td>
+              <td>
+                <%= reg.attendeeEmail %>
+              </td>
+              <td><span class="badge bg-info-subtle text-info border border-info-subtle">
+                  <%= reg.ticketType || 'Standard' %>
+                </span></td>
+              <td>
+                <%= new Date(reg.createdAt).toLocaleDateString('vi-VN') %>
+              </td>
+              <td class="pe-4">
+                <span
+                  class="badge rounded-pill <%= reg.status === 'CONFIRMED' ? 'bg-success' : 'bg-warning text-dark' %>">
+                  <%= reg.status || 'CONFIRMED' %>
+                </span>
+              </td>
+            </tr>
+            <% }) %>
+              <% } else { %>
+                <tr>
+                  <td colspan="6" class="text-center py-5 text-muted">Chưa có ai đăng ký tham gia sự kiện này.</td>
+                </tr>
+                <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<% if (pagination.totalPages> 1) { %>
+  <nav class="d-flex justify-content-center mt-4" aria-label="Phân trang danh sách đăng ký">
+    <ul class="pagination">
+      <li class="page-item <%= pagination.currentPage <= 1 ? 'disabled' : '' %>">
+        <a class="page-link" href="?page=<%= pagination.currentPage - 1 %>">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+      </li>
+
+      <% for (let p=1; p <=pagination.totalPages; p++) { %>
+        <% if ( p===1 || p===pagination.totalPages || (p>= pagination.currentPage - 2 && p <= pagination.currentPage +
+            2) ) { %>
+            <li class="page-item <%= p === pagination.currentPage ? 'active' : '' %>">
+              <a class="page-link" href="?page=<%= p %>">
+                <%= p %>
+              </a>
+            </li>
+            <% } else if (p===pagination.currentPage - 3 || p===pagination.currentPage + 3) { %>
+              <li class="page-item disabled"><span class="page-link">…</span></li>
+              <% } %>
+                <% } %>
+
+                  <li class="page-item <%= pagination.currentPage >= pagination.totalPages ? 'disabled' : '' %>">
+                    <a class="page-link" href="?page=<%= pagination.currentPage + 1 %>">
+                      <i class="bi bi-chevron-right"></i>
+                    </a>
+                  </li>
+    </ul>
+  </nav>
+  <% } %>
+
+   

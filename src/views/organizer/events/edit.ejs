@@ -1,0 +1,90 @@
+<%# Kiểm tra trạng thái đóng băng chỉnh sửa %>
+<% const isLocked = event.status === 'APPROVED' || event.status === 'ONGOING'; %>
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="/organizer/events">Sự kiện của tôi</a></li>
+    <li class="breadcrumb-item active">Chỉnh sửa sự kiện</li>
+  </ol>
+</nav>
+
+<% if (isLocked) { %>
+<div class="alert alert-warning border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+  <i class="bi bi-lock-fill me-2 fs-4"></i>
+  <div>
+    Sự kiện này đang ở trạng thái <strong><%= event.status %></strong>. Bạn không thể chỉnh sửa thông tin khi sự kiện đã được phê duyệt hoặc đang chạy.
+  </div>
+</div>
+<% } %>
+
+<div class="card border-0 shadow-sm p-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
+    <h2 class="h4 fw-bold text-dark mb-0">Cập nhật thông tin sự kiện</h2>
+    <span class="badge bg-primary px-3 py-2 text-uppercase">Trạng thái: <%= event.status %></span>
+  </div>
+
+  <%# Form edit — có id để button bên ngoài link vào %>
+  <form action="/organizer/events/<%= event._id %>/edit" method="POST" id="editForm">
+    <fieldset <%= isLocked ? 'disabled' : '' %>>
+      <div class="row g-4">
+        <div class="col-lg-8">
+          <div class="mb-3">
+            <label for="title" class="form-label small fw-bold">Tên sự kiện</label>
+            <input type="text" class="form-control" id="title" name="title" value="<%= event.title %>" required>
+          </div>
+          <div class="mb-3">
+            <label for="description" class="form-label small fw-bold">Mô tả chi tiết</label>
+            <textarea class="form-control" id="description" name="description" rows="8" required><%= event.description %></textarea>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="mb-3">
+            <label for="category" class="form-label small fw-bold">Danh mục</label>
+            <select class="form-select" id="category" name="category" required>
+              <option value="music" <%= event.category === 'music' ? 'selected' : '' %>>Music</option>
+              <option value="tech" <%= event.category === 'tech' ? 'selected' : '' %>>Tech</option>
+              <option value="sport" <%= event.category === 'sport' ? 'selected' : '' %>>Sport</option>
+              <option value="education" <%= event.category === 'education' ? 'selected' : '' %>>Education</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="location" class="form-label small fw-bold">Địa điểm</label>
+            <input type="text" class="form-control" id="location" name="location" value="<%= event.location %>" required>
+          </div>
+          <div class="mb-3">
+            <label for="startDate" class="form-label small fw-bold">Ngày bắt đầu</label>
+            <input type="datetime-local" class="form-control" id="startDate" name="startDate" value="<%= new Date(event.startDate).toISOString().slice(0, 16) %>" required>
+          </div>
+          <div class="mb-3">
+            <label for="endDate" class="form-label small fw-bold">Ngày kết thúc</label>
+            <input type="datetime-local" class="form-control" id="endDate" name="endDate" value="<%= new Date(event.endDate).toISOString().slice(0, 16) %>" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-bold">Banner hiện tại</label>
+            <div class="border rounded text-center overflow-hidden" style="height: 140px;">
+              <img src="<%= event.bannerUrl || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=400&q=80' %>" class="w-100 h-100 object-fit-cover">
+            </div>
+          </div>
+        </div>
+      </div>
+    </fieldset>
+  </form>
+
+  <div class="col-12 border-top mt-4 pt-3 d-flex justify-content-end gap-2">
+    <a href="/organizer/events" class="btn btn-outline-secondary px-4">Quay lại</a>
+    <% if (!isLocked) { %>
+    <%# Button này link với editForm qua thuộc tính form="editForm" %>
+    <button type="submit" form="editForm" class="btn btn-success px-4 fw-bold">
+      Cập nhật thay đổi
+    </button>
+    <% if (event.status === 'DRAFT') { %>
+    <form action="/organizer/events/<%= event._id %>/submit" method="POST" class="d-inline">
+      <button type="submit" class="btn btn-primary px-4 fw-bold">
+        <i class="bi bi-send me-2"></i>Gửi duyệt
+      </button>
+    </form>
+    <% } %>
+    <% } %>
+  </div>
+</div>

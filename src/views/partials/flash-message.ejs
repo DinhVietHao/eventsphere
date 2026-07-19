@@ -1,0 +1,25 @@
+<%# 
+  Data truyền vào (thường lưu ở res.locals thông qua middleware):
+  - messages: { success: [], error: [] }
+%>
+<div class="container mt-3">
+  <% if (typeof messages !== 'undefined' && messages.success && messages.success.length > 0) { %>
+  <% messages.success.forEach(msg => { %>
+  <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm d-flex align-items-center" role="alert">
+    <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+    <div><%= msg %></div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  <% }) %>
+  <% } %>
+
+  <% if (typeof messages !== 'undefined' && messages.error && messages.error.length > 0) { %>
+  <% messages.error.forEach(msg => { %>
+  <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm d-flex align-items-center" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+    <div><%= msg %></div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  <% }) %>
+  <% } %>
+</div>

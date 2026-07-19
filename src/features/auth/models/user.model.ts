@@ -1,6 +1,6 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 
-export interface IUserDocument extends Document {
+export interface IUser extends Document {
   name                   : string;
   email                  : string;
   passwordHash           : string;
@@ -8,6 +8,11 @@ export interface IUserDocument extends Document {
   phone                 ?: string;
   avatar                ?: string;
   isActive               : boolean;
+  lockedReason          ?: string | null;
+  lockedAt              ?: Date | null;
+  lockedBy              ?: Types.ObjectId | IUser | null;
+  unlockedAt            ?: Date | null;
+  unlockedBy            ?: Types.ObjectId | IUser | null;
   emailVerified          : boolean;
   emailVerificationToken?: string;
   googleAccessToken     ?: string;
@@ -16,7 +21,7 @@ export interface IUserDocument extends Document {
   updatedAt              : Date;
 }
 
-const userSchema = new Schema<IUserDocument>(
+const userSchema = new Schema<IUser>(
   {
     name        : { type: String, required: true, trim: true },
     email       : { type: String, required: true, unique: true, lowercase: true },
@@ -29,6 +34,11 @@ const userSchema = new Schema<IUserDocument>(
     phone                 : { type: String, default: null },
     avatar                : { type: String, default: null },
     isActive              : { type: Boolean, default: true },
+    lockedReason          : { type: String, default: null, trim: true },
+    lockedAt              : { type: Date, default: null },
+    lockedBy              : { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    unlockedAt            : { type: Date, default: null },
+    unlockedBy            : { type: Schema.Types.ObjectId, ref: 'User', default: null },
     emailVerified         : { type: Boolean, default: false },
     emailVerificationToken: { type: String, select: false, default: null },
     googleAccessToken     : { type: String, select: false, default: null },
@@ -42,4 +52,4 @@ const userSchema = new Schema<IUserDocument>(
 
 userSchema.index({ email: 1 }, { name: 'idx_users_email', unique: true });
 
-export const UserModel = model<IUserDocument>('User', userSchema);
+export const User = model<IUser>('User', userSchema);

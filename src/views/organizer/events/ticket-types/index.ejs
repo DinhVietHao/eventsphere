@@ -1,0 +1,127 @@
+<% const msgs = typeof messages !== 'undefined' ? messages : { success: [], error: [] }; %>
+<% if (msgs.error && msgs.error.length > 0) { %>
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+  <i class="bi bi-exclamation-triangle me-2"></i><%= msgs.error[0] %>
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<% } %>
+<% if (msgs.success && msgs.success.length > 0) { %>
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+  <i class="bi bi-check-circle me-2"></i><%= msgs.success[0] %>
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<% } %>
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="/organizer/events">Sự kiện của tôi</a></li>
+    <li class="breadcrumb-item active"><%= event.title %></li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 fw-bold text-dark mb-1">Quản lý loại vé</h1>
+    <p class="text-muted mb-0 small"><i class="bi bi-calendar-event me-1"></i><%= event.title %></p>
+  </div>
+  <% if (['DRAFT','PENDING'].includes(event.status)) { %>
+    <a href="/organizer/events/<%= event._id %>/ticket-types/create"
+       class="btn btn-primary fw-bold">
+      <i class="bi bi-plus-lg me-2"></i>Thêm loại vé
+    </a>
+  <% } %>
+</div>
+
+<% if (!['DRAFT','PENDING'].includes(event.status)) { %>
+<div class="alert alert-warning border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+  <i class="bi bi-lock-fill me-2 fs-5"></i>
+  <div>
+    Sự kiện đang ở trạng thái <strong><%= event.status %></strong>. Không thể thêm, sửa hoặc xóa loại vé.
+  </div>
+</div>
+<% } %>
+
+<div class="card border-0 shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 text-nowrap">
+      <thead class="table-light text-muted small text-uppercase">
+        <tr>
+          <th class="ps-4">Tên loại vé</th>
+          <th>Giá</th>
+          <th>Quota</th>
+          <th>Đã bán</th>
+          <th>Còn lại</th>
+          <th>Mô tả</th>
+          <th class="pe-4 text-end">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (ticketTypes.length === 0) { %>
+        <tr>
+          <td colspan="7" class="text-center py-5 text-muted">
+            <i class="bi bi-ticket-perforated fs-2 d-block mb-2"></i>
+            Chưa có loại vé nào.
+            <% if (['DRAFT','PENDING'].includes(event.status)) { %>
+              <a href="/organizer/events/<%= event._id %>/ticket-types/create">Thêm ngay</a>
+            <% } %>
+          </td>
+        </tr>
+        <% } %>
+        <% ticketTypes.forEach(tt => { %>
+        <tr>
+          <td class="ps-4 fw-semibold text-dark"><%= tt.name %></td>
+          <td>
+            <% if (tt.price === 0) { %>
+              <span class="badge bg-success">Miễn phí</span>
+            <% } else { %>
+              <span class="fw-semibold"><%= tt.price.toLocaleString('vi-VN') %>đ</span>
+            <% } %>
+          </td>
+          <td><%= tt.quota %></td>
+          <td>
+            <% if (tt.sold > 0) { %>
+              <span class="badge bg-primary"><%= tt.sold %></span>
+            <% } else { %>
+              <span class="text-muted">0</span>
+            <% } %>
+          </td>
+          <td>
+            <% const remaining = tt.quota - tt.sold; %>
+            <% if (remaining === 0) { %>
+              <span class="badge bg-danger">Hết vé</span>
+            <% } else if (remaining <= 10) { %>
+              <span class="badge bg-warning text-dark"><%= remaining %></span>
+            <% } else { %>
+              <span class="text-success fw-semibold"><%= remaining %></span>
+            <% } %>
+          </td>
+          <td class="text-muted small" style="max-width:200px; white-space:normal">
+            <%= tt.description || '—' %>
+          </td>
+          <td class="pe-4 text-end">
+            <% if (['DRAFT','PENDING'].includes(event.status)) { %>
+            <div class="btn-group btn-group-sm">
+              <a href="/organizer/events/<%= event._id %>/ticket-types/<%= tt._id %>/edit"
+                 class="btn btn-outline-secondary" title="Sửa">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form action="/organizer/events/<%= event._id %>/ticket-types/<%= tt._id %>/delete"
+                    method="POST" class="d-inline"
+                    onsubmit="return confirm('Bạn chắc chắn muốn xóa loại vé này?')">
+                <button type="submit" class="btn btn-outline-danger rounded-start-0"
+                        title="<%= tt.sold > 0 ? 'Không thể xóa — đã có người mua' : 'Xóa' %>"
+                        <%= tt.sold > 0 ? 'disabled' : '' %>>
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+            <% } else { %>
+              <span class="text-muted small">—</span>
+            <% } %>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>

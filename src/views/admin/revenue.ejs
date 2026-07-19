@@ -1,0 +1,230 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 fw-bold text-dark mb-0"><i class="bi bi-cash-coin text-primary me-2"></i>Báo cáo doanh thu</h1>
+    <span class="text-muted small">
+    <i class="bi bi-calendar-check me-1"></i>Kỳ báo cáo:
+    <%= filters.startDate ? new Date(filters.startDate).toLocaleDateString('vi-VN') : 'Tất cả' %> -
+    <%= filters.endDate ? new Date(filters.endDate).toLocaleDateString('vi-VN') : 'Hiện tại' %>
+  </span>
+</div>
+
+<%# Bộ lọc (Filter Form) %>
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body py-3">
+        <form action="/admin/revenue" method="GET" class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Gom nhóm</label>
+                <select name="groupBy" class="form-select form-select-sm">
+                    <option value="day" <%= groupBy === 'day' ? 'selected' : '' %>>Ngày</option>
+                    <option value="month" <%= groupBy === 'month' ? 'selected' : '' %>>Tháng</option>
+                    <option value="category" <%= groupBy === 'category' ? 'selected' : '' %>>Danh mục</option>
+                    <option value="organizer" <%= groupBy === 'organizer' ? 'selected' : '' %>>Người tổ chức</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Danh mục</label>
+                <select name="category" class="form-select form-select-sm">
+                    <option value="">Tất cả</option>
+                    <option value="music" <%= filters.category === 'music' ? 'selected' : '' %>>Music</option>
+                    <option value="tech" <%= filters.category === 'tech' ? 'selected' : '' %>>Tech</option>
+                    <option value="sport" <%= filters.category === 'sport' ? 'selected' : '' %>>Sport</option>
+                    <option value="education" <%= filters.category === 'education' ? 'selected' : '' %>>Education</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Người tổ chức</label>
+                <select name="organizerId" class="form-select form-select-sm">
+                    <option value="">Tất cả</option>
+                    <% if (typeof organizers !== 'undefined') { %>
+                        <% organizers.forEach(org => { %>
+                            <option value="<%= org._id %>" <%= filters.organizerId === org._id.toString() ? 'selected' : '' %>>
+                                <%= org.name %>
+                            </option>
+                        <% }) %>
+                    <% } %>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Từ ngày</label>
+                <input type="date" id="startDate" name="startDate" class="form-control form-control-sm"
+                       value="<%= filters.startDate ? new Date(filters.startDate).toISOString().split('T')[0] : '' %>">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-muted text-uppercase mb-1" style="font-size: 0.7rem;">Đến ngày</label>
+                <input type="date" id="endDate" name="endDate" class="form-control form-control-sm"
+                       value="<%= filters.endDate ? new Date(filters.endDate).toISOString().split('T')[0] : '' %>">
+            </div>
+
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100 fw-semibold"><i class="bi bi-filter"></i> Lọc dữ liệu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<%# Stat cards %>
+<div class="row g-3 mb-4">
+    <div class="col-sm-6">
+        <div class="card border-0 shadow-sm p-3 h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="text-muted small text-uppercase fw-bold mb-1">Tổng doanh thu kỳ</p>
+                    <h3 class="fw-bold text-success mb-0">
+                        <%# Dùng Intl.NumberFormat để format tiền Việt Nam tự động thêm dấu phẩy %>
+                        <%= new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalPeriodRevenue || 0) %>
+                    </h3>
+                </div>
+                <div class="bg-success-subtle text-success rounded p-3"><i class="bi bi-currency-dollar fs-4"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6">
+        <div class="card border-0 shadow-sm p-3 h-100">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <p class="text-muted small text-uppercase fw-bold mb-1">Tổng vé bán ra</p>
+                    <h3 class="fw-bold text-primary mb-0"><%= stats.events.total || 0 %></h3>
+                    <small class="text-muted">vé hợp lệ</small>
+                </div>
+                <div class="bg-primary-subtle text-primary rounded p-3"><i class="bi bi-ticket-detailed fs-4"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%# Biểu đồ và Bảng chi tiết %>
+<div class="row g-4">
+    <%# Cột biểu đồ Chart.js %>
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-graph-up text-primary me-2"></i>Biểu đồ trực quan</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="revenueChart" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <%# Cột bảng chi tiết (Data Table) %>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-list-columns text-info me-2"></i>Chi tiết các nhóm</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-3">Trục X</th>
+                        <th class="text-end pe-3">Doanh thu</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <% if (chartData && chartData.length > 0) { %>
+                        <% chartData.forEach(item => { %>
+                            <tr>
+                                <td class="ps-3 fw-semibold text-dark small"><%= item._id || 'Khác' %></td>
+                                <td class="pe-3 text-end text-success fw-bold small">
+                                    <%= new Intl.NumberFormat('vi-VN').format(item.totalRevenue) %> ₫
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="2" class="text-center py-4 text-muted small">Không có dữ liệu trong thời gian này.</td>
+                        </tr>
+                    <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Ép kiểu mảng dữ liệu từ backend BE truyền sang Frontend JS
+        const rawData = <%- JSON.stringify(chartData || []) %>;
+
+        // Bóc tách mảng để vẽ biểu đồ
+        const labels = rawData.map(item => item._id || 'Chưa xác định');
+        const dataValues = rawData.map(item => item.totalRevenue);
+
+        // Render Chart
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(ctx, {
+            type: '<%= groupBy === "category" ? "bar" : "line" %>', // Nếu là category thì vẽ cột, còn ngày tháng thì vẽ đường
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Doanh thu (VND)',
+                    data: dataValues,
+                    backgroundColor: 'rgba(13, 110, 253, 0.2)', // Màu xanh Primary của Bootstrap
+                    borderColor: 'rgba(13, 110, 253, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(13, 110, 253, 1)',
+                    fill: true,
+                    tension: 0.3 // Làm cong nét vẽ cho mượt
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false } // Giấu đi chú thích cho gọn
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                // Đổi số 500000 thành 500.000 ₫ ở trục Y
+                                return new Intl.NumberFormat('vi-VN').format(value) + ' ₫';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+
+    // ==========================================
+    // --- LOGIC RÀNG BUỘC NGÀY THÁNG LỌC ---
+    // ==========================================
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+
+    const today = new Date();
+    // Trừ đi độ lệch múi giờ (TimezoneOffset) để khi toISOString không bị lùi ngày
+    const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+
+    // Gán max chặn ngày tương lai
+    startDateInput.max = localToday;
+    endDateInput.max = localToday;
+
+    // Hàm này chạy mỗi khi Admin chọn/sửa "Từ ngày"
+    startDateInput.addEventListener('change', function() {
+        if (this.value) {
+            // Ép "Đến ngày" không được nhỏ hơn "Từ ngày" vừa chọn
+            endDateInput.min = this.value;
+
+            // Nếu "Đến ngày" hiện tại đang nhỏ hơn "Từ ngày" mới chọn -> Tự động sửa "Đến ngày" bằng "Từ ngày" luôn cho đỡ lỗi
+            if (endDateInput.value && endDateInput.value < this.value) {
+                endDateInput.value = this.value;
+            }
+        } else {
+            // Nếu Admin xóa ô "Từ ngày", gỡ bỏ giới hạn min của "Đến ngày"
+            endDateInput.min = '';
+        }
+    });
+
+    // Chạy mồi 1 lần lúc vừa load trang (dành cho trường hợp Admin đã có sẵn bộ lọc từ trước trên URL)
+    if (startDateInput.value) {
+        endDateInput.min = startDateInput.value;
+    }
+</script>

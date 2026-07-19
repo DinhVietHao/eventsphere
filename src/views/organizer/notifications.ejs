@@ -1,0 +1,186 @@
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="/organizer/dashboard">Tổng quan</a></li>
+    <li class="breadcrumb-item active">Gửi thông báo</li>
+  </ol>
+</nav>
+
+<%# Flash messages %>
+<% const msgs = typeof messages !== 'undefined' ? messages : { success: [], error: [] }; %>
+<% if (msgs.error && msgs.error.length > 0) { %>
+<div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert">
+  <i class="bi bi-exclamation-triangle-fill me-2"></i><%= msgs.error[0] %>
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<% } %>
+<% if (msgs.success && msgs.success.length > 0) { %>
+<div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert">
+  <i class="bi bi-check-circle-fill me-2"></i><%= msgs.success[0] %>
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<% } %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 fw-bold text-dark mb-0">
+    <i class="bi bi-megaphone-fill text-primary me-2"></i>Gửi thông báo hàng loạt
+  </h1>
+</div>
+
+<div class="row g-4">
+
+  <%# Form gửi thông báo %>
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm p-4">
+      <h5 class="fw-bold text-dark mb-4 border-bottom pb-2">Soạn thông báo</h5>
+
+      <form action="/organizer/notifications/send" method="POST" id="notifyForm">
+
+        <div class="mb-4">
+          <label for="eventId" class="form-label small fw-bold">Chọn sự kiện <span class="text-danger">*</span></label>
+          <select class="form-select" id="eventId" name="eventId" required onchange="updateRecipientCount(this)">
+            <option value="">-- Chọn sự kiện để gửi thông báo --</option>
+            <% if (events && events.length > 0) { %>
+            <% events.forEach(event => { %>
+            <option value="<%= event._id %>" data-count="<%= event.registrationsCount || 0 %>">
+              <%= event.title %> (<%= event.status %>)
+            </option>
+            <% }) %>
+            <% } %>
+          </select>
+          <div class="form-text text-muted">Chỉ hiển thị sự kiện đã được duyệt hoặc đang diễn ra.</div>
+        </div>
+
+        <%# Recipient preview %>
+        <div class="alert alert-info border-0 d-flex align-items-center mb-4 py-2" id="recipientInfo">
+          <i class="bi bi-info-circle-fill me-2"></i>
+          <span>Vui lòng chọn sự kiện để xem số lượng người nhận.</span>
+        </div>
+
+        <div class="mb-3">
+          <label for="subject" class="form-label small fw-bold">Tiêu đề thông báo <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="subject" name="subject" required
+            placeholder="Ví dụ: Thông báo quan trọng về sự kiện Tech Summit 2026"
+            maxlength="200"
+            value="<%= typeof old !== 'undefined' && old ? old.subject || '' : '' %>">
+          <div class="form-text text-muted">Tối đa 200 ký tự.</div>
+        </div>
+
+        <div class="mb-4">
+          <label for="message" class="form-label small fw-bold">Nội dung thông báo <span class="text-danger">*</span></label>
+          <textarea class="form-control" id="message" name="message" rows="8" required
+            maxlength="2000"
+            placeholder="Nhập nội dung thông báo bạn muốn gửi đến tất cả người tham dự..."><%= typeof old !== 'undefined' && old ? old.message || '' : '' %></textarea>
+          <div class="d-flex justify-content-between mt-1">
+            <div class="form-text text-muted">Tối đa 2000 ký tự.</div>
+            <small class="text-muted" id="charCount">0 / 2000</small>
+          </div>
+        </div>
+
+        <%# Preview email template %>
+        <div class="card border border-dashed border-primary bg-primary-subtle mb-4 p-3 d-none" id="emailPreview">
+          <h6 class="small fw-bold text-primary mb-2"><i class="bi bi-eye me-1"></i>Xem trước email</h6>
+          <div class="bg-white rounded p-3 border small">
+            <strong>Tiêu đề:</strong> <span id="previewSubject" class="text-dark"></span><br>
+            <hr class="my-2">
+            <p class="mb-1 text-muted" style="font-size: 0.85rem;">Xin chào <strong>[Tên người nhận]</strong>,</p>
+            <p id="previewMessage" class="text-dark mb-1" style="font-size: 0.85rem; white-space: pre-wrap;"></p>
+            <p class="text-muted mb-0" style="font-size: 0.8rem;"><em>EventSphere Notification</em></p>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 border-top pt-3">
+          <button type="button" class="btn btn-outline-secondary px-4" onclick="togglePreview()">
+            <i class="bi bi-eye me-2"></i>Xem trước
+          </button>
+          <button type="submit" class="btn btn-primary fw-bold px-4" id="submitBtn">
+            <i class="bi bi-send-fill me-2"></i>Gửi thông báo
+            <div class="spinner-border spinner-border-sm ms-2 d-none" id="btnSpinner"></div>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <%# Sidebar hướng dẫn %>
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm p-4 mb-4">
+      <h6 class="fw-bold text-dark mb-3"><i class="bi bi-lightbulb-fill text-warning me-2"></i>Hướng dẫn</h6>
+      <ul class="list-unstyled small text-muted mb-0">
+        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Chọn sự kiện muốn gửi thông báo</li>
+        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Nhập tiêu đề và nội dung email</li>
+        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Xem trước email trước khi gửi</li>
+        <li class="mb-2"><i class="bi bi-check-circle-fill text-success me-2"></i>Nhấn <strong>Gửi thông báo</strong> để xác nhận</li>
+        <li><i class="bi bi-info-circle-fill text-info me-2"></i>Email sẽ được gửi đến tất cả người đã đăng ký vé (đã thanh toán)</li>
+      </ul>
+    </div>
+
+    <div class="card border-0 shadow-sm p-4">
+      <h6 class="fw-bold text-dark mb-3"><i class="bi bi-clock-history text-secondary me-2"></i>Lịch sử gửi gần đây</h6>
+      <% if (typeof sentHistory !== 'undefined' && sentHistory && sentHistory.length > 0) { %>
+      <% sentHistory.forEach(item => { %>
+      <div class="d-flex align-items-start mb-3 pb-3 border-bottom">
+        <div class="bg-success-subtle text-success rounded p-2 me-3 flex-shrink-0">
+          <i class="bi bi-envelope-check fs-6"></i>
+        </div>
+        <div>
+          <p class="mb-0 small fw-semibold text-dark"><%= item.subject %></p>
+          <p class="mb-0 text-muted" style="font-size: 0.78rem;"><%= item.eventTitle %> — <%= item.totalQueued %> người</p>
+          <p class="mb-0 text-muted" style="font-size: 0.78rem;"><%= new Date(item.sentAt).toLocaleString('vi-VN') %></p>
+        </div>
+      </div>
+      <% }) %>
+      <% } else { %>
+      <p class="text-muted small mb-0 text-center py-2">Chưa có lịch sử gửi thông báo.</p>
+      <% } %>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Cập nhật số người nhận khi chọn event
+  function updateRecipientCount(select) {
+    const option = select.options[select.selectedIndex];
+    const count = option.dataset.count || 0;
+    const info = document.getElementById('recipientInfo');
+    if (select.value) {
+      info.className = 'alert alert-primary border-0 d-flex align-items-center mb-4 py-2';
+      info.innerHTML = `<i class="bi bi-people-fill me-2"></i><span>Thông báo sẽ được gửi đến <strong>${count} người</strong> đã đăng ký sự kiện này.</span>`;
+    } else {
+      info.className = 'alert alert-info border-0 d-flex align-items-center mb-4 py-2';
+      info.innerHTML = `<i class="bi bi-info-circle-fill me-2"></i><span>Vui lòng chọn sự kiện để xem số lượng người nhận.</span>`;
+    }
+  }
+
+  // Đếm ký tự message
+  const messageArea = document.getElementById('message');
+  const charCount   = document.getElementById('charCount');
+  messageArea.addEventListener('input', () => {
+    charCount.textContent = `${messageArea.value.length} / 2000`;
+  });
+
+  // Toggle preview email
+  let previewVisible = false;
+  function togglePreview() {
+    const preview   = document.getElementById('emailPreview');
+    const subject   = document.getElementById('subject').value;
+    const message   = document.getElementById('message').value;
+    previewVisible  = !previewVisible;
+
+    if (previewVisible) {
+      document.getElementById('previewSubject').textContent = subject || '(Chưa nhập tiêu đề)';
+      document.getElementById('previewMessage').textContent = message || '(Chưa nhập nội dung)';
+      preview.classList.remove('d-none');
+    } else {
+      preview.classList.add('d-none');
+    }
+  }
+
+  // Loading state khi submit
+  document.getElementById('notifyForm').addEventListener('submit', function () {
+    const btn     = document.getElementById('submitBtn');
+    const spinner = document.getElementById('btnSpinner');
+    btn.disabled  = true;
+    spinner.classList.remove('d-none');
+  });
+</script>

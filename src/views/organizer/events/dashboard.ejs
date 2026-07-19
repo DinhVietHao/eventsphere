@@ -1,0 +1,202 @@
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb mb-0">
+    <li class="breadcrumb-item"><a href="/organizer/events">Sự kiện của tôi</a></li>
+    <li class="breadcrumb-item active">Dashboard Realtime</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 fw-bold text-dark mb-1">
+      <i class="bi bi-speedometer2 text-primary me-2"></i>Dashboard Check-in Realtime
+    </h1>
+    <p class="text-muted small mb-0"><%= snapshot.eventTitle %></p>
+  </div>
+  <div class="d-flex gap-2 align-items-center">
+    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2" id="connectionBadge">
+      <i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>Đang kết nối...
+    </span>
+    <a href="/organizer/events/<%= snapshot.eventId %>/report" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-bar-chart-line me-1"></i>Xem báo cáo đầy đủ
+    </a>
+  </div>
+</div>
+
+<%# Stat cards — cập nhật realtime qua Socket.io %>
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="card border-0 shadow-sm p-4 text-center h-100">
+      <div class="bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width:56px;height:56px;">
+        <i class="bi bi-ticket-perforated fs-4"></i>
+      </div>
+      <h2 class="fw-bold text-dark mb-0" id="statRegistered"><%= snapshot.totalRegistered %></h2>
+      <p class="text-muted small mb-0">Tổng đăng ký</p>
+    </div>
+  </div>
+
+  <div class="col-sm-4">
+    <div class="card border-0 shadow-sm p-4 text-center h-100 border-success" style="border-width: 2px !important;">
+      <div class="bg-success-subtle text-success rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width:56px;height:56px;">
+        <i class="bi bi-person-check fs-4"></i>
+      </div>
+      <h2 class="fw-bold text-success mb-0" id="statCheckedIn"><%= snapshot.totalCheckedIn %></h2>
+      <p class="text-muted small mb-0">Đã check-in</p>
+    </div>
+  </div>
+
+  <div class="col-sm-4">
+    <div class="card border-0 shadow-sm p-4 text-center h-100">
+      <div class="bg-info-subtle text-info rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3" style="width:56px;height:56px;">
+        <i class="bi bi-percent fs-4"></i>
+      </div>
+      <h2 class="fw-bold text-info mb-0" id="statRate"><%= snapshot.attendanceRate %>%</h2>
+      <p class="text-muted small mb-0">Tỷ lệ tham dự</p>
+    </div>
+  </div>
+</div>
+
+<%# Progress bar %>
+<div class="card border-0 shadow-sm p-4 mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="small fw-bold text-dark">Tiến độ check-in</span>
+    <span class="small text-muted" id="progressLabel"><%= snapshot.totalCheckedIn %> / <%= snapshot.totalRegistered %></span>
+  </div>
+  <div class="progress" style="height: 12px; border-radius: 8px;">
+    <div class="progress-bar bg-success progress-bar-striped progress-bar-animated"
+      id="progressBar"
+      style="width: <%= snapshot.totalRegistered > 0 ? snapshot.attendanceRate : 0 %>%"
+      role="progressbar">
+    </div>
+  </div>
+</div>
+
+<%# Live feed — check-in gần nhất %>
+<div class="card border-0 shadow-sm p-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold text-dark mb-0"><i class="bi bi-activity text-success me-2"></i>Check-in gần nhất</h5>
+  </div>
+
+  <div id="liveFeed" style="max-height: 320px; overflow-y: auto;">
+    <% if (snapshot.recentCheckins && snapshot.recentCheckins.length > 0) { %>
+      <% snapshot.recentCheckins.forEach(c => { %>
+      <div class="d-flex align-items-center p-2 mb-2 bg-light rounded border feed-item">
+        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width:36px;height:36px;font-weight:bold;">
+          <%= c.name.charAt(0).toUpperCase() %>
+        </div>
+        <div class="flex-grow-1">
+          <div class="fw-semibold text-dark small"><%= c.name %></div>
+          <div class="text-muted" style="font-size:0.75rem;"><%= c.email %></div>
+        </div>
+        <div class="text-end">
+          <div class="text-muted" style="font-size:0.75rem;"><%= new Date(c.checkedAt).toLocaleTimeString('vi-VN') %></div>
+          <span class="badge bg-light text-muted border" style="font-size:0.65rem;"><%= c.method === 'qr_scan' ? 'QR' : 'Thủ công' %></span>
+        </div>
+      </div>
+      <% }) %>
+    <% } else { %>
+    <div class="text-center py-4 text-muted" id="feedEmpty">
+      <i class="bi bi-hourglass-split display-6 d-block mb-2"></i>
+      <p class="small mb-0">Đang chờ check-in đầu tiên...</p>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<%# Socket.io client script %>
+<script src="https://cdn.jsdelivr.net/npm/socket.io-client@4/dist/socket.io.min.js"></script>
+<script>
+  const eventId   = '<%= snapshot.eventId %>';
+  const socket    = io(window.location.origin);
+  let totalCheckedIn = <%= snapshot.totalCheckedIn %>;
+  let totalRegistered = <%= snapshot.totalRegistered %>;
+
+  // Kết nối và join room
+  socket.on('connect', () => {
+    socket.emit('join_event', eventId);
+    document.getElementById('connectionBadge').innerHTML =
+      '<i class="bi bi-circle-fill me-1 text-success" style="font-size:0.5rem;"></i>Đang kết nối realtime';
+    document.getElementById('connectionBadge').className =
+      'badge bg-success-subtle text-success border border-success-subtle px-3 py-2';
+  });
+
+  socket.on('disconnect', () => {
+    document.getElementById('connectionBadge').innerHTML =
+      '<i class="bi bi-circle-fill me-1 text-danger" style="font-size:0.5rem;"></i>Mất kết nối';
+    document.getElementById('connectionBadge').className =
+      'badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2';
+  });
+
+  // Cập nhật totalRegistered khi có người đăng ký mới (không cần check-in)
+  socket.on('registration_update', (data) => {
+    if (data.totalRegistered !== undefined) {
+      totalRegistered = data.totalRegistered;
+      document.getElementById('statRegistered').textContent = totalRegistered;
+      document.getElementById('progressLabel').textContent =
+        totalCheckedIn + ' / ' + totalRegistered;
+      // Tính lại tỉ lệ
+      const rate = totalRegistered > 0
+        ? parseFloat((totalCheckedIn / totalRegistered * 100).toFixed(1))
+        : 0;
+      document.getElementById('statRate').textContent = rate + '%';
+      document.getElementById('progressBar').style.width = rate + '%';
+    }
+  });
+
+  // Nhận update từ server khi UC-21 emit
+  socket.on('checkin_update', (data) => {
+    // Cập nhật số liệu
+    if (data.totalCheckedIn !== undefined) {
+      totalCheckedIn = data.totalCheckedIn;
+      document.getElementById('statCheckedIn').textContent = totalCheckedIn;
+    }
+    if (data.totalRegistered !== undefined) {
+      totalRegistered = data.totalRegistered;
+      document.getElementById('statRegistered').textContent = totalRegistered;
+    }
+    if (data.attendanceRate !== undefined) {
+      document.getElementById('statRate').textContent = data.attendanceRate + '%';
+      document.getElementById('progressBar').style.width = data.attendanceRate + '%';
+      document.getElementById('progressLabel').textContent =
+        totalCheckedIn + ' / ' + totalRegistered;
+    }
+
+    // Ẩn placeholder, thêm item vào live feed
+    const feedEmpty = document.getElementById('feedEmpty');
+    if (feedEmpty) feedEmpty.classList.add('d-none');
+
+    const feed = document.getElementById('liveFeed');
+    const item = document.createElement('div');
+    item.className = 'd-flex align-items-center p-2 mb-2 bg-success-subtle rounded border border-success-subtle feed-item';
+    item.innerHTML = `
+      <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width:36px;height:36px;font-weight:bold;">
+        ${(data.lastCheckedIn?.name || '?').charAt(0).toUpperCase()}
+      </div>
+      <div class="flex-grow-1">
+        <div class="fw-semibold text-dark small">${data.lastCheckedIn?.name || 'Không rõ'}</div>
+        <div class="text-muted" style="font-size:0.75rem;">${data.lastCheckedIn?.email || ''}</div>
+      </div>
+      <div class="text-end">
+        <div class="text-muted" style="font-size:0.75rem;">
+          ${new Date(data.lastCheckedIn?.checkedAt || Date.now()).toLocaleTimeString('vi-VN')}
+        </div>
+        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:0.65rem;">Vừa xong</span>
+      </div>
+    `;
+
+    // Thêm vào đầu feed
+    feed.insertBefore(item, feed.firstChild);
+
+    // Giới hạn tối đa 50 item trong feed tránh tràn DOM
+    const items = feed.querySelectorAll('.feed-item');
+    if (items.length > 50) items[items.length - 1].remove();
+
+    // Animation
+    item.style.opacity = '0';
+    item.style.transform = 'translateY(-10px)';
+    item.style.transition = 'all 0.3s ease';
+    setTimeout(() => {
+      item.style.opacity = '1';
+      item.style.transform = 'translateY(0)';
+    }, 50);
+  });
+</script>

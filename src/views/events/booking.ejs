@@ -1,0 +1,201 @@
+<% if (!event) { %>
+  <div class="container">
+    <div class="alert alert-danger border-0 shadow-sm">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      <%= error || 'Khong the tai thong tin su kien.' %>
+    </div>
+    <a href="/events" class="btn btn-outline-primary">
+      <i class="bi bi-arrow-left me-1"></i>Quay lai danh sach su kien
+    </a>
+  </div>
+  <% } else { %>
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-lg-8">
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+              <div class="d-flex align-items-start justify-content-between gap-3 border-bottom pb-3 mb-4">
+                <div>
+                  <a href="/events/<%= event._id %>" class="text-decoration-none small">
+                    <i class="bi bi-arrow-left me-1"></i>Chi tiết sự kiện
+                  </a>
+                  <h1 class="h3 fw-bold text-dark mt-2 mb-1">
+                    <%= event.title %>
+                  </h1>
+                  <p class="text-muted mb-0">
+                    <i class="bi bi-calendar-event text-primary me-1"></i>
+                    <%= new Date(event.startDate).toLocaleString('vi-VN') %>
+                      <span class="mx-2">|</span>
+                      <i class="bi bi-geo-alt-fill text-danger me-1"></i>
+                      <%= event.location %>
+                  </p>
+                </div>
+              </div>
+
+              <% if (error) { %>
+                <div class="alert alert-danger border-0 shadow-sm">
+                  <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                  <%= error %>
+                </div>
+                <% } %>
+
+                  <% if (registrationResult) { %>
+                    <% if (registrationResult.nextStep==='ticket_issued' ) { %>
+                      <div
+                        class="d-flex align-items-start justify-content-between alert alert-success border-0 shadow-sm">
+                        <div class="d-flex align-items-start">
+                          <i class="bi bi-check-circle-fill fs-4 me-3"></i>
+                          <div>
+                            <h2 class="h5 fw-bold mb-1">Đã đăng ký thành công</h2>
+                            <p class="mb-0">Vé QR đã được tạo và gửi đến email của bạn.</p>
+                          </div>
+                        </div>
+                        <div class="ms-md-3 mt-3 mt-md-0 flex-shrink-0">
+                          <a href="/tickets/<%= registrationResult.ticket._id %>"
+                            class="btn btn-light text-success border-0 shadow-sm fw-semibold px-3">
+                            <i class="bi bi-ticket-perforated-fill me-1"></i>
+                            Xem chi tiết vé
+                            <i class="bi bi-arrow-right-short ms-1"></i>
+                          </a>
+                        </div>
+                      </div>
+
+                      <div class="text-center bg-light rounded p-4 border">
+                        <img src="<%= registrationResult.ticket.qrCode %>" alt="Ticket QR Code"
+                          class="img-fluid bg-white p-3 rounded shadow-sm" style="max-width: 260px;">
+                        <p class="text-muted small mt-3 mb-0">Mã vé: <%= registrationResult.ticket._id %>
+                        </p>
+
+                      </div>
+                      <% } else { %>
+                        <div class="alert alert-warning border-0 shadow-sm">
+                          <div class="d-flex align-items-start">
+                            <i class="bi bi-credit-card-fill fs-4 me-3"></i>
+                            <div>
+                              <h2 class="h5 fw-bold mb-1">Can thanh toan ve</h2>
+                              <p class="mb-2">Registration da duoc tao voi trang thai pending_payment.</p>
+                              <span class="fw-bold">
+                                So tien:
+                                <%= registrationResult.payment.amount.toLocaleString('vi-VN') %>
+                                  <%= registrationResult.payment.currency %>
+                              </span>
+                              <form action="/api/v1/payments/vnpay/create" method="POST" class="mt-3">
+                                <input type="hidden" name="registrationId"
+                                  value="<%= registrationResult.registration._id %>">
+                                <input type="hidden" name="language" value="vn">
+                                <div class="row g-2 align-items-end">
+                                  <div class="col-md-8">
+                                    <label for="bankCode" class="form-label small fw-bold">Bank</label>
+                                    <select id="bankCode" name="bankCode" class="form-select">
+                                      <option value="">VNPay default</option>
+                                      <option value="NCB">NCB</option>
+                                    </select>
+                                  </div>
+                                  <div class="col-md-4 d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                      Thanh toán qua VNPay
+                                    </button>
+                                  </div>
+                                </div>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+                        <% } %>
+                          <% } %>
+
+                            <% if (!registrationResult) { %>
+                              <form action="/events/<%= event._id %>/booking" method="POST">
+                                <h2 class="h5 fw-bold text-dark mb-3">Chọn loại vé</h2>
+
+                                <% if (ticketTypes && ticketTypes.length> 0) { %>
+                                  <div class="row g-3 mb-4">
+                                    <% ticketTypes.forEach(ticketType=> { %>
+                                      <% const sold=typeof ticketType.soldQuantity !=='undefined' ?
+                                        ticketType.soldQuantity : ticketType.sold; const
+                                        remaining=Math.max(ticketType.quota - sold, 0); const isSoldOut=remaining <=0;
+                                        const isSelected=selectedTicketTypeId &&
+                                        selectedTicketTypeId.toString()===ticketType._id.toString(); %>
+                                        <div class="col-md-6">
+                                          <label
+                                            class="card h-100 border <%= isSelected ? 'border-primary shadow-sm' : 'border-light shadow-sm' %> <%= isSoldOut ? 'opacity-75' : '' %>"
+                                            style="cursor: <%= isSoldOut ? 'not-allowed' : 'pointer' %>;">
+                                            <div class="card-body">
+                                              <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="ticketTypeId"
+                                                  value="<%= ticketType._id %>" <%=isSelected ? 'checked' : '' %>
+                                                <%= isSoldOut ? 'disabled' : 'required' %>>
+                                                  <div class="ms-2">
+                                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                                      <h3 class="h6 fw-bold text-dark mb-1">
+                                                        <%= ticketType.name %>
+                                                      </h3>
+                                                      <% if (isSoldOut) { %>
+                                                        <span class="badge bg-secondary">Het ve</span>
+                                                        <% } else { %>
+                                                          <span class="badge bg-success">Con <%= remaining %></span>
+                                                          <% } %>
+                                                    </div>
+                                                    <p class="text-muted small mb-3">
+                                                      <%= ticketType.description || 'Ve tham du su kien' %>
+                                                    </p>
+                                                    <div class="fw-bold text-primary">
+                                                      <%= ticketType.price===0 ? 'Free' :
+                                                        ticketType.price.toLocaleString('vi-VN') + ' VND' %>
+                                                    </div>
+                                                  </div>
+                                              </div>
+                                            </div>
+                                          </label>
+                                        </div>
+                                        <% }) %>
+                                  </div>
+
+                                  <button type="submit" class="btn btn-primary btn-lg px-4 fw-bold">
+                                    <i class="bi bi-ticket-perforated-fill me-2"></i>Đăng ký tham dự
+                                  </button>
+                                  <% } else { %>
+                                    <div class="alert alert-info border-0 shadow-sm">
+                                      <i class="bi bi-info-circle-fill me-2"></i>
+                                      Sự kiện này chưa có loại vé nào.
+                                    </div>
+                                    <% } %>
+                              </form>
+                              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <aside class="col-lg-4">
+          <div class="card border-0 shadow-sm sticky-lg-top" style="top: 80px;">
+            <img
+              src="<%= event.bannerUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=900&q=80' %>"
+              class="card-img-top object-fit-cover" alt="<%= event.title %>" style="height: 180px;">
+            <div class="card-body">
+              <h2 class="h5 fw-bold text-dark mb-3">
+                <%= event.title %>
+              </h2>
+              <p class="text-muted small mb-2">
+                <i class="bi bi-calendar-check-fill text-primary me-2"></i>
+                <%= new Date(event.startDate).toLocaleString('vi-VN') %>
+              </p>
+              <p class="text-muted small mb-3">
+                <i class="bi bi-geo-alt-fill text-danger me-2"></i>
+                <%= event.location %>
+              </p>
+              <hr>
+              <p class="small text-muted mb-0">
+                <% if (registrationResult && registrationResult.nextStep==='payment_required' ) { %>
+                  Trang thai tiep theo: UC08 Payment.
+                  <% } else if (registrationResult) { %>
+                    Giu QR code nay de check-in tai cong su kien.
+                    <% } else { %>
+                      Hay chon mot loai ve con quota de hoan tat dang ky.
+                      <% } %>
+              </p>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+    <% } %>

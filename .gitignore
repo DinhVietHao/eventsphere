@@ -6,7 +6,7 @@ jspm_packages/
 dist/
 build/
 
-# Environment variables (CHẶN TUYỆT ĐỐI FILE NÀY ĐỂ BẢO MẬT)
+# Environment variables
 .env
 .env.production
 .env.local
@@ -30,3 +30,5 @@ lerna-debug.log*
 # OS specific files
 .DS_Store
 Thumbs.db
+
+
