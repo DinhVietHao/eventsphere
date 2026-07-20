@@ -36,7 +36,9 @@ export const uploadEventBanner = multer({
   limits: { fileSize: MAX_EVENT_BANNER_SIZE },
 }).single("banner");
 
-export const getEventBannerUrl = (file?: Express.Multer.File): string | undefined => {
+export const getEventBannerUrl = (
+  file?: Express.Multer.File,
+): string | undefined => {
   if (!file) return undefined;
   return `${EVENT_BANNER_URL_PREFIX}/${file.filename}`;
 };
