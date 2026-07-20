@@ -32,17 +32,19 @@ export class EventService {
     return eventRepository.search(keyword.trim());
   }
 
-  // UC04 - Lọc theo category và/hoặc khoảng thời gian, có phân trang
+  // UC04 - Lọc theo category / khoảng thời gian / từ khóa, có phân trang
   async filterEvents(
-    filters: {
-      category?: string;
-      startFrom?: Date;
-      startTo?: Date;
-    },
-    page = 1,
-    limit = 9,
+      filters: {
+        keyword?: string;
+        category?: string;
+        startFrom?: Date;
+        startTo?: Date;
+      },
+      page = 1,
+      limit = 9,
   ): Promise<{ events: IEvent[]; total: number }> {
-    const hasFilter = filters.category || filters.startFrom || filters.startTo;
+    const hasFilter =
+        filters.category || filters.startFrom || filters.startTo || filters.keyword;
     if (!hasFilter) {
       throw new AppError("At least one filter is required", 400);
     }
@@ -56,6 +58,7 @@ export class EventService {
     }
 
     const normalizedFilters = {
+      keyword: filters.keyword?.trim() || undefined,
       category: filters.category,
       startFrom: filters.startFrom,
       startTo,
