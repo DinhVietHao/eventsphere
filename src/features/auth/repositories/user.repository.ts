@@ -191,4 +191,56 @@ export class UserRepository {
   async updatePassword(id: string, passwordHash: string): Promise<void> {
     await User.findByIdAndUpdate(id, { $set: { passwordHash } });
   }
+
+  // Lưu token xác thực email khi đăng ký (chỉ lưu bản hash, không lưu token gốc)
+  async setEmailVerificationToken(
+    id: string,
+    tokenHash: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    await User.findByIdAndUpdate(id, {
+      $set: { emailVerificationToken: tokenHash, emailVerificationExpires: expiresAt },
+    });
+  }
+
+  // Tìm user theo hash token xác thực email
+  async findByEmailVerificationToken(tokenHash: string): Promise<IUser | null> {
+    return User.findOne({ emailVerificationToken: tokenHash })
+      .select("+emailVerificationToken +emailVerificationExpires")
+      .lean();
+  }
+
+  // Đánh dấu email đã xác thực, xoá token khỏi DB
+  async markEmailVerified(id: string): Promise<void> {
+    await User.findByIdAndUpdate(id, {
+      $set: { emailVerified: true },
+      $unset: { emailVerificationToken: "", emailVerificationExpires: "" },
+    });
+  }
+
+  // Lưu token quên mật khẩu (chỉ lưu bản hash + thời hạn)
+  async setPasswordResetToken(
+    id: string,
+    tokenHash: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    await User.findByIdAndUpdate(id, {
+      $set: { passwordResetToken: tokenHash, passwordResetExpires: expiresAt },
+    });
+  }
+
+  // Tìm user theo hash token reset password
+  async findByPasswordResetToken(tokenHash: string): Promise<IUser | null> {
+    return User.findOne({ passwordResetToken: tokenHash })
+      .select("+passwordResetToken +passwordResetExpires")
+      .lean();
+  }
+
+  // Đặt mật khẩu mới và xoá token reset khỏi DB
+  async resetPassword(id: string, passwordHash: string): Promise<void> {
+    await User.findByIdAndUpdate(id, {
+      $set: { passwordHash },
+      $unset: { passwordResetToken: "", passwordResetExpires: "" },
+    });
+  }
 }
