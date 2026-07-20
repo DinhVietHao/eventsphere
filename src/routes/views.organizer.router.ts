@@ -24,15 +24,15 @@ const requireLogin = (req: Request, res: Response, next: NextFunction) => {
 
 const requireRole =
   (...roles: string[]) =>
-    (req: Request, res: Response, next: NextFunction) => {
-      if (!req.user || !roles.includes(req.user.role)) {
-        return res.status(403).render("errors/403", {
-          layout: false,
-          user: req.user || null,
-        });
-      }
-      next();
-    };
+  (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).render("errors/403", {
+        layout: false,
+        user: req.user || null,
+      });
+    }
+    next();
+  };
 
 const organizerGuard = [requireLogin, requireRole("organizer", "admin")];
 
@@ -153,7 +153,11 @@ organizerViewsRouter.post(
       res.redirect("/organizer/events");
     } catch (err: any) {
       const toArray = (v: unknown): string[] =>
-        v === undefined ? [] : Array.isArray(v) ? (v as string[]) : [v as string];
+        v === undefined
+          ? []
+          : Array.isArray(v)
+            ? (v as string[])
+            : [v as string];
 
       const ticketNames = toArray(req.body.ticketName);
       const ticketPrices = toArray(req.body.ticketPrice);
@@ -252,14 +256,10 @@ organizerViewsRouter.post(
   async (req: Request, res: Response) => {
     try {
       const bannerUrl = getEventBannerUrl(req.file);
-      await eventService.updateEvent(
-        req.params.id as string,
-        req.user!.id,
-        {
-          ...req.body,
-          ...(bannerUrl && { bannerUrl }),
-        },
-      );
+      await eventService.updateEvent(req.params.id as string, req.user!.id, {
+        ...req.body,
+        ...(bannerUrl && { bannerUrl }),
+      });
       res.redirect("/organizer/events");
     } catch (err: any) {
       const event = await eventService.getEventById(req.params.id as string);
