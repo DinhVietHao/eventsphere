@@ -1,55 +1,54 @@
-<div class="w-100 bg-dark position-relative text-white overflow-hidden" style="height: 350px;">
-  <img
-    src="<%= event.bannerUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80' %>"
-    class="w-100 h-100 object-fit-cover opacity-50" alt="<%= event.title %>">
-  <div class="position-absolute top-50 start-50 translate-middle text-center w-75">
-    <span class="badge bg-primary text-uppercase px-3 py-2 mb-3 shadow">
-      <%= event.category %>
-    </span>
-    <h1 class="display-5 fw-bold text-shadow">
-      <%= event.title %>
-    </h1>
+<div class="container">
+  <div class="detail-hero mb-4">
+    <img
+            src="<%= event.bannerUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80' %>"
+            alt="<%= event.title %>">
+    <div class="detail-hero__content">
+      <span class="detail-hero__stamp"><%= event.category %></span>
+      <h1 class="detail-hero__title"><%= event.title %></h1>
+    </div>
   </div>
-</div>
 
-<div class="container mt-4">
   <div class="row g-4">
 
     <div class="col-lg-8">
       <div class="card border-0 shadow-sm p-4 mb-4">
-        <h3 class="h4 fw-bold mb-4 border-bottom pb-2 text-dark">Thông tin sự kiện</h3>
+        <h3 class="h5 fw-bold mb-4 text-dark">Thông tin sự kiện</h3>
 
-        <div class="row g-3 mb-4">
-          <div class="col-sm-6 d-flex align-items-start">
-            <i class="bi bi-geo-alt-fill text-danger fs-4 me-3"></i>
-            <div>
-              <strong class="d-block text-dark">Địa điểm tổ chức</strong>
-              <span class="text-muted">
-                <%= event.location %>
-              </span>
+        <div class="row g-4 mb-4">
+          <div class="col-sm-6">
+            <div class="info-stub">
+              <span class="info-stub__icon is-indigo"><i class="bi bi-geo-alt-fill"></i></span>
+              <div>
+                <span class="info-stub__label">Địa điểm tổ chức</span>
+                <span class="info-stub__value"><%= event.location %></span>
+              </div>
             </div>
           </div>
-          <div class="col-sm-6 d-flex align-items-start">
-            <i class="bi bi-calendar-check-fill text-primary fs-4 me-3"></i>
-            <div>
-              <strong class="d-block text-dark">Thời gian bắt đầu</strong>
-              <span class="text-muted">
-                <%= new Date(event.startDate).toLocaleString('vi-VN') %>
-              </span>
+          <div class="col-sm-6">
+            <div class="info-stub">
+              <span class="info-stub__icon is-amber"><i class="bi bi-calendar-check-fill"></i></span>
+              <div>
+                <span class="info-stub__label">Thời gian bắt đầu</span>
+                <span class="info-stub__value"><%= new Date(event.startDate).toLocaleString('vi-VN') %></span>
+              </div>
             </div>
           </div>
-          <div class="col-sm-6 d-flex align-items-start">
-            <i class="bi bi-person-bounding-box text-success fs-4 me-3"></i>
-            <div>
-              <strong class="d-block text-dark">Ban tổ chức</strong>
-              <span class="text-muted">
-                <%= event.organizer || 'EventSphere Team' %>
-              </span>
+          <div class="col-sm-6">
+            <div class="info-stub">
+              <span class="info-stub__icon is-success"><i class="bi bi-person-bounding-box"></i></span>
+              <div>
+                <span class="info-stub__label">Ban tổ chức</span>
+                <span class="info-stub__value"><%= event.organizer || 'EventSphere Team' %></span>
+              </div>
             </div>
           </div>
         </div>
 
-        <h4 class="h5 fw-bold mb-3 text-dark">Giới thiệu</h4>
+        <div class="section-head">
+          <div><span class="eyebrow">Nội dung</span><h2 class="h6 fw-bold mb-0 mt-1">Giới thiệu</h2></div>
+          <div class="tear-line"></div>
+        </div>
         <div class="text-muted lh-lg">
           <%- event.description || 'Chưa có mô tả chi tiết cho sự kiện này.' %>
         </div>
@@ -58,151 +57,148 @@
       <div class="card border-0 shadow-sm p-4" id="reviews">
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-4">
           <h3 class="h5 fw-bold mb-0 text-dark">
-            <i class="bi bi-chat-left-heart me-2 text-primary"></i>Đánh giá sự kiện
+            <i class="bi bi-chat-left-heart me-2" style="color: var(--indigo);"></i>Đánh giá sự kiện
           </h3>
-          <div class="fw-bold text-warning">
-            ⭐ <%= Number(averageRating || 0).toFixed(1) %> / 5
-              <span class="text-muted fw-normal">(<%= reviewCount || 0 %> đánh giá)</span>
+          <div class="fw-bold d-flex align-items-center gap-1" style="color: var(--amber);">
+            <i class="bi bi-star-fill"></i> <%= Number(averageRating || 0).toFixed(1) %> / 5
+            <span class="text-muted fw-normal small">(<%= reviewCount || 0 %> đánh giá)</span>
           </div>
         </div>
 
         <% if (reviewSuccess) { %>
-          <div class="alert alert-success alert-dismissible fade show" role="alert">
-            Đánh giá của bạn đã được ghi nhận.
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+          <div class="alert flash-ticket mb-4" role="alert">
+            <span class="flash-ticket__icon"><i class="bi bi-check-lg"></i></span>
+            <div class="flash-ticket__msg">Đánh giá của bạn đã được ghi nhận.</div>
           </div>
-          <% } %>
+        <% } %>
 
-            <div class="bg-light rounded-3 p-3 p-md-4 mb-4">
-              <% if (!canReview) { %>
-                <div class="d-flex align-items-center text-muted">
-                  <i class="bi bi-info-circle me-2 text-primary"></i>
-                  <span>
-                    <%= reviewMessage %>
-                  </span>
-                </div>
-                <% } else if (currentUserReview?.hasEdited) { %>
-                  <div class="d-flex align-items-center text-muted">
-                    <i class="bi bi-check-circle me-2 text-success"></i>
-                    <span>Bạn đã cập nhật đánh giá một lần nên không thể chỉnh sửa thêm.</span>
-                  </div>
-                <% } else { %>
-                  <form method="POST" action="/reviews/events/<%= event._id %>">
-                    <div class="mb-3">
-                      <label class="form-label small fw-bold text-secondary">Chọn số sao</label>
-                      <div class="d-flex flex-wrap gap-2">
-                        <% for (let star=1; star <=5; star++) { %>
-                          <input type="radio" class="btn-check" name="rating" id="rating-<%= star %>"
-                            value="<%= star %>" <%=Number(currentUserReview?.rating || 5)===star ? 'checked' : '' %>
-                          required>
-                          <label class="btn btn-outline-warning" for="rating-<%= star %>">
-                            <%= star %> <i class="bi bi-star-fill"></i>
-                          </label>
-                          <% } %>
-                      </div>
-                    </div>
-
-                    <div class="mb-3">
-                      <label for="review-comment" class="form-label small fw-bold text-secondary">Nhận xét của
-                        bạn</label>
-                      <textarea id="review-comment" name="comment" class="form-control" rows="4" maxlength="500"
-                        placeholder="Chia sẻ cảm nhận của bạn về sự kiện này..."><%= currentUserReview?.comment || '' %></textarea>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary px-4">
-                      <i class="bi bi-send me-2"></i>
-                      <%= currentUserReview ? 'Cập nhật đánh giá' : 'Gửi đánh giá' %>
-                    </button>
-                  </form>
-                  <% } %>
+        <div class="p-3 p-md-4 mb-4" style="background: var(--paper); border-radius: var(--radius-md);">
+          <% if (!canReview) { %>
+            <div class="d-flex align-items-center text-muted">
+              <i class="bi bi-info-circle me-2" style="color: var(--indigo);"></i>
+              <span><%= reviewMessage %></span>
             </div>
-
-            <% if (!reviews || reviews.length===0) { %>
-              <div class="text-center text-muted py-4 border-top">
-                <i class="bi bi-star fs-2 d-block mb-2 text-warning"></i>
-                Chưa có đánh giá nào cho sự kiện này.
+          <% } else if (currentUserReview?.hasEdited) { %>
+            <div class="d-flex align-items-center text-muted">
+              <i class="bi bi-check-circle me-2" style="color: var(--success);"></i>
+              <span>Bạn đã cập nhật đánh giá một lần nên không thể chỉnh sửa thêm.</span>
+            </div>
+          <% } else { %>
+            <form method="POST" action="/reviews/events/<%= event._id %>">
+              <div class="mb-3">
+                <label class="form-label small fw-bold text-secondary">Chọn số sao</label>
+                <div class="d-flex flex-wrap gap-2">
+                  <% for (let star=1; star <=5; star++) { %>
+                    <input type="radio" class="btn-check" name="rating" id="rating-<%= star %>"
+                           value="<%= star %>" <%=Number(currentUserReview?.rating || 5)===star ? 'checked' : '' %>
+                           required>
+                    <label class="btn btn-outline-warning rounded-pill" for="rating-<%= star %>">
+                      <%= star %> <i class="bi bi-star-fill"></i>
+                    </label>
+                  <% } %>
+                </div>
               </div>
-              <% } else { %>
-                <% reviews.forEach(function(review) { %>
-                  <div class="d-flex border-top pt-3 mb-3">
-                    <div
-                      class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0"
-                      style="width: 45px; height: 45px; font-weight: bold;">
-                      <%= (review.userId?.name || 'U' ).charAt(0).toUpperCase() %>
-                    </div>
-                    <div class="flex-grow-1">
-                      <div
+
+              <div class="mb-3">
+                <label for="review-comment" class="form-label small fw-bold text-secondary">Nhận xét của
+                  bạn</label>
+                <textarea id="review-comment" name="comment" class="form-control" rows="4" maxlength="500"
+                          placeholder="Chia sẻ cảm nhận của bạn về sự kiện này..."><%= currentUserReview?.comment || '' %></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-primary px-4 rounded-pill">
+                <i class="bi bi-send me-2"></i>
+                <%= currentUserReview ? 'Cập nhật đánh giá' : 'Gửi đánh giá' %>
+              </button>
+            </form>
+          <% } %>
+        </div>
+
+        <% if (!reviews || reviews.length===0) { %>
+          <div class="text-center text-muted py-4 border-top">
+            <i class="bi bi-star fs-2 d-block mb-2" style="color: var(--amber);"></i>
+            Chưa có đánh giá nào cho sự kiện này.
+          </div>
+        <% } else { %>
+          <% reviews.forEach(function(review) { %>
+            <div class="d-flex border-top pt-3 mb-3">
+              <div
+                      class="rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0 fw-bold"
+                      style="width: 45px; height: 45px; background: var(--indigo-soft); color: var(--indigo);">
+                <%= (review.userId?.name || 'U' ).charAt(0).toUpperCase() %>
+              </div>
+              <div class="flex-grow-1">
+                <div
                         class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-1 mb-1">
-                        <h6 class="mb-0 fw-bold">
-                          <%= review.userId?.name || 'Người tham dự' %>
-                        </h6>
-                        <small class="text-muted">
-                          <%= new Date(review.reviewedAt).toLocaleString('vi-VN') %>
-                        </small>
-                      </div>
-                      <div class="text-warning small mb-2">
-                        <% for (let star=1; star <=5; star++) { %>
-                          <i class="bi <%= star <= review.rating ? 'bi-star-fill' : 'bi-star' %>"></i>
-                          <% } %>
-                      </div>
-                      <p class="text-muted mb-0 small">
-                        <%= review.comment || 'Không có nhận xét.' %>
-                      </p>
-                    </div>
-                  </div>
-                  <% }); %>
-                    <% if (typeof reviewPagination !== 'undefined' && reviewPagination.totalPages > 1) { %>
-                      <nav class="mt-4" aria-label="Review pagination">
-                        <ul class="pagination justify-content-center mb-0">
-                          <li class="page-item <%= reviewPagination.currentPage === 1 ? 'disabled' : '' %>">
-                            <a class="page-link" href="?reviewPage=<%= reviewPagination.currentPage - 1 %>#reviews" aria-label="Previous">
-                              <span aria-hidden="true">&laquo; Trước</span>
-                            </a>
-                          </li>
+                  <h6 class="mb-0 fw-bold">
+                    <%= review.userId?.name || 'Người tham dự' %>
+                  </h6>
+                  <small class="text-muted" style="font-family: var(--font-mono); font-size: .72rem;">
+                    <%= new Date(review.reviewedAt).toLocaleString('vi-VN') %>
+                  </small>
+                </div>
+                <div class="star-row small mb-2">
+                  <% for (let star=1; star <=5; star++) { %>
+                    <i class="bi <%= star <= review.rating ? 'bi-star-fill' : 'bi-star is-empty' %>"></i>
+                  <% } %>
+                </div>
+                <p class="text-muted mb-0 small">
+                  <%= review.comment || 'Không có nhận xét.' %>
+                </p>
+              </div>
+            </div>
+          <% }); %>
+          <% if (typeof reviewPagination !== 'undefined' && reviewPagination.totalPages > 1) { %>
+            <nav class="mt-4" aria-label="Review pagination">
+              <ul class="pagination pagination-ticket justify-content-center mb-0">
+                <li class="page-item <%= reviewPagination.currentPage === 1 ? 'disabled' : '' %>">
+                  <a class="page-link" href="?reviewPage=<%= reviewPagination.currentPage - 1 %>#reviews" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                  </a>
+                </li>
 
-                          <% for (let page = 1; page <= reviewPagination.totalPages; page++) { %>
-                            <li class="page-item <%= reviewPagination.currentPage === page ? 'active' : '' %>">
-                              <a class="page-link" href="?reviewPage=<%= page %>#reviews"><%= page %></a>
-                            </li>
-                          <% } %>
+                <% for (let page = 1; page <= reviewPagination.totalPages; page++) { %>
+                  <li class="page-item <%= reviewPagination.currentPage === page ? 'active' : '' %>">
+                    <a class="page-link" href="?reviewPage=<%= page %>#reviews"><%= String(page).padStart(2, '0') %></a>
+                  </li>
+                <% } %>
 
-                          <li class="page-item <%= reviewPagination.currentPage === reviewPagination.totalPages ? 'disabled' : '' %>">
-                            <a class="page-link" href="?reviewPage=<%= reviewPagination.currentPage + 1 %>#reviews" aria-label="Next">
-                              <span aria-hidden="true">Sau &raquo;</span>
-                            </a>
-                          </li>
-                        </ul>
-                      </nav>
-                    <% } %>
-                    <% } %>
+                <li class="page-item <%= reviewPagination.currentPage === reviewPagination.totalPages ? 'disabled' : '' %>">
+                  <a class="page-link" href="?reviewPage=<%= reviewPagination.currentPage + 1 %>#reviews" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                  </a>
+                </li>
+              </ul>
+            </nav>
+          <% } %>
+        <% } %>
       </div>
     </div>
 
     <div class="col-lg-4">
-      <div class="card border-0 shadow-sm text-center p-4 sticky-lg-top" style="top: 80px;">
-        <div class="card-body">
-          <span class="text-muted d-block mb-1 small text-uppercase fw-bold">Giá vé tham dự</span>
-          <h2 class="display-6 fw-bold text-primary mb-2">
-            <%= minPrice===maxPrice ? `${minPrice.toLocaleString("vi-VN")} VND` : `Từ
-              ${minPrice.toLocaleString("vi-VN")} đến ${maxPrice.toLocaleString("vi-VN")} VND` %>
-          </h2>
+      <div class="price-stub sticky-lg-top" style="top: 16px;">
+        <span class="price-stub__label">Giá vé tham dự</span>
+        <h2 class="price-stub__value">
+          <%= minPrice===maxPrice ? `${minPrice.toLocaleString("vi-VN")} VND` : `Từ
+            ${minPrice.toLocaleString("vi-VN")} đến ${maxPrice.toLocaleString("vi-VN")} VND` %>
+        </h2>
 
-          <hr class="my-4">
+        <div class="price-stub__divider"></div>
 
-          <% if (event.status==='APPROVED' || event.status==='ONGOING' ) { %>
-            <a href="/events/<%= event._id %>/booking" class="btn btn-primary btn-lg w-100 fw-bold mb-3 shadow-sm">Mua
-              Vé Ngay</a>
-            <p class="text-muted small mb-0"><i class="bi bi-shield-check text-success me-1"></i>Cam kết hoàn tiền trong
-              24h nếu có sự cố xảy ra.</p>
-            <% } else if (event.status==='PENDING' || event.status==='DRAFT' ) { %>
-              <button class="btn btn-secondary btn-lg w-100 fw-bold mb-3" disabled>Chưa mở đăng ký</button>
-              <p class="text-muted small mb-0"><i class="bi bi-clock me-1"></i>Sự kiện đang chờ được phê duyệt.</p>
-              <% } else { %>
-                <button class="btn btn-secondary btn-lg w-100 fw-bold mb-3" disabled>Đã Đóng Đăng Ký</button>
-                <p class="text-danger small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Sự kiện này đã kết thúc
-                  hoặc bị hủy.</p>
-                <% } %>
-        </div>
+        <% if (event.status==='APPROVED' || event.status==='ONGOING' ) { %>
+          <a href="/events/<%= event._id %>/booking" class="btn btn-primary btn-lg w-100 fw-bold mb-3 rounded-pill">
+            <i class="bi bi-ticket-perforated-fill me-2"></i>Mua Vé Ngay
+          </a>
+          <p class="text-muted small mb-0"><i class="bi bi-shield-check me-1" style="color: var(--success);"></i>Cam kết hoàn tiền trong
+            24h nếu có sự cố xảy ra.</p>
+        <% } else if (event.status==='PENDING' || event.status==='DRAFT' ) { %>
+          <button class="btn btn-secondary btn-lg w-100 fw-bold mb-3 rounded-pill" disabled>Chưa mở đăng ký</button>
+          <p class="text-muted small mb-0"><i class="bi bi-clock me-1"></i>Sự kiện đang chờ được phê duyệt.</p>
+        <% } else { %>
+          <button class="btn btn-secondary btn-lg w-100 fw-bold mb-3 rounded-pill" disabled>Đã Đóng Đăng Ký</button>
+          <p class="small mb-0" style="color: var(--danger);"><i class="bi bi-exclamation-triangle me-1"></i>Sự kiện này đã kết thúc
+            hoặc bị hủy.</p>
+        <% } %>
       </div>
     </div>
 

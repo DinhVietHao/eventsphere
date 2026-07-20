@@ -43,6 +43,7 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(ejsLayouts);
 app.set("layout", "layouts/main");
+app.use(express.static(path.join(__dirname, "public")));
 
 // View routes
 app.use("/", viewsRouter);

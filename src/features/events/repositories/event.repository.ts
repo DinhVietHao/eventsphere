@@ -48,12 +48,16 @@ export class EventRepository {
 
   // Dựng chung query filter (category + khoảng ngày) cho find & count
   private buildFilterQuery(filters: {
+    keyword?: string;
     category?: string;
     startFrom?: Date;
     startTo?: Date;
   }): Record<string, unknown> {
     const query: Record<string, unknown> = { status: { $in: PUBLIC_STATUSES } };
 
+    if (filters.keyword && filters.keyword.trim() !== "") {
+      query.$text = { $search: filters.keyword.trim() };
+    }
     if (filters.category) {
       query.category = filters.category;
     }
@@ -67,15 +71,16 @@ export class EventRepository {
     return query;
   }
 
-  // UC04 - Lọc theo category và/hoặc khoảng thời gian, có phân trang
+  // UC04 - Lọc theo category và/hoặc khoảng thời gian (+ keyword), có phân trang
   async findWithFilters(
-    filters: {
-      category?: string;
-      startFrom?: Date;
-      startTo?: Date;
-    },
-    page = 1,
-    limit = 9,
+      filters: {
+        keyword?: string;
+        category?: string;
+        startFrom?: Date;
+        startTo?: Date;
+      },
+      page = 1,
+      limit = 9,
   ): Promise<IEvent[]> {
     const query = this.buildFilterQuery(filters);
     const skip = (page - 1) * limit;
@@ -83,8 +88,9 @@ export class EventRepository {
     return Event.find(query).sort({ startDate: 1 }).skip(skip).limit(limit);
   }
 
-  // Đếm tổng số event khớp filter (category + khoảng ngày) để tính pagination
+  // Đếm tổng số event khớp filter (category + khoảng ngày + keyword) để tính pagination
   async countWithFilters(filters: {
+    keyword?: string;
     category?: string;
     startFrom?: Date;
     startTo?: Date;
