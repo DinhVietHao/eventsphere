@@ -10,14 +10,19 @@ import {
 import { PaymentRepository } from "./repositories/payment.repository";
 import { RegistrationRepository } from "../tickets/repositories/registration.repository";
 import { TicketRepository } from "../tickets/repositories/ticket.repository";
-import { TicketsService } from "../tickets/tickets.service";
+import {
+    EVENT_REGISTRATION_CLOSED_MESSAGE,
+    TicketsService,
+} from "../tickets/tickets.service";
 import { TicketTypeRepository } from "../events/repositories/ticketType.repository";
+import { EventRepository } from "../events/repositories/event.repository";
 
 export class PaymentService {
     private paymentRepository: PaymentRepository;
     private registrationRepository: RegistrationRepository;
     private ticketRepository: TicketRepository;
     private ticketTypeRepository: TicketTypeRepository;
+    private eventRepository: EventRepository;
     private ticketsService: TicketsService;
 
     constructor() {
@@ -25,6 +30,7 @@ export class PaymentService {
         this.registrationRepository = new RegistrationRepository();
         this.ticketRepository = new TicketRepository();
         this.ticketTypeRepository = new TicketTypeRepository();
+        this.eventRepository = new EventRepository();
         this.ticketsService = new TicketsService();
     }
 
@@ -71,6 +77,18 @@ export class PaymentService {
         if (registration.paymentStatus === "paid") {
             throw new AppError("Đăng ký này đã được thanh toán.", 409);
         }
+
+        const event = await this.eventRepository.findById(registration.eventId.toString());
+        if (!event) {
+            throw new AppError("Không tìm thấy thông tin sự kiện.", 404);
+        }
+        if (event.status === "CANCELLED") {
+            throw new AppError("Sự kiện đã bị hủy. Bạn không thể đăng ký hoặc mua vé.", 400);
+        }
+        if (event.status !== "APPROVED") {
+            throw new AppError("Sự kiện hiện không cho phép đăng ký tham dự.", 400);
+        }
+        this.assertEventCanAcceptRegistration(event);
 
         const ticketType = await this.ticketTypeRepository.findByEventAndTicketType(
             registration.eventId.toString(),
@@ -139,6 +157,13 @@ export class PaymentService {
             amount: Number(ticketType.price),
             registrationId: registration._id,
         };
+    }
+
+    private assertEventCanAcceptRegistration(event: { startDate: Date }) {
+        const eventStartAt = new Date(event.startDate);
+        if (Number.isNaN(eventStartAt.getTime()) || new Date() >= eventStartAt) {
+            throw new AppError(EVENT_REGISTRATION_CLOSED_MESSAGE, 400);
+        }
     }
 
     async handleVNPayReturn(query: Record<string, string>) {

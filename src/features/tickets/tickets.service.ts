@@ -10,6 +10,9 @@ import { RegistrationRepository } from "./repositories/registration.repository";
 import { TicketRepository } from "./repositories/ticket.repository";
 import { getIO } from "../../config/socket";
 
+export const EVENT_REGISTRATION_CLOSED_MESSAGE =
+  "Sự kiện đã bắt đầu hoặc đã kết thúc. Bạn không thể đăng ký hoặc mua vé.";
+
 export class TicketsService {
   private registrationRepository: RegistrationRepository;
   private ticketRepository: TicketRepository;
@@ -38,9 +41,13 @@ export class TicketsService {
       iRegisterAttendanceDto.eventId,
     );
     if (!event) throw new AppError("Không tìm thấy sự kiện.", 404);
-    if (!["APPROVED", "ONGOING"].includes(event.status)) {
+    if (event.status === "CANCELLED") {
+      throw new AppError("Sự kiện đã bị hủy. Bạn không thể đăng ký hoặc mua vé.", 400);
+    }
+    if (event.status !== "APPROVED") {
       throw new AppError("Sự kiện hiện không cho phép đăng ký tham dự.", 400);
     }
+    this.assertEventCanAcceptRegistration(event);
 
     const ticketType = await this.ticketTypeRepository.findByEventAndTicketType(
       iRegisterAttendanceDto.eventId,
@@ -212,6 +219,13 @@ export class TicketsService {
       },
       nextStep: "payment_required",
     };
+  }
+
+  private assertEventCanAcceptRegistration(event: { startDate: Date }) {
+    const eventStartAt = new Date(event.startDate);
+    if (Number.isNaN(eventStartAt.getTime()) || new Date() >= eventStartAt) {
+      throw new AppError(EVENT_REGISTRATION_CLOSED_MESSAGE, 400);
+    }
   }
 
   async issueTicketForRegistration(registrationId: string) {

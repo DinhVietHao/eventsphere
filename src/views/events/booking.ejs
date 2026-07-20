@@ -9,6 +9,7 @@
     </a>
   </div>
 <% } else { %>
+  <% const eventStartAt = new Date(event.startDate); const hasEventStarted = Date.now() >= eventStartAt.getTime(); const canRegisterForEvent = event.status === 'APPROVED' && !hasEventStarted; %>
   <div class="container">
     <div class="row g-4">
       <div class="col-lg-8">
@@ -70,6 +71,8 @@
                     </div>
                   </div>
                 </div>
+              <% } else if (!canRegisterForEvent) { %>
+                Sự kiện hiện không còn cho phép đăng ký hoặc mua vé.
               <% } else { %>
                 <div class="alert flash-ticket mb-4" style="border-left-color: var(--amber);" role="alert">
                           <span class="flash-ticket__icon" style="background: var(--amber-soft2); color: #a3690f;">
@@ -83,6 +86,7 @@
                               <%= registrationResult.payment.amount.toLocaleString('vi-VN') %>
                       <%= registrationResult.payment.currency %>
                             </span>
+                    <% if (canRegisterForEvent) { %>
                     <form action="/api/v1/payments/vnpay/create" method="POST">
                       <input type="hidden" name="registrationId"
                              value="<%= registrationResult.registration._id %>">
@@ -102,12 +106,18 @@
                         </div>
                       </div>
                     </form>
+                    <% } else { %>
+                      <div class="alert flash-ticket is-danger mb-0" role="alert">
+                        <span class="flash-ticket__icon"><i class="bi bi-exclamation-lg"></i></span>
+                        <div class="flash-ticket__msg">Sự kiện đã bắt đầu hoặc đã kết thúc. Bạn không thể đăng ký hoặc mua vé.</div>
+                      </div>
+                    <% } %>
                   </div>
                 </div>
               <% } %>
             <% } %>
 
-            <% if (!registrationResult) { %>
+            <% if (!registrationResult && canRegisterForEvent) { %>
               <form action="/events/<%= event._id %>/booking" method="POST">
                 <div class="section-head">
                   <div><span class="eyebrow">Bước 1</span><h2 class="h6 fw-bold mb-0 mt-1">Chọn loại vé</h2></div>
@@ -165,6 +175,19 @@
                   </div>
                 <% } %>
               </form>
+            <% } else if (!registrationResult) { %>
+              <div class="alert flash-ticket is-danger mb-0" role="alert">
+                <span class="flash-ticket__icon"><i class="bi bi-exclamation-lg"></i></span>
+                <div class="flash-ticket__msg">
+                  <% if (event.status === 'PENDING' || event.status === 'DRAFT') { %>
+                    Sự kiện hiện chưa mở đăng ký.
+                  <% } else if (event.status === 'CANCELLED') { %>
+                    Sự kiện đã bị hủy. Bạn không thể đăng ký hoặc mua vé.
+                  <% } else { %>
+                    Sự kiện đã bắt đầu hoặc đã kết thúc. Bạn không thể đăng ký hoặc mua vé.
+                  <% } %>
+                </div>
+              </div>
             <% } %>
           </div>
         </div>
