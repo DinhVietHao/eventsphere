@@ -193,6 +193,72 @@ export class EmailService {
     });
   }
 
+  /**
+   * Gửi email xác thực tài khoản sau khi đăng ký. Link hết hạn sau 24 giờ.
+   */
+  async sendVerificationEmail(params: { to: string; name: string; verifyUrl: string }): Promise<void> {
+    if (!appConfig.email.user || !appConfig.email.password) {
+      console.warn("[EmailService] EMAIL_USER/EMAIL_PASSWORD is missing. Skip sending verification email.");
+      return;
+    }
+
+    const name = this.escapeHtml(params.name);
+
+    await this.transporter.sendMail({
+      from: appConfig.email.from,
+      to: params.to,
+      subject: "Xác thực tài khoản EventSphere của bạn",
+      html: `
+        <div style="font-family:'Segoe UI',Arial,sans-serif;background:#eef1ec;padding:32px 16px;">
+          <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 20px 40px -28px rgba(18,20,28,.4);">
+            <div style="background:#12141c;padding:24px 32px;">
+              <span style="color:#f5a623;font-weight:700;font-size:18px;">Event<span style="color:#ffffff;">Sphere</span></span>
+            </div>
+            <div style="padding:32px;color:#12141c;">
+              <p style="margin:0 0 16px;">Xin chào <strong>${name}</strong>,</p>
+              <p style="margin:0 0 24px;line-height:1.6;">Cảm ơn bạn đã đăng ký tài khoản EventSphere. Vui lòng bấm nút bên dưới để xác thực địa chỉ email và kích hoạt tài khoản.</p>
+              <a href="${params.verifyUrl}" style="display:inline-block;background:#4338ca;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 28px;border-radius:999px;">Xác thực email</a>
+              <p style="margin:24px 0 0;font-size:13px;color:#8b90a0;">Link có hiệu lực trong 24 giờ. Nếu bạn không tạo tài khoản này, vui lòng bỏ qua email này.</p>
+            </div>
+          </div>
+        </div>
+      `,
+    });
+  }
+
+  /**
+   * Gửi email chứa link đặt lại mật khẩu. Link hết hạn sau 30 phút.
+   */
+  async sendResetPasswordEmail(params: { to: string; name: string; resetUrl: string }): Promise<void> {
+    if (!appConfig.email.user || !appConfig.email.password) {
+      console.warn("[EmailService] EMAIL_USER/EMAIL_PASSWORD is missing. Skip sending reset password email.");
+      return;
+    }
+
+    const name = this.escapeHtml(params.name);
+
+    await this.transporter.sendMail({
+      from: appConfig.email.from,
+      to: params.to,
+      subject: "Yêu cầu đặt lại mật khẩu EventSphere",
+      html: `
+        <div style="font-family:'Segoe UI',Arial,sans-serif;background:#eef1ec;padding:32px 16px;">
+          <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 20px 40px -28px rgba(18,20,28,.4);">
+            <div style="background:#12141c;padding:24px 32px;">
+              <span style="color:#f5a623;font-weight:700;font-size:18px;">Event<span style="color:#ffffff;">Sphere</span></span>
+            </div>
+            <div style="padding:32px;color:#12141c;">
+              <p style="margin:0 0 16px;">Xin chào <strong>${name}</strong>,</p>
+              <p style="margin:0 0 24px;line-height:1.6;">Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Bấm nút bên dưới để đặt mật khẩu mới.</p>
+              <a href="${params.resetUrl}" style="display:inline-block;background:#4338ca;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 28px;border-radius:999px;">Đặt lại mật khẩu</a>
+              <p style="margin:24px 0 0;font-size:13px;color:#8b90a0;">Link có hiệu lực trong 30 phút. Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+            </div>
+          </div>
+        </div>
+      `,
+    });
+  }
+
   private escapeHtml(value: string): string {
     return value
       .replace(/&/g, "&amp;")
