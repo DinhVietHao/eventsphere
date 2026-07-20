@@ -1,44 +1,69 @@
-import fs from "fs";
-import path from "path";
 import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { Request } from "express";
 
-const EVENT_BANNER_DIR = path.join(process.cwd(), "public", "images", "event");
-const EVENT_BANNER_URL_PREFIX = "/images/event";
-const MAX_EVENT_BANNER_SIZE = 5 * 1024 * 1024;
+// ─── Avatar ────────────────────────────────────────────────────────────────
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    fs.mkdirSync(EVENT_BANNER_DIR, { recursive: true });
-    cb(null, EVENT_BANNER_DIR);
-  },
+const AVATAR_DIR = path.join(process.cwd(), "public", "uploads", "avatars");
+if (!fs.existsSync(AVATAR_DIR)) fs.mkdirSync(AVATAR_DIR, { recursive: true });
+
+const avatarStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, AVATAR_DIR),
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `event-banner-${unique}${ext}`);
+    const uniqueName = `avatar_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`;
+    cb(null, uniqueName);
   },
 });
 
-const fileFilter = (
+const imageFilter = (
   _req: Request,
   file: Express.Multer.File,
   cb: multer.FileFilterCallback,
 ) => {
-  if (!file.mimetype.startsWith("image/")) {
-    return cb(new Error("Banner sự kiện phải là file ảnh"));
+  const allowed = [".jpg", ".jpeg", ".png", ".webp"];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowed.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Chi chap nhan file anh: jpg, jpeg, png, webp"));
   }
-  cb(null, true);
 };
+
+export const uploadAvatar = multer({
+  storage: avatarStorage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+}).single("avatar");
+
+// ─── Event Banner ──────────────────────────────────────────────────────────
+
+const BANNER_DIR = path.join(process.cwd(), "public", "uploads", "banners");
+if (!fs.existsSync(BANNER_DIR)) fs.mkdirSync(BANNER_DIR, { recursive: true });
+
+const bannerStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, BANNER_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const uniqueName = `banner_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`;
+    cb(null, uniqueName);
+  },
+});
 
 export const uploadEventBanner = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: MAX_EVENT_BANNER_SIZE },
+  storage: bannerStorage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB cho banner
 }).single("banner");
 
-export const getEventBannerUrl = (
-  file?: Express.Multer.File,
-): string | undefined => {
+/**
+ * Lấy URL public của banner sau khi upload.
+ * Trả về undefined nếu không có file (giữ nguyên banner cũ).
+ */
+export function getEventBannerUrl(
+  file: Express.Multer.File | undefined,
+): string | undefined {
   if (!file) return undefined;
-  return `${EVENT_BANNER_URL_PREFIX}/${file.filename}`;
-};
+  return `/uploads/banners/${file.filename}`;
+}

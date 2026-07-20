@@ -95,6 +95,14 @@
               <%= profile.name.charAt(0).toUpperCase() %>
             </div>
           <% } %>
+          <!-- Nút đổi ảnh -->
+          <form action="/profile/avatar" method="POST" enctype="multipart/form-data" class="position-relative" style="margin-bottom: -8px;">
+            <label for="avatarInput" class="btn btn-sm btn-light shadow-sm border" style="cursor:pointer;" title="Đổi ảnh đại diện">
+              <i class="bi bi-camera-fill text-primary"></i>
+            </label>
+            <input type="file" id="avatarInput" name="avatar" accept=".jpg,.jpeg,.png,.webp"
+                   class="d-none" onchange="this.form.submit()">
+          </form>
           <div class="pb-1">
             <h4 class="fw-bold mb-1"><%= profile.name %></h4>
             <div class="d-flex align-items-center gap-2 flex-wrap">

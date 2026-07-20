@@ -1,7 +1,10 @@
 import { Router } from "express";
 import { Request, Response } from "express";
+import path from "path";
+import fs from "fs";
 import { AuthService } from "../features/auth/auth.service";
 import { verifyAccessToken } from "../shared/utils/jwt.util";
+import { uploadAvatar } from "../shared/middlewares/upload.middleware";
 
 const authViewsRouter = Router();
 const authService = new AuthService();
@@ -173,6 +176,65 @@ authViewsRouter.post(
         success: null,
       });
     }
+  },
+);
+
+// Upload avatar
+authViewsRouter.post(
+  "/profile/avatar",
+  requireAuth,
+  (req: Request, res: Response) => {
+    uploadAvatar(req, res, async (err) => {
+      const userId = (req as any).user.id;
+
+      if (err) {
+        const profile = await authService.getProfile(userId);
+        return res.render("auth/profile", {
+          layout: false,
+          user: (req as any).user,
+          profile,
+          activeTab: "info",
+          error: err.message || "Upload ảnh thất bại",
+          success: null,
+        });
+      }
+
+      if (!req.file) {
+        (req as any).flash?.("error", "Vui lòng chọn file ảnh");
+        return res.redirect("/profile?tab=info");
+      }
+
+      try {
+        // Lấy avatar cũ để xóa file nếu có
+        const currentProfile = await authService.getProfile(userId);
+        const oldAvatar = currentProfile.avatar;
+
+        // Đường dẫn public để lưu vào DB và hiển thị
+        const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+        await authService.updateProfile(userId, { avatar: avatarUrl });
+
+        // Xóa file avatar cũ nếu là file local (không xóa nếu là URL ngoài)
+        if (oldAvatar && oldAvatar.startsWith("/uploads/")) {
+          const oldPath = path.join(process.cwd(), "public", oldAvatar);
+          if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        }
+
+        (req as any).flash?.("success", "Cập nhật ảnh đại diện thành công!");
+        res.redirect("/profile?tab=info");
+      } catch (updateErr: any) {
+        // Xóa file vừa upload nếu update DB lỗi
+        if (req.file) fs.unlinkSync(req.file.path);
+        const profile = await authService.getProfile(userId);
+        res.render("auth/profile", {
+          layout: false,
+          user: (req as any).user,
+          profile,
+          activeTab: "info",
+          error: updateErr.message || "Cập nhật ảnh thất bại",
+          success: null,
+        });
+      }
+    });
   },
 );
 
