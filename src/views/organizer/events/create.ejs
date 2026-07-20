@@ -12,7 +12,7 @@
 </div>
 <% } %>
 
-<form action="/organizer/events" method="POST" id="eventForm">
+<form action="/organizer/events" method="POST" id="eventForm" enctype="multipart/form-data">
   <%# ── PHẦN 1: THÔNG TIN SỰ KIỆN ── %>
   <div class="card border-0 shadow-sm p-4 mb-4">
     <h2 class="h5 fw-bold text-dark mb-4 border-bottom pb-2">
@@ -49,6 +49,11 @@
           <input type="text" class="form-control" name="location" required
             placeholder="Tòa nhà, tên đường, Quận/Thành phố..."
             value="<%= (typeof old !== 'undefined' && old) ? old.location || '' : '' %>">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Banner sự kiện</label>
+          <input type="file" class="form-control" name="banner" accept="image/*">
+          <div class="form-text">Ảnh tối đa 5MB.</div>
         </div>
         <div class="mb-3">
           <label class="form-label small fw-bold">Ngày bắt đầu <span class="text-danger">*</span></label>

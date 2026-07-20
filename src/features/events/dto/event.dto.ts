@@ -30,7 +30,7 @@ export const CreateEventSchema = Joi.object({
   location: Joi.string().trim().required(),
   startDate: Joi.date().iso().greater("now").required(),
   endDate: Joi.date().iso().greater(Joi.ref("startDate")).required(),
-  bannerUrl: Joi.string().uri().allow(null, "").optional(),
+  bannerUrl: Joi.string().trim().max(2048).allow(null, "").optional(),
   actionType: Joi.string().valid("draft", "submit").default("draft"),
 });
 
@@ -41,5 +41,5 @@ export const UpdateEventSchema = Joi.object({
   location: Joi.string().trim(),
   startDate: Joi.date().iso(),
   endDate: Joi.date().iso().greater(Joi.ref("startDate")),
-  bannerUrl: Joi.string().uri().allow(null, "").optional(),
+  bannerUrl: Joi.string().trim().max(2048).allow(null, "").optional(),
 }).min(1);

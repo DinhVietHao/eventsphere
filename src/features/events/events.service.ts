@@ -175,51 +175,81 @@ export class EventService {
     organizerId: string,
     dto: IUpdateEventDto,
   ): Promise<IEvent> {
-    const event = await eventRepository.findById(id);
+    if (!Types.ObjectId.isValid(id)) {
+      throw new AppError("ID sự kiện không hợp lệ", 400);
+    }
+
+    const event = await eventRepository.findOwnedEventById(id, organizerId);
     if (!event) {
-      throw new AppError("Event không tồn tại", 404);
+      throw new AppError("Event không tồn tại hoặc bạn không có quyền chỉnh sửa", 404);
     }
-    if (event.organizerId.toString() !== organizerId) {
-      throw new AppError("Bạn không có quyền chỉnh sửa event này", 403);
-    }
-    if (event.status === "APPROVED" || event.status === "ONGOING") {
+    if (event.status !== "DRAFT") {
       throw new AppError(
-        "Không thể chỉnh sửa event đã được duyệt hoặc đang diễn ra",
+        "Chỉ có thể chỉnh sửa event ở trạng thái DRAFT",
         403,
       );
     }
 
-    const updated = await eventRepository.updateById(id, {
+    const updateData: Partial<IEvent> = {
       title: dto.title,
       description: dto.description,
       category: dto.category,
       location: dto.location,
       startDate: dto.startDate ? new Date(dto.startDate) : undefined,
       endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+      bannerUrl: dto.bannerUrl,
+    };
+    Object.keys(updateData).forEach((key) => {
+      if (updateData[key as keyof IEvent] === undefined) {
+        delete updateData[key as keyof IEvent];
+      }
     });
+
+    const updated = await eventRepository.updateOwnedEventById(
+      id,
+      organizerId,
+      updateData,
+    );
 
     return updated!;
   }
 
   // Gửi duyệt event — DRAFT → PENDING
   async submitEvent(id: string, organizerId: string): Promise<IEvent> {
-    const event = await eventRepository.findById(id);
-    console.log("submitEvent called:", {
-      id,
-      organizerId,
-      status: event?.status,
-      eventOrganizerId: event?.organizerId.toString(),
-    });
-    if (!event) {
-      throw new AppError("Event không tồn tại", 404);
+    if (!Types.ObjectId.isValid(id)) {
+      throw new AppError("ID sự kiện không hợp lệ", 400);
     }
-    if (event.organizerId.toString() !== organizerId) {
-      throw new AppError("Bạn không có quyền thực hiện thao tác này", 403);
+
+    const event = await eventRepository.findOwnedEventById(id, organizerId);
+    if (!event) {
+      throw new AppError("Event không tồn tại hoặc bạn không có quyền thực hiện thao tác này", 404);
     }
     if (event.status !== "DRAFT") {
       throw new AppError("Chỉ có thể gửi duyệt event ở trạng thái DRAFT", 400);
     }
-    const updated = await eventRepository.updateById(id, { status: "PENDING" });
+    const updated = await eventRepository.updateOwnedEventById(id, organizerId, {
+      status: "PENDING",
+    });
+    return updated!;
+  }
+
+  // Hủy event đang chờ duyệt — PENDING → CANCELLED
+  async cancelEvent(id: string, organizerId: string): Promise<IEvent> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new AppError("ID sự kiện không hợp lệ", 400);
+    }
+
+    const event = await eventRepository.findOwnedEventById(id, organizerId);
+    if (!event) {
+      throw new AppError("Event không tồn tại hoặc bạn không có quyền hủy", 404);
+    }
+    if (event.status !== "PENDING") {
+      throw new AppError("Chỉ có thể hủy event ở trạng thái PENDING", 400);
+    }
+
+    const updated = await eventRepository.updateOwnedEventById(id, organizerId, {
+      status: "DRAFT",
+    });
     return updated!;
   }
 

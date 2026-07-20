@@ -28,6 +28,16 @@ export class EventRepository {
     return Event.findById(id);
   }
 
+  async findOwnedEventById(
+    eventId: string,
+    organizerId: string,
+  ): Promise<IEvent | null> {
+    return Event.findOne({
+      _id: new Types.ObjectId(eventId),
+      organizerId: new Types.ObjectId(organizerId),
+    } as any);
+  }
+
   // UC03 - Tìm kiếm full-text
   async search(keyword: string): Promise<IEvent[]> {
     return Event.find({
@@ -139,6 +149,24 @@ export class EventRepository {
       returnDocument: "after",
       runValidators: true,
     });
+  }
+
+  async updateOwnedEventById(
+    eventId: string,
+    organizerId: string,
+    data: Partial<IEvent>,
+  ): Promise<IEvent | null> {
+    return Event.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(eventId),
+        organizerId: new Types.ObjectId(organizerId),
+      } as any,
+      data,
+      {
+        returnDocument: "after",
+        runValidators: true,
+      },
+    );
   }
 
   // Xóa event theo id
