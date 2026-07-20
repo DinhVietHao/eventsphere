@@ -22,7 +22,12 @@ viewsRouter.use(async (req: Request, res: Response, next: NextFunction) => {
       const user = await userRepository.findById(payload.id);
 
       if (user && user.isActive) {
-        req.user = { id: user._id.toString(), role: user.role, name: user.name };
+        req.user = {
+          id: user._id.toString(),
+          role: user.role,
+          name: user.name,
+          avatar: user.avatar ?? undefined,
+        };
       } else {
         res.clearCookie("accessToken");
         res.clearCookie("refreshToken");
