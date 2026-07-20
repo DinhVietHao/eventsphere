@@ -11,8 +11,9 @@ const registrationRepository = new RegistrationRepository();
 
 export class EventService {
   // UC01 - Danh sách event công khai
-  async getPublishedEvents(page: number, limit: number): Promise<IEvent[]> {
-    return eventRepository.findPublished(page, limit);
+  async getPublishedEvents(page: number, limit: number): Promise<any[]> {
+    const events = await eventRepository.findPublished(page, limit);
+    return this.withMinTicketPrices(events);
   }
 
   // UC02 - Chi tiết 1 event
@@ -42,7 +43,7 @@ export class EventService {
       },
       page = 1,
       limit = 9,
-  ): Promise<{ events: IEvent[]; total: number }> {
+  ): Promise<{ events: any[]; total: number }> {
     const hasFilter =
         filters.category || filters.startFrom || filters.startTo || filters.keyword;
     if (!hasFilter) {
@@ -69,7 +70,23 @@ export class EventService {
       eventRepository.countWithFilters(normalizedFilters),
     ]);
 
-    return { events, total };
+    return { events: await this.withMinTicketPrices(events), total };
+  }
+
+  private async withMinTicketPrices(events: IEvent[]): Promise<any[]> {
+    const eventIds = events.map((event: any) => event._id.toString());
+    const minPriceMap = await eventRepository.findMinTicketPricesByEventIds(
+      eventIds,
+    );
+
+    return events.map((event: any) => {
+      const plainEvent = event.toObject ? event.toObject() : event;
+      const minPrice = minPriceMap.get(event._id.toString());
+      return {
+        ...plainEvent,
+        price: minPrice ?? null,
+      };
+    });
   }
 
   async countPublishedEvents(
