@@ -142,6 +142,22 @@ organizerViewsRouter.post(
       (req as any).flash("success", "Tạo sự kiện và loại vé thành công!");
       res.redirect("/organizer/events");
     } catch (err: any) {
+      const toArray = (v: unknown): string[] =>
+        v === undefined ? [] : Array.isArray(v) ? (v as string[]) : [v as string];
+
+      const ticketNames = toArray(req.body.ticketName);
+      const ticketPrices = toArray(req.body.ticketPrice);
+      const ticketQuotas = toArray(req.body.ticketQuota);
+      const ticketDescriptions = toArray(req.body.ticketDescription);
+
+      // Giữ lại các dòng loại vé người dùng đã nhập khi tạo event thất bại
+      const tickets = ticketNames.map((name, i) => ({
+        name,
+        price: ticketPrices[i] ?? "",
+        quota: ticketQuotas[i] ?? "",
+        description: ticketDescriptions[i] ?? "",
+      }));
+
       res.render("organizer/events/create", {
         layout: "layouts/organizer",
         user: req.user,
@@ -153,6 +169,7 @@ organizerViewsRouter.post(
           location: req.body.location,
           startDate: req.body.startDate,
           endDate: req.body.endDate,
+          tickets,
         },
       });
     }

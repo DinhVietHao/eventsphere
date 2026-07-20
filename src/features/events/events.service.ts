@@ -32,23 +32,65 @@ export class EventService {
     return eventRepository.search(keyword.trim());
   }
 
-  // UC04 - Lọc theo category và/hoặc khoảng thời gian
-  async filterEvents(filters: {
-    category?: string;
-    startFrom?: Date;
-    startTo?: Date;
-  }): Promise<IEvent[]> {
+  // UC04 - Lọc theo category và/hoặc khoảng thời gian, có phân trang
+  async filterEvents(
+    filters: {
+      category?: string;
+      startFrom?: Date;
+      startTo?: Date;
+    },
+    page = 1,
+    limit = 9,
+  ): Promise<{ events: IEvent[]; total: number }> {
     const hasFilter = filters.category || filters.startFrom || filters.startTo;
     if (!hasFilter) {
       throw new AppError("At least one filter is required", 400);
     }
-    return eventRepository.findWithFilters(filters);
+
+    // Ngày kết thúc chỉ có phần ngày (00:00:00) → đẩy về cuối ngày để
+    // bao trọn cả ngày đó (kể cả khi startFrom === startTo).
+    let startTo = filters.startTo;
+    if (startTo) {
+      startTo = new Date(startTo);
+      startTo.setUTCHours(23, 59, 59, 999);
+    }
+
+    const normalizedFilters = {
+      category: filters.category,
+      startFrom: filters.startFrom,
+      startTo,
+    };
+
+    const [events, total] = await Promise.all([
+      eventRepository.findWithFilters(normalizedFilters, page, limit),
+      eventRepository.countWithFilters(normalizedFilters),
+    ]);
+
+    return { events, total };
   }
 
   async countPublishedEvents(
     filters: { category?: string } = {},
   ): Promise<number> {
     return eventRepository.countPublished(filters);
+  }
+
+  // Tự động chuyển trạng thái event theo thời gian — chạy định kỳ bởi scheduler
+  async autoUpdateEventStatuses(): Promise<{
+    started: string[];
+    ended: string[];
+    cancelled: string[];
+  }> {
+    const now = new Date();
+    const pendingCutoff = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+
+    // Chạy tuần tự để 1 event vừa APPROVED->ONGOING có thể tiếp tục
+    // được xét ONGOING->ENDED ngay trong cùng 1 lượt quét (nếu endDate cũng đã qua).
+    const started = await eventRepository.startApprovedEvents(now);
+    const ended = await eventRepository.endOngoingEvents(now);
+    const cancelled = await eventRepository.cancelStalePendingEvents(pendingCutoff);
+
+    return { started, ended, cancelled };
   }
 
   // ───── UC13 — Organizer CRUD ─────
@@ -73,7 +115,7 @@ export class EventService {
     page: number,
     limit: number,
   ): Promise<{
-    events: (IEvent & { registrationsCount: number })[];
+    events: (IEvent & { registrationsCount: number; totalQuota: number })[];
     total: number;
   }> {
     const [events, total] = await Promise.all([
@@ -81,14 +123,17 @@ export class EventService {
       eventRepository.countByOrganizer(organizerId),
     ]);
 
-    // Đếm số đăng ký thực tế cho tất cả event trong 1 query aggregate
+    // Đếm số đăng ký + tổng quota vé thực tế cho tất cả event trong 2 query aggregate
     const eventIds = events.map((e: any) => e._id.toString());
-    const countMap =
-      await eventRepository.countRegistrationsByEventIds(eventIds);
+    const [countMap, quotaMap] = await Promise.all([
+      eventRepository.countRegistrationsByEventIds(eventIds),
+      eventRepository.sumQuotaByEventIds(eventIds),
+    ]);
 
     const eventsWithCount = events.map((e: any) => ({
       ...(e.toObject ? e.toObject() : e),
       registrationsCount: countMap.get(e._id.toString()) ?? 0,
+      totalQuota: quotaMap.get(e._id.toString()) ?? 0,
     }));
 
     return { events: eventsWithCount, total };

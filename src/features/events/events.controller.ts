@@ -17,12 +17,20 @@ export class EventController {
 
       // Có filter → UC04
       if (category || startFrom || startTo) {
-        const events = await eventService.filterEvents({
-          category: category as string | undefined,
-          startFrom: startFrom ? new Date(startFrom as string) : undefined,
-          startTo: startTo ? new Date(startTo as string) : undefined,
-        });
-        return sendSuccess(res, events, "Filter events successfully");
+        const { events, total } = await eventService.filterEvents(
+          {
+            category: category as string | undefined,
+            startFrom: startFrom ? new Date(startFrom as string) : undefined,
+            startTo: startTo ? new Date(startTo as string) : undefined,
+          },
+          page,
+          limit,
+        );
+        return sendSuccess(
+          res,
+          { events, total, page, limit },
+          "Filter events successfully",
+        );
       }
 
       // Không có filter → UC01

@@ -3,24 +3,31 @@
   - pagination: { currentPage: 1, totalPages: 5, limit: 10 }
   - currentUrl: String (Ví dụ: '/events?category=music')
 %>
-<% if (typeof pagination !== 'undefined' && pagination.totalPages > 1) { %>
+<% if (typeof pagination !== 'undefined' && pagination.totalPages > 1) {
+     const __f = (typeof filters !== 'undefined' && filters) ? filters : {};
+     const __qs = Object.keys(__f)
+       .filter((k) => __f[k])
+       .map((k) => `${k}=${encodeURIComponent(__f[k])}`)
+       .join('&');
+     const __pageUrl = (p) => `?${__qs ? __qs + '&' : ''}page=${p}`;
+%>
 <nav class="mt-5" aria-label="Page navigation">
   <ul class="pagination justify-content-center">
 
     <li class="page-item <%= pagination.currentPage === 1 ? 'disabled' : '' %>">
-      <a class="page-link" href="?page=<%= pagination.currentPage - 1 %>" aria-label="Previous">
+      <a class="page-link" href="<%= __pageUrl(pagination.currentPage - 1) %>" aria-label="Previous">
         <span aria-hidden="true">&laquo; Trước</span>
       </a>
     </li>
 
     <% for(let i = 1; i <= pagination.totalPages; i++) { %>
     <li class="page-item <%= pagination.currentPage === i ? 'active' : '' %>">
-      <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+      <a class="page-link" href="<%= __pageUrl(i) %>"><%= i %></a>
     </li>
     <% } %>
 
     <li class="page-item <%= pagination.currentPage === pagination.totalPages ? 'disabled' : '' %>">
-      <a class="page-link" href="?page=<%= pagination.currentPage + 1 %>" aria-label="Next">
+      <a class="page-link" href="<%= __pageUrl(pagination.currentPage + 1) %>" aria-label="Next">
         <span aria-hidden="true">Sau &raquo;</span>
       </a>
     </li>

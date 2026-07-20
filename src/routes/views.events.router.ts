@@ -25,16 +25,26 @@ eventsViewsRouter.get("/events", async (req: Request, res: Response) => {
     const startTo = req.query.startTo as string | undefined;
     const hasFilter = category || startFrom || startTo;
 
-    const [events, total] = await Promise.all([
-      hasFilter
-        ? eventService.filterEvents({
+    let events;
+    let total;
+    if (hasFilter) {
+      const result = await eventService.filterEvents(
+        {
           category,
           startFrom: startFrom ? new Date(startFrom) : undefined,
           startTo: startTo ? new Date(startTo) : undefined,
-        })
-        : eventService.getPublishedEvents(page, LIMIT),
-      eventService.countPublishedEvents({ category }),
-    ]);
+        },
+        page,
+        LIMIT,
+      );
+      events = result.events;
+      total = result.total;
+    } else {
+      [events, total] = await Promise.all([
+        eventService.getPublishedEvents(page, LIMIT),
+        eventService.countPublishedEvents({ category }),
+      ]);
+    }
 
     res.render("events/index", {
       events,
@@ -42,6 +52,11 @@ eventsViewsRouter.get("/events", async (req: Request, res: Response) => {
         currentPage: page,
         totalPages: Math.ceil(total / LIMIT),
         limit: LIMIT,
+      },
+      filters: {
+        category: category || "",
+        startFrom: startFrom || "",
+        startTo: startTo || "",
       },
       user: req.user || null,
     });

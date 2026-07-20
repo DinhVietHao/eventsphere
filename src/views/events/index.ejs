@@ -11,22 +11,22 @@
             <div class="mb-3">
               <label for="category" class="form-label small fw-bold text-secondary">Danh mục</label>
               <select class="form-select" id="category" name="category">
-                <option value="">Tất cả danh mục</option>
-                <option value="music">Music</option>
-                <option value="tech">Tech</option>
-                <option value="sport">Sport</option>
-                <option value="education">Education</option>
+                <option value="" <%= !filters.category ? 'selected' : '' %>>Tất cả danh mục</option>
+                <option value="music" <%= filters.category==='music' ? 'selected' : '' %>>Music</option>
+                <option value="tech" <%= filters.category==='tech' ? 'selected' : '' %>>Tech</option>
+                <option value="sport" <%= filters.category==='sport' ? 'selected' : '' %>>Sport</option>
+                <option value="education" <%= filters.category==='education' ? 'selected' : '' %>>Education</option>
               </select>
             </div>
 
             <div class="mb-3">
               <label for="startDate" class="form-label small fw-bold text-secondary">Từ ngày</label>
-              <input type="date" class="form-select" id="startDate" name="startFrom">
+              <input type="date" class="form-select" id="startDate" name="startFrom" value="<%= filters.startFrom %>">
             </div>
 
             <div class="mb-4">
               <label for="endDate" class="form-label small fw-bold text-secondary">Đến ngày</label>
-              <input type="date" class="form-select" id="endDate" name="startTo">
+              <input type="date" class="form-select" id="endDate" name="startTo" value="<%= filters.startTo %>">
             </div>
 
             <button type="submit" class="btn btn-primary w-100">Áp dụng lọc</button>
