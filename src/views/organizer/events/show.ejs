@@ -1,180 +1,202 @@
-<% const isLocked = !['DRAFT', 'PENDING'].includes(event.status); %>
+<% const isLocked=!['DRAFT', 'PENDING' ].includes(event.status); %>
 
-<nav aria-label="breadcrumb" class="mb-3">
-  <ol class="breadcrumb mb-0">
-    <li class="breadcrumb-item"><a href="/organizer/events">Sự kiện của tôi</a></li>
-    <li class="breadcrumb-item active"><%= event.title %></li>
-  </ol>
-</nav>
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="/organizer/events">Sự kiện của tôi</a></li>
+      <li class="breadcrumb-item active">
+        <%= event.title %>
+      </li>
+    </ol>
+  </nav>
 
-<%# ── Header ── %>
-<div class="d-flex justify-content-between align-items-start mb-4">
-  <div>
-    <h1 class="h3 fw-bold text-dark mb-1"><%= event.title %></h1>
-    <span class="badge text-uppercase px-3 py-2
+  <%# ── Header ── %>
+    <div class="d-flex justify-content-between align-items-start mb-4">
+      <div>
+        <h1 class="h3 fw-bold text-dark mb-1">
+          <%= event.title %>
+        </h1>
+        <span class="badge text-uppercase px-3 py-2
       <% if(event.status==='DRAFT')      { %>bg-secondary
       <% } else if(event.status==='PENDING')  { %>bg-warning text-dark
       <% } else if(event.status==='APPROVED') { %>bg-success
       <% } else if(event.status==='REJECTED') { %>bg-danger
       <% } else { %>bg-dark<% } %>">
-      <%= event.status %>
-    </span>
-  </div>
-  <div class="d-flex gap-2">
-    <% if (!isLocked) { %>
-      <a href="/organizer/events/<%= event._id %>/edit"
-         class="btn btn-outline-secondary">
-        <i class="bi bi-pencil me-1"></i>Chỉnh sửa
-      </a>
-      <% if (event.status === 'DRAFT') { %>
-        <form action="/organizer/events/<%= event._id %>/submit" method="POST" class="d-inline">
-          <button type="submit" class="btn btn-primary fw-bold">
-            <i class="bi bi-send me-1"></i>Gửi duyệt
-          </button>
-        </form>
-      <% } %>
-    <% } %>
-    <% if (['DRAFT', 'REJECTED'].includes(event.status)) { %>
-      <form action="/organizer/events/<%= event._id %>/delete" method="POST" class="d-inline"
-            onsubmit="return confirm('Xóa sự kiện này? Thao tác không thể khôi phục.')">
-        <button type="submit" class="btn btn-outline-danger">
-          <i class="bi bi-trash me-1"></i>Xóa
-        </button>
-      </form>
-    <% } %>
-  </div>
-</div>
-
-<%# ── Thông tin sự kiện ── %>
-<div class="card border-0 shadow-sm mb-4">
-  <div class="row g-0">
-    <div class="col-md-4">
-      <img src="<%= event.bannerUrl || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=600&q=80' %>"
-           class="img-fluid rounded-start h-100 object-fit-cover" style="max-height:260px; width:100%;" alt="Banner">
+          <%= event.status %>
+        </span>
+      </div>
+      <div class="d-flex gap-2">
+        <% if (!isLocked) { %>
+          <a href="/organizer/events/<%= event._id %>/edit" class="btn btn-outline-secondary">
+            <i class="bi bi-pencil me-1"></i>Chỉnh sửa
+          </a>
+          <% if (event.status==='DRAFT' ) { %>
+            <form action="/organizer/events/<%= event._id %>/submit" method="POST" class="d-inline">
+              <button type="submit" class="btn btn-primary fw-bold">
+                <i class="bi bi-send me-1"></i>Gửi duyệt
+              </button>
+            </form>
+            <% } %>
+              <% } %>
+                <% if (['DRAFT', 'REJECTED' ].includes(event.status)) { %>
+                  <form action="/organizer/events/<%= event._id %>/delete" method="POST" class="d-inline"
+                    onsubmit="return confirm('Xóa sự kiện này? Thao tác không thể khôi phục.')">
+                    <button type="submit" class="btn btn-outline-danger">
+                      <i class="bi bi-trash me-1"></i>Xóa
+                    </button>
+                  </form>
+                  <% } %>
+      </div>
     </div>
-    <div class="col-md-8">
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-sm-6">
-            <p class="text-muted small fw-bold mb-1"><i class="bi bi-tag me-1"></i>Danh mục</p>
-            <span class="badge bg-light text-dark text-uppercase border"><%= event.category %></span>
+
+    <%# ── Thông tin sự kiện ── %>
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="row g-0">
+          <div class="col-md-4">
+            <img
+              src="<%= event.bannerUrl || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=600&q=80' %>"
+              class="img-fluid rounded-start h-100 object-fit-cover" style="max-height:260px; width:100%;" alt="Banner">
           </div>
-          <div class="col-sm-6">
-            <p class="text-muted small fw-bold mb-1"><i class="bi bi-geo-alt me-1"></i>Địa điểm</p>
-            <p class="mb-0 small"><%= event.location %></p>
-          </div>
-          <div class="col-sm-6">
-            <p class="text-muted small fw-bold mb-1"><i class="bi bi-calendar-event me-1"></i>Bắt đầu</p>
-            <p class="mb-0 small"><%= new Date(event.startDate).toLocaleString('vi-VN') %></p>
-          </div>
-          <div class="col-sm-6">
-            <p class="text-muted small fw-bold mb-1"><i class="bi bi-calendar-check me-1"></i>Kết thúc</p>
-            <p class="mb-0 small"><%= new Date(event.endDate).toLocaleString('vi-VN') %></p>
-          </div>
-          <div class="col-12">
-            <p class="text-muted small fw-bold mb-1"><i class="bi bi-text-paragraph me-1"></i>Mô tả</p>
-            <p class="mb-0 small text-muted" style="white-space:pre-line"><%= event.description %></p>
+          <div class="col-md-8">
+            <div class="card-body p-4">
+              <div class="row g-3">
+                <div class="col-sm-6">
+                  <p class="text-muted small fw-bold mb-1"><i class="bi bi-tag me-1"></i>Danh mục</p>
+                  <span class="badge bg-light text-dark text-uppercase border">
+                    <%= event.category %>
+                  </span>
+                </div>
+                <div class="col-sm-6">
+                  <p class="text-muted small fw-bold mb-1"><i class="bi bi-geo-alt me-1"></i>Địa điểm</p>
+                  <p class="mb-0 small">
+                    <%= event.location %>
+                  </p>
+                </div>
+                <div class="col-sm-6">
+                  <p class="text-muted small fw-bold mb-1"><i class="bi bi-calendar-event me-1"></i>Bắt đầu</p>
+                  <p class="mb-0 small">
+                    <%= new Date(event.startDate).toLocaleString('vi-VN') %>
+                  </p>
+                </div>
+                <div class="col-sm-6">
+                  <p class="text-muted small fw-bold mb-1"><i class="bi bi-calendar-check me-1"></i>Kết thúc</p>
+                  <p class="mb-0 small">
+                    <%= new Date(event.endDate).toLocaleString('vi-VN') %>
+                  </p>
+                </div>
+                <div class="col-12">
+                  <p class="text-muted small fw-bold mb-1"><i class="bi bi-text-paragraph me-1"></i>Mô tả</p>
+                  <p class="mb-0 small text-muted" style="white-space:pre-line">
+                    <%= event.description %>
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</div>
 
-<%# ── Loại vé ── %>
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h5 class="fw-bold mb-0"><i class="bi bi-ticket-perforated me-2"></i>Loại vé</h5>
-  <% if (!isLocked) { %>
-    <a href="/organizer/events/<%= event._id %>/ticket-types/create"
-       class="btn btn-primary btn-sm fw-bold">
-      <i class="bi bi-plus-lg me-1"></i>Thêm loại vé
-    </a>
-  <% } %>
-</div>
+      <%# ── Loại vé ── %>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0"><i class="bi bi-ticket-perforated me-2"></i>Loại vé</h5>
+          <% if (!isLocked) { %>
+            <a href="/organizer/events/<%= event._id %>/ticket-types/create" class="btn btn-primary btn-sm fw-bold">
+              <i class="bi bi-plus-lg me-1"></i>Thêm loại vé
+            </a>
+            <% } %>
+        </div>
 
-<div class="card border-0 shadow-sm mb-4">
-  <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0 text-nowrap">
-      <thead class="table-light text-muted small text-uppercase">
-        <tr>
-          <th class="ps-4">Tên loại vé</th>
-          <th>Giá</th>
-          <th>Quota</th>
-          <th>Đã bán</th>
-          <th>Còn lại</th>
-          <th class="pe-4 text-end">Thao tác</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if (ticketTypes.length === 0) { %>
-        <tr>
-          <td colspan="6" class="text-center py-4 text-muted">
-            <i class="bi bi-ticket-perforated fs-3 d-block mb-1"></i>
-            Chưa có loại vé nào.
-            <% if (!isLocked) { %>
-              <a href="/organizer/events/<%= event._id %>/ticket-types/create">Thêm ngay</a>
-            <% } %>
-          </td>
-        </tr>
-        <% } %>
-        <% ticketTypes.forEach(tt => { %>
-        <tr>
-          <td class="ps-4 fw-semibold"><%= tt.name %></td>
-          <td>
-            <% if (tt.price === 0) { %>
-              <span class="badge bg-success">Miễn phí</span>
-            <% } else { %>
-              <%= tt.price.toLocaleString('vi-VN') %>đ
-            <% } %>
-          </td>
-          <td><%= tt.quota %></td>
-          <td>
-            <% if (tt.sold > 0) { %>
-              <span class="badge bg-primary"><%= tt.sold %></span>
-            <% } else { %>
-              <span class="text-muted">0</span>
-            <% } %>
-          </td>
-          <td>
-            <% const rem = tt.quota - tt.sold; %>
-            <% if (rem === 0) { %>
-              <span class="badge bg-danger">Hết vé</span>
-            <% } else if (rem <= 10) { %>
-              <span class="badge bg-warning text-dark"><%= rem %></span>
-            <% } else { %>
-              <span class="text-success fw-semibold"><%= rem %></span>
-            <% } %>
-          </td>
-          <td class="pe-4 text-end">
-            <% if (!isLocked) { %>
-            <div class="btn-group btn-group-sm">
-              <a href="/organizer/events/<%= event._id %>/ticket-types/<%= tt._id %>/edit"
-                 class="btn btn-outline-secondary" title="Sửa">
-                <i class="bi bi-pencil"></i>
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-nowrap">
+              <thead class="table-light text-muted small text-uppercase">
+                <tr>
+                  <th class="ps-4">Tên loại vé</th>
+                  <th>Giá</th>
+                  <th>Quota</th>
+                  <th>Đã bán</th>
+                  <th>Còn lại</th>
+                  <th class="pe-4 text-end">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (ticketTypes.length===0) { %>
+                  <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">
+                      <i class="bi bi-ticket-perforated fs-3 d-block mb-1"></i>
+                      Chưa có loại vé nào.
+                      <% if (!isLocked) { %>
+                        <a href="/organizer/events/<%= event._id %>/ticket-types/create">Thêm ngay</a>
+                        <% } %>
+                    </td>
+                  </tr>
+                  <% } %>
+                    <% ticketTypes.forEach(tt=> { %>
+                      <tr>
+                        <td class="ps-4 fw-semibold">
+                          <%= tt.name %>
+                        </td>
+                        <td>
+                          <% if (tt.price===0) { %>
+                            <span class="badge bg-success">Miễn phí</span>
+                            <% } else { %>
+                              <%= tt.price.toLocaleString('vi-VN') %>đ
+                                <% } %>
+                        </td>
+                        <td>
+                          <%= tt.quota %>
+                        </td>
+                        <td>
+                          <% if (tt.sold> 0) { %>
+                            <span class="badge bg-primary">
+                              <%= tt.sold %>
+                            </span>
+                            <% } else { %>
+                              <span class="text-muted">0</span>
+                              <% } %>
+                        </td>
+                        <td>
+                          <% const rem=tt.quota - tt.sold; %>
+                            <% if (rem===0) { %>
+                              <span class="badge bg-danger">Hết vé</span>
+                              <% } else if (rem <=10) { %>
+                                <span class="badge bg-warning text-dark">
+                                  <%= rem %>
+                                </span>
+                                <% } else { %>
+                                  <span class="text-success fw-semibold">
+                                    <%= rem %>
+                                  </span>
+                                  <% } %>
+                        </td>
+                        <td class="pe-4 text-end">
+                          <% if (!isLocked) { %>
+                            <div class="btn-group btn-group-sm">
+                              <a href="/organizer/events/<%= event._id %>/ticket-types/<%= tt._id %>/edit"
+                                class="btn btn-outline-secondary" title="Sửa">
+                                <i class="bi bi-pencil"></i>
+                              </a>
+                              <form action="/organizer/events/<%= event._id %>/ticket-types/<%= tt._id %>/delete"
+                                method="POST" class="d-inline" onsubmit="return confirm('Xóa loại vé này?')">
+                                <button type="submit" class="btn btn-outline-danger rounded-start-0" <%=tt.sold> 0 ?
+                                  'disabled title="Đã có người mua"' : '' %>>
+                                  <i class="bi bi-trash"></i>
+                                </button>
+                              </form>
+                            </div>
+                            <% } else { %>
+                              <span class="text-muted small">—</span>
+                              <% } %>
+                        </td>
+                      </tr>
+                      <% }) %>
+              </tbody>
+            </table>
+          </div>
+          <% if (ticketTypes.length> 0) { %>
+            <div class="card-footer bg-transparent text-end">
+              <a href="/organizer/events/<%= event._id %>/ticket-types" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-right me-1"></i>Quản lý loại vé
               </a>
-              <form action="/organizer/events/<%= event._id %>/ticket-types/<%= tt._id %>/delete"
-                    method="POST" class="d-inline"
-                    onsubmit="return confirm('Xóa loại vé này?')">
-                <button type="submit" class="btn btn-outline-danger rounded-start-0"
-                        <%= tt.sold > 0 ? 'disabled title="Đã có người mua"' : '' %>>
-                  <i class="bi bi-trash"></i>
-                </button>
-              </form>
             </div>
-            <% } else { %>
-              <span class="text-muted small">—</span>
             <% } %>
-          </td>
-        </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
-  <% if (ticketTypes.length > 0) { %>
-  <div class="card-footer bg-transparent text-end">
-    <a href="/organizer/events/<%= event._id %>/ticket-types" class="btn btn-sm btn-outline-secondary">
-      <i class="bi bi-arrow-right me-1"></i>Quản lý loại vé
-    </a>
-  </div>
-  <% } %>
-</div>
+        </div>
