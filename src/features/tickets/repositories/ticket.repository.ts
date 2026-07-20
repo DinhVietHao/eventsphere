@@ -44,7 +44,7 @@ export class TicketRepository {
     return TicketModel.findOne({
       eventId: eventObjectId,
       attendeeId: userObjectId,
-      status: { $in: ["ISSUED", "CHECKED_IN", "EXPIRED"] },
+      status: "CHECKED_IN",
     });
   }
 }

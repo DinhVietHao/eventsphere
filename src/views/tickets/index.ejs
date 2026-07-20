@@ -13,9 +13,11 @@
     <div class="row g-4">
       <% tickets.forEach((ticket)=> { %>
         <% const event=ticket.eventId || {}; const ticketType=ticket.ticketTypeId || {}; const
-          status=ticket.displayStatus || { key: "upcoming" , className: "bg-primary" }; const statusLabelMap={
-          upcoming: "Sắp diễn ra" , attended: "Đã tham dự" , cancelled: "Đã hủy" , expired: "Đã hết hạn" , }; const
-          statusLabel=statusLabelMap[status.key] || "Sắp diễn ra" ; %>
+          registration=ticket.registrationId || {}; const status=String(ticket.status || "ISSUED" ).toLowerCase(); const
+          statusMeta={ issued: { label: "Đã phát hành" , className: "bg-success" }, checked_in: { label: "Đã check-in" ,
+          className: "bg-primary" }, expired: { label: "Đã hết hạn" , className: "bg-danger" }, cancelled: {
+          label: "Đã hủy" , className: "bg-secondary" }, }[status] || { label: ticket.status, className: "bg-secondary"
+          }; const price=Number(ticketType.price || 0); %>
           <div class="col-12">
             <div class="card border-0 shadow-sm overflow-hidden">
               <div class="row g-0">
@@ -37,8 +39,8 @@
                           <%= ticketType.name || "Standard" %>
                         </div>
                       </div>
-                      <span class="badge <%= status.className %> px-3 py-2">
-                        <%= statusLabel %>
+                      <span class="badge <%= statusMeta.className %> px-3 py-2">
+                        <%= statusMeta.label %>
                       </span>
                     </div>
 
