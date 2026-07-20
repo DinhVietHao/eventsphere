@@ -9,11 +9,15 @@ import { ReviewModel } from "../../reviews/models/review.model";
 import { EventStaffModel } from "../models/eventStaff.model";
 import { escapeRegex } from "../../../shared/utils/regex.util";
 
+// Trạng thái hiển thị công khai: sự kiện đã duyệt hoặc đang diễn ra.
+// ENDED bị loại khỏi danh sách/tìm kiếm công khai nhưng vẫn xem được qua trang chi tiết.
+const PUBLIC_STATUSES: IEvent["status"][] = ["APPROVED", "ONGOING"];
+
 export class EventRepository {
   // UC01 - Danh sách event công khai, có phân trang
   async findPublished(page: number, limit: number): Promise<IEvent[]> {
     const skip = (page - 1) * limit;
-    return Event.find({ status: "APPROVED" })
+    return Event.find({ status: { $in: PUBLIC_STATUSES } })
       .sort({ startDate: 1 })
       .skip(skip)
       .limit(limit);
@@ -28,17 +32,17 @@ export class EventRepository {
   async search(keyword: string): Promise<IEvent[]> {
     return Event.find({
       $text: { $search: keyword },
-      status: "APPROVED",
+      status: { $in: PUBLIC_STATUSES },
     });
   }
 
-  // UC04 - Lọc theo category và/hoặc khoảng thời gian
-  async findWithFilters(filters: {
+  // Dựng chung query filter (category + khoảng ngày) cho find & count
+  private buildFilterQuery(filters: {
     category?: string;
     startFrom?: Date;
     startTo?: Date;
-  }): Promise<IEvent[]> {
-    const query: Record<string, unknown> = { status: "APPROVED" };
+  }): Record<string, unknown> {
+    const query: Record<string, unknown> = { status: { $in: PUBLIC_STATUSES } };
 
     if (filters.category) {
       query.category = filters.category;
@@ -50,12 +54,37 @@ export class EventRepository {
       };
     }
 
-    return Event.find(query).sort({ startDate: 1 });
+    return query;
+  }
+
+  // UC04 - Lọc theo category và/hoặc khoảng thời gian, có phân trang
+  async findWithFilters(
+    filters: {
+      category?: string;
+      startFrom?: Date;
+      startTo?: Date;
+    },
+    page = 1,
+    limit = 9,
+  ): Promise<IEvent[]> {
+    const query = this.buildFilterQuery(filters);
+    const skip = (page - 1) * limit;
+
+    return Event.find(query).sort({ startDate: 1 }).skip(skip).limit(limit);
+  }
+
+  // Đếm tổng số event khớp filter (category + khoảng ngày) để tính pagination
+  async countWithFilters(filters: {
+    category?: string;
+    startFrom?: Date;
+    startTo?: Date;
+  }): Promise<number> {
+    return Event.countDocuments(this.buildFilterQuery(filters));
   }
 
   // Đếm tổng số event để tính pagination
   async countPublished(filters: { category?: string } = {}): Promise<number> {
-    const query: Record<string, unknown> = { status: "APPROVED" };
+    const query: Record<string, unknown> = { status: { $in: PUBLIC_STATUSES } };
     if (filters.category) query.category = filters.category;
     return Event.countDocuments(query);
   }
@@ -314,6 +343,84 @@ export class EventRepository {
     const map = new Map<string, number>();
     for (const row of result) {
       map.set(row._id.toString(), row.count);
+    }
+    return map;
+  }
+
+  // ───── Tự động chuyển trạng thái event theo thời gian ─────
+
+  // APPROVED -> ONGOING khi đã đến giờ bắt đầu
+  async startApprovedEvents(now: Date): Promise<string[]> {
+    const events = await Event.find({
+      status: "APPROVED",
+      startDate: { $lte: now },
+    }).select("_id");
+    const ids = events.map((e) => (e._id as Types.ObjectId).toString());
+    if (ids.length > 0) {
+      await Event.updateMany(
+        { _id: { $in: ids } },
+        { $set: { status: "ONGOING" } },
+      );
+    }
+    return ids;
+  }
+
+  // ONGOING -> ENDED khi đã đến giờ kết thúc
+  async endOngoingEvents(now: Date): Promise<string[]> {
+    const events = await Event.find({
+      status: "ONGOING",
+      endDate: { $lte: now },
+    }).select("_id");
+    const ids = events.map((e) => (e._id as Types.ObjectId).toString());
+    if (ids.length > 0) {
+      await Event.updateMany(
+        { _id: { $in: ids } },
+        { $set: { status: "ENDED" } },
+      );
+    }
+    return ids;
+  }
+
+  // PENDING quá hạn (createdAt <= cutoff) mà chưa được duyệt -> CANCELLED
+  async cancelStalePendingEvents(cutoff: Date): Promise<string[]> {
+    const events = await Event.find({
+      status: "PENDING",
+      createdAt: { $lte: cutoff },
+    }).select("_id");
+    const ids = events.map((e) => (e._id as Types.ObjectId).toString());
+    if (ids.length > 0) {
+      await Event.updateMany(
+        { _id: { $in: ids } },
+        {
+          $set: {
+            status: "CANCELLED",
+            rejectionReason: "Tự động hủy do quá 3 ngày không được duyệt",
+          },
+        },
+      );
+    }
+    return ids;
+  }
+
+  // Tính tổng quota (tổng số vé) của nhiều event cùng lúc — dùng cho danh sách organizer
+  async sumQuotaByEventIds(eventIds: string[]): Promise<Map<string, number>> {
+    const result = await TicketType.aggregate([
+      {
+        $match: {
+          eventId: { $in: eventIds.map((id) => new mongoose.Types.ObjectId(id)) },
+        },
+      },
+      {
+        $group: {
+          _id: "$eventId",
+          totalQuota: { $sum: "$quota" },
+        },
+      },
+    ]);
+
+    const map = new Map<string, number>();
+    for (const row of result) {
+      map.set(row._id.toString(), row.totalQuota);
     }
     return map;
   }
