@@ -34,7 +34,7 @@ const imageFilter = (
 export const uploadAvatar = multer({
   storage: avatarStorage,
   fileFilter: imageFilter,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB avatar
 }).single("avatar");
 
 // ─── Event Banner ──────────────────────────────────────────────────────────
@@ -54,7 +54,7 @@ const bannerStorage = multer.diskStorage({
 export const uploadEventBanner = multer({
   storage: bannerStorage,
   fileFilter: imageFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB cho banner
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB cho banner
 }).single("banner");
 
 /**
