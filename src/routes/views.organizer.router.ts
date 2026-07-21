@@ -61,10 +61,15 @@ organizerViewsRouter.get(
   async (req: any, res: Response) => {
     try {
       const page = Number(req.query.page) || 1;
+      const keyword = (req.query.keyword as string | undefined) || "";
+      const category = (req.query.category as string | undefined) || "";
+      const status = (req.query.status as string | undefined) || "";
+
       const { events, total } = await eventService.getMyEvents(
         req.user!.id,
         page,
         LIMIT,
+        { keyword, category, status },
       );
       const messages = req.flash();
       res.render("organizer/events/index", {
@@ -76,6 +81,7 @@ organizerViewsRouter.get(
           totalPages: Math.ceil(total / LIMIT),
           limit: LIMIT,
         },
+        filters: { keyword, category, status },
         messages: { success: messages.success, error: messages.error },
       });
     } catch (err) {

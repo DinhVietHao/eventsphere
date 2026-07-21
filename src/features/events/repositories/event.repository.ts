@@ -119,7 +119,25 @@ export class EventRepository {
 
   // ───── UC13 — Organizer CRUD ─────
 
-  // Lấy danh sách events của 1 organizer, có phân trang
+  // Dựng chung query lọc/tìm kiếm sự kiện của 1 organizer
+  private buildOrganizerQuery(
+    organizerId: string,
+    filters: { keyword?: string; category?: string; status?: string } = {},
+  ): Record<string, unknown> {
+    const query: Record<string, unknown> = {
+      organizerId: new Types.ObjectId(organizerId),
+    };
+
+    if (filters.category) query.category = filters.category;
+    if (filters.status) query.status = filters.status;
+    if (filters.keyword && filters.keyword.trim() !== "") {
+      query.title = { $regex: escapeRegex(filters.keyword.trim()), $options: "i" };
+    }
+
+    return query;
+  }
+
+  // Giá vé thấp nhất theo từng event — dùng cho danh sách organizer
   async findMinTicketPricesByEventIds(
     eventIds: string[],
   ): Promise<Map<string, number>> {
@@ -148,23 +166,29 @@ export class EventRepository {
     return map;
   }
 
+  // Lấy danh sách events của 1 organizer, có lọc/tìm kiếm + phân trang,
+  // sắp xếp theo thời gian tạo sớm nhất (createdAt tăng dần)
   async findByOrganizer(
     organizerId: string,
     page: number,
     limit: number,
+    filters: { keyword?: string; category?: string; status?: string } = {},
   ): Promise<IEvent[]> {
     const skip = (page - 1) * limit;
-    return Event.find({ organizerId: new Types.ObjectId(organizerId) } as any)
-      .sort({ createdAt: -1 })
+    return Event.find(this.buildOrganizerQuery(organizerId, filters) as any)
+      .sort({ createdAt: 1 })
       .skip(skip)
       .limit(limit);
   }
 
-  // Đếm tổng events của organizer để tính pagination
-  async countByOrganizer(organizerId: string): Promise<number> {
-    return Event.countDocuments({
-      organizerId: new Types.ObjectId(organizerId),
-    } as any);
+  // Đếm tổng events của organizer khớp filter để tính pagination
+  async countByOrganizer(
+    organizerId: string,
+    filters: { keyword?: string; category?: string; status?: string } = {},
+  ): Promise<number> {
+    return Event.countDocuments(
+      this.buildOrganizerQuery(organizerId, filters) as any,
+    );
   }
 
   // Lấy danh sách events đã approved/ongoing/ended của organizer — dùng cho dropdown gửi thông báo

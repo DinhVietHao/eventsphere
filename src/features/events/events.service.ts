@@ -129,18 +129,19 @@ export class EventService {
     }));
   }
 
-  // Lấy danh sách events của organizer
+  // Lấy danh sách events của organizer, có lọc/tìm kiếm
   async getMyEvents(
     organizerId: string,
     page: number,
     limit: number,
+    filters: { keyword?: string; category?: string; status?: string } = {},
   ): Promise<{
     events: (IEvent & { registrationsCount: number; totalQuota: number })[];
     total: number;
   }> {
     const [events, total] = await Promise.all([
-      eventRepository.findByOrganizer(organizerId, page, limit),
-      eventRepository.countByOrganizer(organizerId),
+      eventRepository.findByOrganizer(organizerId, page, limit, filters),
+      eventRepository.countByOrganizer(organizerId, filters),
     ]);
 
     // Đếm số đăng ký + tổng quota vé thực tế cho tất cả event trong 2 query aggregate

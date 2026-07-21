@@ -20,6 +20,49 @@
               kiện mới</a>
           </div>
 
+          <% const f = typeof filters !=='undefined' && filters ? filters : { keyword: '', category: '', status: '' }; %>
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <form action="/organizer/events" method="GET" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                  <label for="keyword" class="form-label small fw-bold text-secondary">Tìm kiếm</label>
+                  <input type="text" class="form-control" id="keyword" name="keyword"
+                    placeholder="Tìm theo tên sự kiện..." value="<%= f.keyword %>">
+                </div>
+                <div class="col-md-3">
+                  <label for="category" class="form-label small fw-bold text-secondary">Danh mục</label>
+                  <select class="form-select" id="category" name="category">
+                    <option value="" <%= !f.category ? 'selected' : '' %>>Tất cả danh mục</option>
+                    <option value="music" <%= f.category==='music' ? 'selected' : '' %>>Music</option>
+                    <option value="tech" <%= f.category==='tech' ? 'selected' : '' %>>Tech</option>
+                    <option value="sport" <%= f.category==='sport' ? 'selected' : '' %>>Sport</option>
+                    <option value="education" <%= f.category==='education' ? 'selected' : '' %>>Education</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label for="status" class="form-label small fw-bold text-secondary">Trạng thái</label>
+                  <select class="form-select" id="status" name="status">
+                    <option value="" <%= !f.status ? 'selected' : '' %>>Tất cả trạng thái</option>
+                    <option value="DRAFT" <%= f.status==='DRAFT' ? 'selected' : '' %>>DRAFT</option>
+                    <option value="PENDING" <%= f.status==='PENDING' ? 'selected' : '' %>>PENDING</option>
+                    <option value="APPROVED" <%= f.status==='APPROVED' ? 'selected' : '' %>>APPROVED</option>
+                    <option value="ONGOING" <%= f.status==='ONGOING' ? 'selected' : '' %>>ONGOING</option>
+                    <option value="ENDED" <%= f.status==='ENDED' ? 'selected' : '' %>>ENDED</option>
+                    <option value="CANCELLED" <%= f.status==='CANCELLED' ? 'selected' : '' %>>CANCELLED</option>
+                  </select>
+                </div>
+                <div class="col-md-1 d-flex gap-2">
+                  <button type="submit" class="btn btn-primary w-100" title="Áp dụng"><i class="bi bi-search"></i></button>
+                </div>
+                <% if (f.keyword || f.category || f.status) { %>
+                <div class="col-12">
+                  <a href="/organizer/events" class="small text-decoration-none text-muted"><i class="bi bi-x-circle me-1"></i>Xóa bộ lọc</a>
+                </div>
+                <% } %>
+              </form>
+            </div>
+          </div>
+
           <div class="card border-0 shadow-sm">
             <div class="table-responsive">
               <table class="table table-hover align-middle mb-0 text-nowrap">
@@ -117,8 +160,13 @@
                       <% }) %>
                         <% } else { %>
                           <tr>
-                            <td colspan="8" class="text-center py-5 text-muted">Bạn chưa tạo sự kiện nào. Hãy nhấn nút
-                              để tạo ngay!</td>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                              <% if (f.keyword || f.category || f.status) { %>
+                                Không tìm thấy sự kiện phù hợp với bộ lọc.
+                              <% } else { %>
+                                Bạn chưa tạo sự kiện nào. Hãy nhấn nút để tạo ngay!
+                              <% } %>
+                            </td>
                           </tr>
                           <% } %>
                 </tbody>

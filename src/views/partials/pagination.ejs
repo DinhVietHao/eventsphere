@@ -1,7 +1,8 @@
 <%#
   Data truyền vào từ Controller (ví dụ):
   - pagination: { currentPage: 1, totalPages: 5, limit: 10 }
-  - filters: { keyword, category, startFrom, startTo } (tùy chọn — giữ filter khi đổi trang)
+  - filters: object bất kỳ các cặp key/value filter hiện tại (tùy chọn — mọi key có giá trị
+    truthy sẽ được giữ nguyên trên URL khi đổi trang, không cần khai báo cứng từng field ở đây)
 
   Rút gọn số trang (xử lý 100% ở frontend, không cần đổi backend):
   luôn hiện 3 trang đầu + 3 trang cuối, VÀ hiện thêm trang liền kề quanh
@@ -13,10 +14,9 @@
   const pf = typeof filters !== 'undefined' && filters ? filters : {};
   const pageUrl = (p) => {
     const params = new URLSearchParams();
-    if (pf.keyword) params.set('keyword', pf.keyword);
-    if (pf.category) params.set('category', pf.category);
-    if (pf.startFrom) params.set('startFrom', pf.startFrom);
-    if (pf.startTo) params.set('startTo', pf.startTo);
+    Object.keys(pf).forEach((k) => {
+      if (pf[k]) params.set(k, pf[k]);
+    });
     params.set('page', p);
     return '?' + params.toString();
   };
