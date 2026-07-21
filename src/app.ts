@@ -3,6 +3,7 @@ import express from "express";
 import flash from "connect-flash";
 import session from "express-session";
 import cookieParser from "cookie-parser";
+import swaggerUi from "swagger-ui-express";
 import viewsRouter from "./routes/views.router";
 import notificationRouter from "./features/notifications/notification.router";
 import adminRouter from "./features/admin/admin.router";
@@ -13,6 +14,7 @@ import paymentRoutes from "./features/payment/payment.routes";
 import checkinRouter from "./features/checkin/checkin.router";
 import registrationRouter from "./features/tickets/registration.router";
 import ticketsRouter from "./features/tickets/tickets.router";
+import { swaggerSpec } from "./config/swagger.config";
 
 const ejsLayouts = require("express-ejs-layouts");
 
@@ -57,6 +59,18 @@ app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/checkin", checkinRouter);
 app.use("/api/v1/notifications", notificationRouter);
 app.use("/api/v1/admin", adminRouter);
+
+app.get("/api-docs.json", (_req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerSpec);
+});
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+  }),
+);
 
 // Global Error Handler
 app.use(errorHandler);
