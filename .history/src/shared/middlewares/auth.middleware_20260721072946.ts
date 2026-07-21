@@ -30,12 +30,12 @@ export const authMiddleware = async (
     const user = await userRepository.findById(payload.id);
 
     if (!user) {
-      throw new AppError("Tài khoản không tồn tại", 401);
+      throw new AppError("Tài khoản đã tồn tại", 401);
     }
 
     if (!user.isActive) {
       throw new AppError(
-        "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.",
+        "Tài khoản của bạn đã bị khóa. Vui lòng .",
         403,
       );
     }
@@ -48,6 +48,6 @@ export const authMiddleware = async (
       return;
     }
 
-    next(new AppError("Token không hợp lệ hoặc đã hết hạn.", 401));
+    next(new AppError("Token khong hop le hoac da het han", 401));
   }
 };
