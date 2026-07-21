@@ -23,14 +23,14 @@ export const authMiddleware = async (
     }
 
     if (!token) {
-      throw new AppError("Bạn chưa đăng nhập", 401);
+      throw new AppError("Ban chua dang nhap", 401);
     }
 
     const payload = verifyAccessToken(token);
     const user = await userRepository.findById(payload.id);
 
     if (!user) {
-      throw new AppError("Tài khoản không tồn tại", 401);
+      throw new AppError("Tài khoản đã tồn tại", 401);
     }
 
     if (!user.isActive) {

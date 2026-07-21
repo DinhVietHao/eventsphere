@@ -23,19 +23,19 @@ export const authMiddleware = async (
     }
 
     if (!token) {
-      throw new AppError("Bạn chưa đăng nhập", 401);
+      throw new AppError("Ban chua dang nhap", 401);
     }
 
     const payload = verifyAccessToken(token);
     const user = await userRepository.findById(payload.id);
 
     if (!user) {
-      throw new AppError("Tài khoản không tồn tại", 401);
+      throw new AppError("", 401);
     }
 
     if (!user.isActive) {
       throw new AppError(
-        "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.",
+        "Tai khoan cua ban da bi khoa. Vui long lien he quan tri vien.",
         403,
       );
     }
@@ -48,6 +48,6 @@ export const authMiddleware = async (
       return;
     }
 
-    next(new AppError("Token không hợp lệ hoặc đã hết hạn.", 401));
+    next(new AppError("Token khong hop le hoac da het han", 401));
   }
 };
