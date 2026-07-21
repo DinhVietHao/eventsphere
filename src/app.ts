@@ -20,6 +20,7 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "..", "public")));
 
 // Config Session + Flash
 app.use(cookieParser());
@@ -42,6 +43,7 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(ejsLayouts);
 app.set("layout", "layouts/main");
+app.use(express.static(path.join(__dirname, "public")));
 
 // View routes
 app.use("/", viewsRouter);

@@ -4,20 +4,17 @@ import { SubmitReviewDto } from "./dto/reviews.dto";
 import { ReviewsRepository } from "./repositories/reviews.repository";
 import { ReviewUser } from "./type/reviews.type";
 import { EventRepository } from "../events/repositories/event.repository";
-import { RegistrationRepository } from "../tickets/repositories/registration.repository";
 import { TicketRepository } from "../tickets/repositories/ticket.repository";
 
 
 export class ReviewsService {
   private reviewsRepository: ReviewsRepository;
   private eventRepository: EventRepository;
-  private registrationRepository: RegistrationRepository;
   private ticketRepository: TicketRepository;
 
   constructor() {
     this.reviewsRepository = new ReviewsRepository();
     this.eventRepository = new EventRepository();
-    this.registrationRepository = new RegistrationRepository();
     this.ticketRepository = new TicketRepository();
   }
 
@@ -32,15 +29,11 @@ export class ReviewsService {
       throw new AppError("Bạn có thể đánh giá sau khi sự kiện kết thúc.", 400);
     }
 
-    const attendanceRegistration = await this.registrationRepository.findAttendanceByEventAndUser(
-      dto.eventId,
-      user.id,
-    );
     const attendanceTicket = await this.ticketRepository.findAttendanceByEventAndUser(
       dto.eventId,
       user.id,
     );
-    if (!attendanceRegistration && !attendanceTicket) {
+    if (!attendanceTicket) {
       throw new AppError("Chỉ người đã tham dự mới có thể đánh giá.", 403);
     }
 
@@ -93,11 +86,10 @@ export class ReviewsService {
     const safePage = Math.max(1, page);
     const safeLimit = Math.max(1, limit);
 
-    const [reviews, reviewCount, currentUserReview, attendanceRegistration, attendanceTicket] = await Promise.all([
+    const [reviews, reviewCount, currentUserReview, attendanceTicket] = await Promise.all([
       this.reviewsRepository.findByEvent(eventId, safePage, safeLimit),
       this.reviewsRepository.countByEvent(eventId),
       user ? this.reviewsRepository.findByEventAndUser(eventId, user.id) : null,
-      user ? this.registrationRepository.findAttendanceByEventAndUser(eventId, user.id) : null,
       user ? this.ticketRepository.findAttendanceByEventAndUser(eventId, user.id) : null,
     ]);
 
@@ -106,13 +98,13 @@ export class ReviewsService {
       user &&
       user.role === "attendee" &&
       isEnded &&
-      (attendanceRegistration || attendanceTicket),
+      attendanceTicket,
     );
     return {
       reviews,
       currentUserReview,
       canReview,
-      reviewMessage: this.getReviewMessage(user, isEnded, Boolean(attendanceRegistration || attendanceTicket)),
+      reviewMessage: this.getReviewMessage(user, isEnded, Boolean(attendanceTicket)),
       averageRating: event.avgRating,
       reviewCount,
       reviewPagination: {

@@ -10,6 +10,9 @@ import { RegistrationRepository } from "./repositories/registration.repository";
 import { TicketRepository } from "./repositories/ticket.repository";
 import { getIO } from "../../config/socket";
 
+export const EVENT_REGISTRATION_CLOSED_MESSAGE =
+  "Sự kiện đã bắt đầu hoặc đã kết thúc. Bạn không thể đăng ký hoặc mua vé.";
+
 export class TicketsService {
   private registrationRepository: RegistrationRepository;
   private ticketRepository: TicketRepository;
@@ -38,9 +41,13 @@ export class TicketsService {
       iRegisterAttendanceDto.eventId,
     );
     if (!event) throw new AppError("Không tìm thấy sự kiện.", 404);
-    if (!["APPROVED", "ONGOING"].includes(event.status)) {
+    if (event.status === "CANCELLED") {
+      throw new AppError("Sự kiện đã bị hủy. Bạn không thể đăng ký hoặc mua vé.", 400);
+    }
+    if (event.status !== "APPROVED") {
       throw new AppError("Sự kiện hiện không cho phép đăng ký tham dự.", 400);
     }
+    this.assertEventCanAcceptRegistration(event);
 
     const ticketType = await this.ticketTypeRepository.findByEventAndTicketType(
       iRegisterAttendanceDto.eventId,
@@ -74,26 +81,26 @@ export class TicketsService {
 
       const registration = existingRegistration
         ? await this.registrationRepository.resetForRetry(
-            existingRegistration._id.toString(),
-            {
-              ticketTypeId: new Types.ObjectId(
-                iRegisterAttendanceDto.ticketTypeId,
-              ),
-              status: "pending_payment",
-              paymentStatus: "unpaid",
-            },
-          )
-        : await this.registrationRepository.create({
-            _id: new Types.ObjectId(),
-            userId: new Types.ObjectId(attendeeId),
-            eventId: new Types.ObjectId(iRegisterAttendanceDto.eventId),
+          existingRegistration._id.toString(),
+          {
             ticketTypeId: new Types.ObjectId(
               iRegisterAttendanceDto.ticketTypeId,
             ),
             status: "pending_payment",
             paymentStatus: "unpaid",
-            registeredAt: new Date(),
-          });
+          },
+        )
+        : await this.registrationRepository.create({
+          _id: new Types.ObjectId(),
+          userId: new Types.ObjectId(attendeeId),
+          eventId: new Types.ObjectId(iRegisterAttendanceDto.eventId),
+          ticketTypeId: new Types.ObjectId(
+            iRegisterAttendanceDto.ticketTypeId,
+          ),
+          status: "pending_payment",
+          paymentStatus: "unpaid",
+          registeredAt: new Date(),
+        });
 
       if (!registration) throw new AppError("Đăng ký tham dự thất bại.", 500);
 
@@ -117,26 +124,26 @@ export class TicketsService {
     try {
       const registration = existingRegistration
         ? await this.registrationRepository.resetForRetry(
-            existingRegistration._id.toString(),
-            {
-              ticketTypeId: new Types.ObjectId(
-                iRegisterAttendanceDto.ticketTypeId,
-              ),
-              status: "confirmed",
-              paymentStatus: "free",
-            },
-          )
-        : await this.registrationRepository.create({
-            _id: new Types.ObjectId(),
-            userId: new Types.ObjectId(attendeeId),
-            eventId: new Types.ObjectId(iRegisterAttendanceDto.eventId),
+          existingRegistration._id.toString(),
+          {
             ticketTypeId: new Types.ObjectId(
               iRegisterAttendanceDto.ticketTypeId,
             ),
             status: "confirmed",
             paymentStatus: "free",
-            registeredAt: new Date(),
-          });
+          },
+        )
+        : await this.registrationRepository.create({
+          _id: new Types.ObjectId(),
+          userId: new Types.ObjectId(attendeeId),
+          eventId: new Types.ObjectId(iRegisterAttendanceDto.eventId),
+          ticketTypeId: new Types.ObjectId(
+            iRegisterAttendanceDto.ticketTypeId,
+          ),
+          status: "confirmed",
+          paymentStatus: "free",
+          registeredAt: new Date(),
+        });
 
       if (!registration) throw new AppError("Đăng ký tham dự thất bại.", 500);
 
@@ -212,6 +219,13 @@ export class TicketsService {
       },
       nextStep: "payment_required",
     };
+  }
+
+  private assertEventCanAcceptRegistration(event: { startDate: Date }) {
+    const eventStartAt = new Date(event.startDate);
+    if (Number.isNaN(eventStartAt.getTime()) || new Date() >= eventStartAt) {
+      throw new AppError(EVENT_REGISTRATION_CLOSED_MESSAGE, 400);
+    }
   }
 
   async issueTicketForRegistration(registrationId: string) {
@@ -335,27 +349,6 @@ export class TicketsService {
   async getAttendanceHistory(attendeeId: string) {
     const tickets =
       await this.ticketRepository.findByAttendeeIdWithDetails(attendeeId);
-    return tickets.map((ticket) => ({
-      ...ticket,
-      displayStatus: this.getAttendanceDisplayStatus(ticket),
-    }));
-  }
-
-  private getAttendanceDisplayStatus(ticket: any) {
-    const registrationStatus = String(
-      ticket.registrationId?.status || "",
-    ).toLowerCase();
-    const ticketStatus = String(ticket.status || "").toLowerCase();
-    const eventEndTime = ticket.eventId?.endTime || ticket.eventId?.endDate;
-    if (registrationStatus === "cancelled") {
-      return { label: "Da huy", className: "bg-secondary", key: "cancelled" };
-    }
-    if (ticketStatus === "checked_in") {
-      return { label: "Da tham du", className: "bg-success", key: "attended" };
-    }
-    if (eventEndTime && new Date(eventEndTime).getTime() < Date.now()) {
-      return { label: "Da het han", className: "bg-danger", key: "expired" };
-    }
-    return { label: "Sap dien ra", className: "bg-primary", key: "upcoming" };
+    return tickets;
   }
 }

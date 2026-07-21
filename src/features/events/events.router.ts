@@ -3,6 +3,7 @@ import { EventController } from "./events.controller";
 import { authMiddleware } from "../../shared/middlewares/auth.middleware";
 import { roleMiddleware } from "../../shared/middlewares/role.middleware";
 import ticketTypesRouter from "../ticketTypes/ticketTypes.router";
+import { uploadEventBanner } from "../../shared/middlewares/upload.middleware";
 
 const eventsRouter = Router();
 const eventController = new EventController();
@@ -23,13 +24,27 @@ eventsRouter.post(
   "/",
   authMiddleware,
   roleMiddleware("organizer", "admin"),
+  uploadEventBanner,
   eventController.createEvent,
 );
 eventsRouter.put(
   "/:id",
   authMiddleware,
   roleMiddleware("organizer", "admin"),
+  uploadEventBanner,
   eventController.updateEvent,
+);
+eventsRouter.patch(
+  "/:id/submit",
+  authMiddleware,
+  roleMiddleware("organizer", "admin"),
+  eventController.submitEvent,
+);
+eventsRouter.patch(
+  "/:id/cancel",
+  authMiddleware,
+  roleMiddleware("organizer", "admin"),
+  eventController.cancelEvent,
 );
 eventsRouter.delete(
   "/:id",

@@ -51,3 +51,23 @@ export const ChangePasswordSchema = Joi.object({
       "any.required": "Xác nhận mật khẩu là bắt buộc",
     }),
 });
+
+// DTO cho yêu cầu gửi email quên mật khẩu
+export const ForgotPasswordSchema = Joi.object({
+  email: Joi.string().email().required().lowercase(),
+});
+
+// DTO cho đặt lại mật khẩu bằng token từ email
+export const ResetPasswordSchema = Joi.object({
+  password: Joi.string().min(6).max(30).required().messages({
+    "string.min": "Mật khẩu mới tối thiểu 6 ký tự",
+    "any.required": "Mật khẩu mới là bắt buộc",
+  }),
+  confirmPassword: Joi.string()
+    .valid(Joi.ref("password"))
+    .required()
+    .messages({
+      "any.only": "Xác nhận mật khẩu không khớp",
+      "any.required": "Xác nhận mật khẩu là bắt buộc",
+    }),
+});

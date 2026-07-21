@@ -2,6 +2,10 @@ import { Request, Response, NextFunction, Router } from "express";
 import { EventService } from "../features/events/events.service";
 import { NotificationService } from "../features/notifications/notification.service";
 import { TicketTypeService } from "../features/ticketTypes/ticketTypes.service";
+import {
+  getEventBannerUrl,
+  uploadEventBanner,
+} from "../shared/middlewares/upload.middleware";
 
 const organizerViewsRouter = Router();
 const eventService = new EventService();
@@ -104,16 +108,22 @@ organizerViewsRouter.get(
 organizerViewsRouter.post(
   "/organizer/events",
   ...organizerGuard,
+  uploadEventBanner,
   async (req: Request, res: Response) => {
     try {
+      const bannerUrl = getEventBannerUrl(req.file);
+      const eventBody = {
+        ...req.body,
+        ...(bannerUrl && { bannerUrl }),
+      };
       // Validate các trường bắt buộc của event
       const missing: string[] = [];
-      if (!req.body.title?.trim()) missing.push("Tên sự kiện");
-      if (!req.body.description?.trim()) missing.push("Mô tả chi tiết");
-      if (!req.body.category) missing.push("Danh mục");
-      if (!req.body.location?.trim()) missing.push("Địa điểm");
-      if (!req.body.startDate) missing.push("Ngày bắt đầu");
-      if (!req.body.endDate) missing.push("Ngày kết thúc");
+      if (!eventBody.title?.trim()) missing.push("Tên sự kiện");
+      if (!eventBody.description?.trim()) missing.push("Mô tả chi tiết");
+      if (!eventBody.category) missing.push("Danh mục");
+      if (!eventBody.location?.trim()) missing.push("Địa điểm");
+      if (!eventBody.startDate) missing.push("Ngày bắt đầu");
+      if (!eventBody.endDate) missing.push("Ngày kết thúc");
       if (missing.length > 0) {
         throw new Error(`Vui lòng điền đầy đủ: ${missing.join(", ")}`);
       }
@@ -125,7 +135,7 @@ organizerViewsRouter.post(
       }
 
       // Tạo event trước
-      const event = await eventService.createEvent(req.user!.id, req.body);
+      const event = await eventService.createEvent(req.user!.id, eventBody);
 
       // Tạo từng loại vé
       const prices = [req.body.ticketPrice].flat();
@@ -149,7 +159,11 @@ organizerViewsRouter.post(
       res.redirect("/organizer/events");
     } catch (err: any) {
       const toArray = (v: unknown): string[] =>
-        v === undefined ? [] : Array.isArray(v) ? (v as string[]) : [v as string];
+        v === undefined
+          ? []
+          : Array.isArray(v)
+            ? (v as string[])
+            : [v as string];
 
       const ticketNames = toArray(req.body.ticketName);
       const ticketPrices = toArray(req.body.ticketPrice);
@@ -175,6 +189,7 @@ organizerViewsRouter.post(
           location: req.body.location,
           startDate: req.body.startDate,
           endDate: req.body.endDate,
+          bannerUrl: req.body.bannerUrl,
           tickets,
         },
       });
@@ -219,6 +234,14 @@ organizerViewsRouter.get(
   async (req: Request, res: Response) => {
     try {
       const event = await eventService.getEventById(req.params.id as string);
+      if (
+        event.organizerId.toString() !== req.user!.id &&
+        req.user!.role !== "admin"
+      ) {
+        return res
+          .status(403)
+          .render("errors/403", { layout: false, user: req.user });
+      }
       res.render("organizer/events/edit", {
         layout: "layouts/organizer",
         user: req.user,
@@ -235,13 +258,14 @@ organizerViewsRouter.get(
 organizerViewsRouter.post(
   "/organizer/events/:id/edit",
   ...organizerGuard,
+  uploadEventBanner,
   async (req: Request, res: Response) => {
     try {
-      await eventService.updateEvent(
-        req.params.id as string,
-        req.user!.id,
-        req.body,
-      );
+      const bannerUrl = getEventBannerUrl(req.file);
+      await eventService.updateEvent(req.params.id as string, req.user!.id, {
+        ...req.body,
+        ...(bannerUrl && { bannerUrl }),
+      });
       res.redirect("/organizer/events");
     } catch (err: any) {
       const event = await eventService.getEventById(req.params.id as string);
@@ -266,6 +290,22 @@ organizerViewsRouter.post(
       res.redirect("/organizer/events");
     } catch (err: any) {
       (req as any).flash("error", err.message || "Gửi duyệt thất bại");
+      res.redirect("/organizer/events");
+    }
+  },
+);
+
+// POST /organizer/events/:id/cancel — hủy event đang chờ duyệt
+organizerViewsRouter.post(
+  "/organizer/events/:id/cancel",
+  ...organizerGuard,
+  async (req: any, res: Response) => {
+    try {
+      await eventService.cancelEvent(req.params.id as string, req.user!.id);
+      req.flash("success", "Đã hủy sự kiện đang chờ duyệt thành công!");
+      res.redirect("/organizer/events");
+    } catch (err: any) {
+      req.flash("error", err.message || "Hủy sự kiện thất bại");
       res.redirect("/organizer/events");
     }
   },

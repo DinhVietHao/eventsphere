@@ -28,22 +28,48 @@ export class EventRepository {
     return Event.findById(id);
   }
 
+  async findOwnedEventById(
+    eventId: string,
+    organizerId: string,
+  ): Promise<IEvent | null> {
+    return Event.findOne({
+      _id: new Types.ObjectId(eventId),
+      organizerId: new Types.ObjectId(organizerId),
+    } as any);
+  }
+
   // UC03 - Tìm kiếm full-text
   async search(keyword: string): Promise<IEvent[]> {
+    const regex = new RegExp(escapeRegex(keyword), "i");
     return Event.find({
-      $text: { $search: keyword },
       status: { $in: PUBLIC_STATUSES },
+      $or: [
+        { title: regex },
+        { location: regex },
+        { description: regex },
+        { category: regex },
+      ],
     });
   }
 
   // Dựng chung query filter (category + khoảng ngày) cho find & count
   private buildFilterQuery(filters: {
+    keyword?: string;
     category?: string;
     startFrom?: Date;
     startTo?: Date;
   }): Record<string, unknown> {
     const query: Record<string, unknown> = { status: { $in: PUBLIC_STATUSES } };
 
+    if (filters.keyword && filters.keyword.trim() !== "") {
+      const regex = new RegExp(escapeRegex(filters.keyword.trim()), "i");
+      query.$or = [
+        { title: regex },
+        { location: regex },
+        { description: regex },
+        { category: regex },
+      ];
+    }
     if (filters.category) {
       query.category = filters.category;
     }
@@ -57,15 +83,16 @@ export class EventRepository {
     return query;
   }
 
-  // UC04 - Lọc theo category và/hoặc khoảng thời gian, có phân trang
+  // UC04 - Lọc theo category và/hoặc khoảng thời gian (+ keyword), có phân trang
   async findWithFilters(
-    filters: {
-      category?: string;
-      startFrom?: Date;
-      startTo?: Date;
-    },
-    page = 1,
-    limit = 9,
+      filters: {
+        keyword?: string;
+        category?: string;
+        startFrom?: Date;
+        startTo?: Date;
+      },
+      page = 1,
+      limit = 9,
   ): Promise<IEvent[]> {
     const query = this.buildFilterQuery(filters);
     const skip = (page - 1) * limit;
@@ -73,8 +100,9 @@ export class EventRepository {
     return Event.find(query).sort({ startDate: 1 }).skip(skip).limit(limit);
   }
 
-  // Đếm tổng số event khớp filter (category + khoảng ngày) để tính pagination
+  // Đếm tổng số event khớp filter (category + khoảng ngày + keyword) để tính pagination
   async countWithFilters(filters: {
+    keyword?: string;
     category?: string;
     startFrom?: Date;
     startTo?: Date;
@@ -107,6 +135,35 @@ export class EventRepository {
     }
 
     return query;
+  }
+
+  // Giá vé thấp nhất theo từng event — dùng cho danh sách organizer
+  async findMinTicketPricesByEventIds(
+    eventIds: string[],
+  ): Promise<Map<string, number>> {
+    if (eventIds.length === 0) return new Map();
+
+    const result = await TicketType.aggregate([
+      {
+        $match: {
+          eventId: {
+            $in: eventIds.map((id) => new mongoose.Types.ObjectId(id)),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$eventId",
+          minPrice: { $min: "$price" },
+        },
+      },
+    ]);
+
+    const map = new Map<string, number>();
+    for (const row of result) {
+      map.set(row._id.toString(), row.minPrice);
+    }
+    return map;
   }
 
   // Lấy danh sách events của 1 organizer, có lọc/tìm kiếm + phân trang,
@@ -156,6 +213,24 @@ export class EventRepository {
       returnDocument: "after",
       runValidators: true,
     });
+  }
+
+  async updateOwnedEventById(
+    eventId: string,
+    organizerId: string,
+    data: Partial<IEvent>,
+  ): Promise<IEvent | null> {
+    return Event.findOneAndUpdate(
+      {
+        _id: new Types.ObjectId(eventId),
+        organizerId: new Types.ObjectId(organizerId),
+      } as any,
+      data,
+      {
+        returnDocument: "after",
+        runValidators: true,
+      },
+    );
   }
 
   // Xóa event theo id
