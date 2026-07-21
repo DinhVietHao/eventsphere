@@ -23,7 +23,7 @@ export const authMiddleware = async (
     }
 
     if (!token) {
-      throw new AppError("Ban chua dang nhap", 401);
+      throw new AppError("Bạn chưa đăng nhập", 401);
     }
 
     const payload = verifyAccessToken(token);
