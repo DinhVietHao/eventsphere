@@ -40,9 +40,15 @@ export class EventRepository {
 
   // UC03 - Tìm kiếm full-text
   async search(keyword: string): Promise<IEvent[]> {
+    const regex = new RegExp(escapeRegex(keyword), "i");
     return Event.find({
-      $text: { $search: keyword },
       status: { $in: PUBLIC_STATUSES },
+      $or: [
+        { title: regex },
+        { location: regex },
+        { description: regex },
+        { category: regex },
+      ],
     });
   }
 
@@ -56,7 +62,13 @@ export class EventRepository {
     const query: Record<string, unknown> = { status: { $in: PUBLIC_STATUSES } };
 
     if (filters.keyword && filters.keyword.trim() !== "") {
-      query.$text = { $search: filters.keyword.trim() };
+      const regex = new RegExp(escapeRegex(filters.keyword.trim()), "i");
+      query.$or = [
+        { title: regex },
+        { location: regex },
+        { description: regex },
+        { category: regex },
+      ];
     }
     if (filters.category) {
       query.category = filters.category;
@@ -108,6 +120,34 @@ export class EventRepository {
   // ───── UC13 — Organizer CRUD ─────
 
   // Lấy danh sách events của 1 organizer, có phân trang
+  async findMinTicketPricesByEventIds(
+    eventIds: string[],
+  ): Promise<Map<string, number>> {
+    if (eventIds.length === 0) return new Map();
+
+    const result = await TicketType.aggregate([
+      {
+        $match: {
+          eventId: {
+            $in: eventIds.map((id) => new mongoose.Types.ObjectId(id)),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$eventId",
+          minPrice: { $min: "$price" },
+        },
+      },
+    ]);
+
+    const map = new Map<string, number>();
+    for (const row of result) {
+      map.set(row._id.toString(), row.minPrice);
+    }
+    return map;
+  }
+
   async findByOrganizer(
     organizerId: string,
     page: number,

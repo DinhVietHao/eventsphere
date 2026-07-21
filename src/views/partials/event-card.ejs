@@ -23,7 +23,13 @@
 
     <div class="ticket-card__footer">
       <span class="ticket-card__price">
-        <%= !item.price || item.price === 0 ? 'Miễn phí' : item.price.toLocaleString('vi-VN') + ' đ' %>
+        <% if (item.price === null || typeof item.price === 'undefined') { %>
+          Chưa mở bán
+        <% } else if (Number(item.price) === 0) { %>
+          Miễn phí
+        <% } else { %>
+          Từ <%= new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(item.price)) %>
+        <% } %>
       </span>
       <a href="/events/<%= item._id %>" class="btn-stub">Chi tiết</a>
     </div>
