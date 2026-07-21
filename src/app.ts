@@ -13,6 +13,7 @@ import paymentRoutes from "./features/payment/payment.routes";
 import checkinRouter from "./features/checkin/checkin.router";
 import registrationRouter from "./features/tickets/registration.router";
 import ticketsRouter from "./features/tickets/tickets.router";
+import { setupSwagger } from "./config/swagger";
 
 const ejsLayouts = require("express-ejs-layouts");
 
@@ -47,6 +48,9 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // View routes
 app.use("/", viewsRouter);
+
+// Swagger API docs — GET /api-docs
+setupSwagger(app);
 
 // API routes
 app.use("/api/v1/auth", authRouter);
