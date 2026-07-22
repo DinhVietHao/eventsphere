@@ -42,6 +42,17 @@ export class NotificationController {
       next(err);
     }
   };
+
+  // GET /api/v1/notifications
+  getSentHistory = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const organizerId = req.user!.id;
+      const history = await notificationService.getSentHistory(organizerId);
+      sendSuccess(res, history, "Lấy lịch sử gửi thông báo thành công");
+    } catch (err) {
+      next(err);
+    }
+  };
 }
 
 export const notificationController = new NotificationController();

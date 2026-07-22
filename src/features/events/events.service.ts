@@ -322,6 +322,12 @@ export class EventService {
       throw new AppError("Bạn không có quyền xem báo cáo sự kiện này", 403);
     }
 
+    if (event.status !== "ENDED") {
+      throw new AppError(
+        "Báo cáo tổng kết chỉ khả dụng khi sự kiện đã kết thúc",
+        400,
+      );
+    }
     // 2. Lấy dữ liệu song song (Promise.all = nhanh hơn gọi tuần tự)
     const [ticketTypes, regStats, totalCheckedIn, totalReviews, avgRating] =
       await Promise.all([

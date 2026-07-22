@@ -78,9 +78,9 @@ authViewsRouter.get("/register", (req: Request, res: Response) => {
 authViewsRouter.post("/register", async (req: Request, res: Response) => {
   const role = req.body.role === "organizer" ? "organizer" : "attendee";
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone } = req.body;
     const baseUrl = `${req.protocol}://${req.get("host")}`;
-    await authService.register({ name, email, password, role }, baseUrl);
+    await authService.register({ name, email, password, role, phone }, baseUrl);
 
     (req as any).flash(
       "success",
@@ -91,7 +91,12 @@ authViewsRouter.post("/register", async (req: Request, res: Response) => {
     res.render("auth/register", {
       layout: false,
       error: err.message || "Đăng ký thất bại",
-      old: { name: req.body.name, email: req.body.email, role },
+      old: {
+        name: req.body.name,
+        email: req.body.email,
+        role,
+        phone: req.body.phone,
+      },
     });
   }
 });
