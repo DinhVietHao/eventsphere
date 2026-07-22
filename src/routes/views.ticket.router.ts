@@ -8,6 +8,7 @@ const ticketsService = new TicketsService();
 //UC09 - View ticket detail
 ticketsViewsRouter.get("/tickets/:id", async (req: Request, res: Response) => {
     try {
+        if (!req.user) return res.redirect("/login");
         const ticketId = req.params.id as string;
         const attendeeId = req.user!.id;
         const ticket = await ticketsService.getTicketDetail(ticketId, attendeeId);
@@ -24,10 +25,12 @@ ticketsViewsRouter.get("/tickets/:id", async (req: Request, res: Response) => {
 //UC12 - View attendance history
 ticketsViewsRouter.get("/tickets", async (req: Request, res: Response) => {
     try {
+        if (!req.user) return res.redirect("/login");
         const attendeeId = req.user!.id;
-        const tickets = await ticketsService.getAttendanceHistory(attendeeId);
+        const history = await ticketsService.getAttendanceHistory(attendeeId);
         res.render("tickets/index", {
-            tickets,
+            history,
+            tickets: history.items,
             user: req.user || null,
             messages: req.flash?.() || {},
         });

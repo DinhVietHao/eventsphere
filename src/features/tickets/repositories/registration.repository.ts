@@ -118,4 +118,29 @@ export class RegistrationRepository {
       .sort({ createdAt: -1 })
       .lean();
   }
+
+  async findHistoryByAttendee(
+    attendeeId: string,
+    page: number,
+    limit: number,
+  ): Promise<{
+    registrations: any[];
+    totalItems: number;
+  }> {
+    const filter = { userId: new Types.ObjectId(attendeeId) };
+    const skip = (page - 1) * limit;
+
+    const [registrations, totalItems] = await Promise.all([
+      Registration.find(filter)
+        .populate("eventId", "title startDate endDate status location bannerUrl")
+        .populate("ticketTypeId", "name price")
+        .sort({ registeredAt: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Registration.countDocuments(filter),
+    ]);
+
+    return { registrations, totalItems };
+  }
 }

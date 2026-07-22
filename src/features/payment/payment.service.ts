@@ -105,7 +105,7 @@ export class PaymentService {
 
         const date = new Date();
         const createDate = moment(date).format("YYYYMMDDHHmmss");
-        const orderCode = `${Date.now()}`;
+        const orderCode = new Types.ObjectId().toString();
         const locale = language && language !== "" ? language : "vn";
 
         const vnpParams: Record<string, string | number> = {
@@ -115,7 +115,7 @@ export class PaymentService {
             vnp_Locale: locale,
             vnp_CurrCode: "VND",
             vnp_TxnRef: orderCode,
-            vnp_OrderInfo: `Thanh toan cho ma GD:${orderCode}`,
+            vnp_OrderInfo: `Thanh toán cho mã giao dịch: ${orderCode}`,
             vnp_OrderType: "other",
             vnp_Amount: Number(ticketType.price) * 100,
             vnp_ReturnUrl: appConfig.vnpay.returnUrl,
@@ -194,12 +194,25 @@ export class PaymentService {
         const actualAmount = Number(query.vnp_Amount);
         const expectedAmount = Number(payment?.amount ?? 0) * 100;
         const amountValid = payment ? actualAmount === expectedAmount : false;
+        const alreadyPaid = payment?.status === "paid";
+        const effectivePaid = (isPaid || alreadyPaid) && amountValid;
         const issuedTicket =
-            isPaid && payment && amountValid
-                ? await this.confirmSuccessfulPayment(query, payment)
+            effectivePaid && payment
+                ? alreadyPaid
+                    ? ticket
+                    : await this.confirmSuccessfulPayment(query, payment)
                 : ticket;
 
-        if (isPaid && !amountValid) {
+        if (isPaid && !amountValid && !alreadyPaid) {
+            if (payment) {
+                await this.paymentRepository.markFailed(query.vnp_TxnRef, query);
+                await this.registrationRepository.updateRegistrationStatus(
+                    payment.registrationId.toString(),
+                    "payment_failed",
+                    "unpaid",
+                    query.vnp_TxnRef,
+                );
+            }
             return {
                 success: false,
                 checksumValid: true,
@@ -210,8 +223,18 @@ export class PaymentService {
             };
         }
 
+        if (payment && !effectivePaid) {
+            await this.paymentRepository.markFailed(query.vnp_TxnRef, query);
+            await this.registrationRepository.updateRegistrationStatus(
+                payment.registrationId.toString(),
+                "payment_failed",
+                "unpaid",
+                query.vnp_TxnRef,
+            );
+        }
+
         return {
-            success: isPaid,
+            success: effectivePaid,
             checksumValid: true,
             orderCode: query.vnp_TxnRef,
             transactionNo: query.vnp_TransactionNo,
@@ -221,7 +244,7 @@ export class PaymentService {
             eventId: payment?.eventId?.toString(),
             ticketId: issuedTicket?._id?.toString(),
             qrCode: issuedTicket?.qrCode,
-            message: isPaid ? "Payment success" : "Payment failed",
+            message: effectivePaid ? "Payment success" : "Payment failed",
         };
     }
 
@@ -247,7 +270,7 @@ export class PaymentService {
             await this.paymentRepository.markFailed(orderCode, query);
             await this.registrationRepository.updateRegistrationStatus(
                 payment.registrationId.toString(),
-                "cancelled",
+                "payment_failed",
                 "unpaid",
                 orderCode,
             );
@@ -262,7 +285,7 @@ export class PaymentService {
             await this.paymentRepository.markFailed(orderCode, query);
             await this.registrationRepository.updateRegistrationStatus(
                 payment.registrationId.toString(),
-                "cancelled",
+                "payment_failed",
                 "unpaid",
                 orderCode,
             );
@@ -277,7 +300,7 @@ export class PaymentService {
             await this.paymentRepository.markFailed(orderCode, query);
             await this.registrationRepository.updateRegistrationStatus(
                 payment.registrationId.toString(),
-                "cancelled",
+                "payment_failed",
                 "unpaid",
                 orderCode,
             );

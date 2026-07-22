@@ -1,11 +1,10 @@
 import { Types } from "mongoose";
 import { AppError } from "../../shared/errors/AppError";
+import { EventRepository } from "../events/repositories/event.repository";
+import { TicketRepository } from "../tickets/repositories/ticket.repository";
 import { SubmitReviewDto } from "./dto/reviews.dto";
 import { ReviewsRepository } from "./repositories/reviews.repository";
 import { ReviewUser } from "./type/reviews.type";
-import { EventRepository } from "../events/repositories/event.repository";
-import { TicketRepository } from "../tickets/repositories/ticket.repository";
-
 
 export class ReviewsService {
   private reviewsRepository: ReviewsRepository;
@@ -19,6 +18,19 @@ export class ReviewsService {
   }
 
   async submitReview(user: ReviewUser, dto: SubmitReviewDto) {
+    if (!Types.ObjectId.isValid(dto.eventId)) {
+      throw new AppError("Mã sự kiện không hợp lệ.", 400);
+    }
+
+    const rating = Number(dto.rating);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      throw new AppError("Rating phải là số nguyên từ 1 đến 5.", 400);
+    }
+
+    const comment = dto.comment?.trim() || null;
+    if (comment && comment.length > 500) {
+      throw new AppError("Bình luận không được vượt quá 500 ký tự.", 400);
+    }
 
     const event = await this.eventRepository.findById(dto.eventId);
     if (!event) {
@@ -26,15 +38,22 @@ export class ReviewsService {
     }
 
     if (!this.isEventEnded(event)) {
-      throw new AppError("Bạn có thể đánh giá sau khi sự kiện kết thúc.", 400);
+      throw new AppError(
+        "Bạn có thể đánh giá sau khi sự kiện kết thúc.",
+        400,
+      );
     }
 
-    const attendanceTicket = await this.ticketRepository.findAttendanceByEventAndUser(
-      dto.eventId,
-      user.id,
-    );
+    const attendanceTicket =
+      await this.ticketRepository.findAttendanceByEventAndUser(
+        dto.eventId,
+        user.id,
+      );
     if (!attendanceTicket) {
-      throw new AppError("Chỉ người đã tham dự mới có thể đánh giá.", 403);
+      throw new AppError(
+        "Chỉ người đã tham dự mới có thể đánh giá.",
+        403,
+      );
     }
 
     const existingReview = await this.reviewsRepository.findByEventAndUser(
@@ -43,25 +62,35 @@ export class ReviewsService {
     );
 
     const reviewData = {
-      rating: dto.rating,
-      comment: dto.comment?.trim() || null,
+      rating,
+      comment,
       reviewedAt: new Date(),
     };
 
     let review;
     if (!existingReview) {
-      review = await this.reviewsRepository.createReview({
-        eventId: new Types.ObjectId(dto.eventId),
-        userId: new Types.ObjectId(user.id),
-        ...reviewData,
-      });
+      try {
+        review = await this.reviewsRepository.createReview({
+          eventId: new Types.ObjectId(dto.eventId),
+          userId: new Types.ObjectId(user.id),
+          ...reviewData,
+        });
+      } catch (error: any) {
+        if (error?.code === 11000) {
+          throw new AppError("Bạn đã đánh giá sự kiện này.", 409);
+        }
+        throw error;
+      }
     } else {
       const hasEdited = await this.reviewsRepository.hasReviewBeenEdited(
         existingReview._id.toString(),
       );
 
       if (hasEdited) {
-        throw new AppError("Bạn chỉ được cập nhật đánh giá một lần.", 400);
+        throw new AppError(
+          "Bạn chỉ được cập nhật đánh giá một lần.",
+          400,
+        );
       }
 
       review = await this.reviewsRepository.updateReview(
@@ -72,12 +101,16 @@ export class ReviewsService {
         },
       );
     }
-    return {
-      review
-    };
+
+    return { review };
   }
 
-  async getEventReviewContext(eventId: string, user?: ReviewUser, page = 1, limit = 5) {
+  async getEventReviewContext(
+    eventId: string,
+    user?: ReviewUser,
+    page = 1,
+    limit = 5,
+  ) {
     const event = await this.eventRepository.findById(eventId);
     if (!event) {
       throw new AppError("Không tìm thấy sự kiện.", 404);
@@ -86,25 +119,33 @@ export class ReviewsService {
     const safePage = Math.max(1, page);
     const safeLimit = Math.max(1, limit);
 
-    const [reviews, reviewCount, currentUserReview, attendanceTicket] = await Promise.all([
-      this.reviewsRepository.findByEvent(eventId, safePage, safeLimit),
-      this.reviewsRepository.countByEvent(eventId),
-      user ? this.reviewsRepository.findByEventAndUser(eventId, user.id) : null,
-      user ? this.ticketRepository.findAttendanceByEventAndUser(eventId, user.id) : null,
-    ]);
+    const [reviews, reviewCount, currentUserReview, attendanceTicket] =
+      await Promise.all([
+        this.reviewsRepository.findByEvent(eventId, safePage, safeLimit),
+        this.reviewsRepository.countByEvent(eventId),
+        user ? this.reviewsRepository.findByEventAndUser(eventId, user.id) : null,
+        user
+          ? this.ticketRepository.findAttendanceByEventAndUser(eventId, user.id)
+          : null,
+      ]);
 
     const isEnded = this.isEventEnded(event);
     const canReview = Boolean(
       user &&
-      user.role === "attendee" &&
-      isEnded &&
-      attendanceTicket,
+        user.role === "attendee" &&
+        isEnded &&
+        attendanceTicket,
     );
+
     return {
       reviews,
       currentUserReview,
       canReview,
-      reviewMessage: this.getReviewMessage(user, isEnded, Boolean(attendanceTicket)),
+      reviewMessage: this.getReviewMessage(
+        user,
+        isEnded,
+        Boolean(attendanceTicket),
+      ),
       averageRating: event.avgRating,
       reviewCount,
       reviewPagination: {
