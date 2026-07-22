@@ -20,6 +20,6 @@ export const errorHandler: ErrorRequestHandler = (
     data: null,
     message,
     error: message,
-    ...(appConfig.nodeEnv === 'development' && { stack: err.stack })
+    // ...(appConfig.nodeEnv === 'development' && { stack: err.stack })
   });
 };

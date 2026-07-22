@@ -33,13 +33,16 @@ async function syncEventRating(eventId: Schema.Types.ObjectId) {
     {
       $group: {
         _id: "$eventId",
-        avg: { $avg: "$rating" }
+        avg: { $avg: "$rating" },
+        count: { $sum: 1 },
       },
     },
   ]);
   const avgRating = result[0]?.avg ?? 0;
+  const reviewCount = result[0]?.count ?? 0;
   await Event.findByIdAndUpdate(eventId, {
-    avgRating: Number(avgRating.toFixed(1))
+    avgRating: Number(avgRating.toFixed(1)),
+    reviewCount,
   });
 }
 

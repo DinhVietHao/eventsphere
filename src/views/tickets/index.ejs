@@ -1,3 +1,20 @@
+<%
+  const rows = Array.isArray(tickets) ? tickets : [];
+  const statusMeta = (item, ticket, registration) => {
+    const raw = String(ticket?.status || registration?.status || '').toLowerCase();
+    if (item?.displayStatus) return { label: item.displayStatus, className: 'bg-secondary' };
+    return {
+      issued: { label: 'Đã phát hành', className: 'bg-success' },
+      checked_in: { label: 'Đã check-in', className: 'bg-primary' },
+      expired: { label: 'Đã hết hạn', className: 'bg-danger' },
+      cancelled: { label: 'Đã hủy', className: 'bg-secondary' },
+      pending_payment: { label: 'Chờ thanh toán', className: 'bg-warning text-dark' },
+      payment_failed: { label: 'Thanh toán thất bại', className: 'bg-danger' },
+      confirmed: { label: 'Sắp diễn ra', className: 'bg-success' },
+    }[raw] || { label: raw || 'Chờ xử lý', className: 'bg-secondary' };
+  };
+%>
+
 <div class="container py-4">
   <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
     <div>
@@ -9,84 +26,86 @@
     </a>
   </div>
 
-  <% if (tickets && tickets.length> 0) { %>
+  <% if (rows.length > 0) { %>
     <div class="row g-4">
-      <% tickets.forEach((ticket)=> { %>
-        <% const event=ticket.eventId || {}; const ticketType=ticket.ticketTypeId || {}; const
-          registration=ticket.registrationId || {}; const status=String(ticket.status || "ISSUED" ).toLowerCase(); const
-          statusMeta={ issued: { label: "Đã phát hành" , className: "bg-success" }, checked_in: { label: "Đã check-in" ,
-          className: "bg-primary" }, expired: { label: "Đã hết hạn" , className: "bg-danger" }, cancelled: {
-          label: "Đã hủy" , className: "bg-secondary" }, }[status] || { label: ticket.status, className: "bg-secondary"
-          }; const price=Number(ticketType.price || 0); %>
-          <div class="col-12">
-            <div class="card border-0 shadow-sm overflow-hidden">
-              <div class="row g-0">
-                <div class="col-md-4 col-lg-3">
-                  <img
-                    src="<%= event.bannerUrl || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=700&q=80' %>"
-                    alt="<%= event.title || 'Event banner' %>" class="w-100 h-100 object-fit-cover"
-                    style="min-height: 190px;">
-                </div>
-                <div class="col-md-8 col-lg-9">
-                  <div class="card-body p-4 h-100 d-flex flex-column">
-                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
-                      <div>
-                        <h2 class="h5 fw-bold mb-1">
-                          <%= event.title || "Event ticket" %>
-                        </h2>
-                        <div class="text-muted small">
-                          <i class="bi bi-ticket-perforated me-1"></i>
-                          <%= ticketType.name || "Standard" %>
-                        </div>
-                      </div>
-                      <span class="badge <%= statusMeta.className %> px-3 py-2">
-                        <%= statusMeta.label %>
-                      </span>
-                    </div>
-
-                    <div class="row g-3 mb-4">
-                      <div class="col-sm-6">
-                        <div class="text-muted small">Thời gian</div>
-                        <div class="fw-semibold">
-                          <%= event.startDate ? new Date(event.startDate).toLocaleString("vi-VN") : "Đang cập nhật" %>
-                        </div>
-                      </div>
-                      <div class="col-sm-6">
-                        <div class="text-muted small">Địa điểm</div>
-                        <div class="fw-semibold">
-                          <%= event.location || "Đang cập nhật" %>
-                        </div>
+      <% rows.forEach((item) => { %>
+        <%
+          const ticket = item.ticket || (item.registration ? null : item);
+          const registration = item.registration || ticket?.registrationId || {};
+          const event = item.event || ticket?.eventId || registration.eventId || {};
+          const ticketType = item.ticketType || ticket?.ticketTypeId || registration.ticketTypeId || {};
+          const meta = statusMeta(item, ticket, registration);
+          const price = Number(ticketType.price || 0);
+        %>
+        <div class="col-12">
+          <div class="card border-0 shadow-sm overflow-hidden">
+            <div class="row g-0">
+              <div class="col-md-4 col-lg-3">
+                <img
+                  src="<%= event.bannerUrl || '/images/event/default-event-banner.svg' %>"
+                  alt="<%= event.title || 'Event banner' %>"
+                  class="w-100 h-100 object-fit-cover"
+                  style="min-height: 190px;">
+              </div>
+              <div class="col-md-8 col-lg-9">
+                <div class="card-body p-4 h-100 d-flex flex-column">
+                  <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                    <div>
+                      <h2 class="h5 fw-bold mb-1"><%= event.title || 'Sự kiện không còn tồn tại' %></h2>
+                      <div class="text-muted small">
+                        <i class="bi bi-ticket-perforated me-1"></i>
+                        <%= ticketType.name || 'Chưa xác định loại vé' %>
+                        <% if (price > 0) { %>
+                          - <%= price.toLocaleString('vi-VN') %> VND
+                        <% } else { %>
+                          - Miễn phí
+                        <% } %>
                       </div>
                     </div>
+                    <span class="badge <%= meta.className %> px-3 py-2"><%= meta.label %></span>
+                  </div>
 
-                    <div class="mt-auto d-flex flex-wrap justify-content-between align-items-center gap-2">
-                      <span class="text-muted small">
-                        Mã vé: <span class="fw-semibold">
-                          <%= ticket._id %>
-                        </span>
-                      </span>
+                  <div class="row g-3 mb-4">
+                    <div class="col-sm-6">
+                      <div class="text-muted small">Thời gian</div>
+                      <div class="fw-semibold">
+                        <%= event.startDate ? new Date(event.startDate).toLocaleString('vi-VN') : 'Đang cập nhật' %>
+                      </div>
+                    </div>
+                    <div class="col-sm-6">
+                      <div class="text-muted small">Địa điểm</div>
+                      <div class="fw-semibold"><%= event.location || 'Đang cập nhật' %></div>
+                    </div>
+                  </div>
+
+                  <div class="mt-auto d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <span class="text-muted small">
+                      Mã vé:
+                      <span class="fw-semibold"><%= ticket?._id || 'Chưa phát hành' %></span>
+                    </span>
+                    <% if (ticket?._id) { %>
                       <a href="/tickets/<%= ticket._id %>" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-eye me-1"></i>
-                        Xem chi tiết
+                        <i class="bi bi-eye me-1"></i>Xem chi tiết
                       </a>
-                    </div>
+                    <% } %>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <% }) %>
-    </div>
-    <% } else { %>
-      <div class="bg-white border rounded-3 shadow-sm text-center py-5 px-4">
-        <div class="display-4 text-primary mb-3">
-          <i class="bi bi-ticket-perforated"></i>
         </div>
-        <h2 class="h5 fw-bold mb-2">Bạn chưa có vé nào</h2>
-        <p class="text-muted mb-4">Hãy khám phá các sự kiện đang mở đăng ký trên EventSphere.</p>
-        <a href="/events" class="btn btn-primary">
-          <i class="bi bi-calendar2-event me-1"></i>Khám phá sự kiện
-        </a>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <div class="bg-white border rounded-3 shadow-sm text-center py-5 px-4">
+      <div class="display-4 text-primary mb-3">
+        <i class="bi bi-ticket-perforated"></i>
       </div>
-      <% } %>
+      <h2 class="h5 fw-bold mb-2">Bạn chưa có vé nào</h2>
+      <p class="text-muted mb-4">Hãy khám phá các sự kiện đang mở đăng ký trên EventSphere.</p>
+      <a href="/events" class="btn btn-primary">
+        <i class="bi bi-calendar2-event me-1"></i>Khám phá sự kiện
+      </a>
+    </div>
+  <% } %>
 </div>

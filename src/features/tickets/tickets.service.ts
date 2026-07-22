@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
-import { EmailService } from "../../shared/services/email.service";
+import { getIO } from "../../config/socket";
 import { AppError } from "../../shared/errors/AppError";
+import { EmailService } from "../../shared/services/email.service";
 import { generateTicketQrCode } from "../../shared/utils/qrCode.util";
 import { UserRepository } from "../auth/repositories/user.repository";
 import { EventRepository } from "../events/repositories/event.repository";
@@ -8,7 +9,6 @@ import { TicketTypeRepository } from "../events/repositories/ticketType.reposito
 import { IRegisterAttendanceDto } from "./dto/registration.dto";
 import { RegistrationRepository } from "./repositories/registration.repository";
 import { TicketRepository } from "./repositories/ticket.repository";
-import { getIO } from "../../config/socket";
 
 export const EVENT_REGISTRATION_CLOSED_MESSAGE =
   "Sự kiện đã bắt đầu hoặc đã kết thúc. Bạn không thể đăng ký hoặc mua vé.";
@@ -34,6 +34,14 @@ export class TicketsService {
     attendeeId: string,
     iRegisterAttendanceDto: IRegisterAttendanceDto,
   ) {
+    if (
+      !Types.ObjectId.isValid(attendeeId) ||
+      !Types.ObjectId.isValid(iRegisterAttendanceDto.eventId) ||
+      !Types.ObjectId.isValid(iRegisterAttendanceDto.ticketTypeId)
+    ) {
+      throw new AppError("Thông tin đăng ký không hợp lệ.", 400);
+    }
+
     const attendee = await this.userRepository.findById(attendeeId);
     if (!attendee) throw new AppError("Không tìm thấy người tham dự.", 404);
 
@@ -42,7 +50,10 @@ export class TicketsService {
     );
     if (!event) throw new AppError("Không tìm thấy sự kiện.", 404);
     if (event.status === "CANCELLED") {
-      throw new AppError("Sự kiện đã bị hủy. Bạn không thể đăng ký hoặc mua vé.", 400);
+      throw new AppError(
+        "Sự kiện đã bị hủy. Bạn không thể đăng ký hoặc mua vé.",
+        400,
+      );
     }
     if (event.status !== "APPROVED") {
       throw new AppError("Sự kiện hiện không cho phép đăng ký tham dự.", 400);
@@ -90,17 +101,11 @@ export class TicketsService {
             paymentStatus: "unpaid",
           },
         )
-        : await this.registrationRepository.create({
-          _id: new Types.ObjectId(),
-          userId: new Types.ObjectId(attendeeId),
-          eventId: new Types.ObjectId(iRegisterAttendanceDto.eventId),
-          ticketTypeId: new Types.ObjectId(
-            iRegisterAttendanceDto.ticketTypeId,
-          ),
-          status: "pending_payment",
-          paymentStatus: "unpaid",
-          registeredAt: new Date(),
-        });
+        : await this.createPendingRegistration(
+          attendeeId,
+          iRegisterAttendanceDto.eventId,
+          iRegisterAttendanceDto.ticketTypeId,
+        );
 
       if (!registration) throw new AppError("Đăng ký tham dự thất bại.", 500);
 
@@ -221,6 +226,35 @@ export class TicketsService {
     };
   }
 
+  private async createPendingRegistration(
+    attendeeId: string,
+    eventId: string,
+    ticketTypeId: string,
+  ) {
+    try {
+      return await this.registrationRepository.create({
+        _id: new Types.ObjectId(),
+        userId: new Types.ObjectId(attendeeId),
+        eventId: new Types.ObjectId(eventId),
+        ticketTypeId: new Types.ObjectId(ticketTypeId),
+        status: "pending_payment",
+        paymentStatus: "unpaid",
+        registeredAt: new Date(),
+      });
+    } catch (error: any) {
+      if (error?.code === 11000) {
+        const registration =
+          await this.registrationRepository.findLatestByAttendeeAndEvent(
+            attendeeId,
+            eventId,
+          );
+        if (registration) return registration;
+      }
+
+      throw error;
+    }
+  }
+
   private assertEventCanAcceptRegistration(event: { startDate: Date }) {
     const eventStartAt = new Date(event.startDate);
     if (Number.isNaN(eventStartAt.getTime()) || new Date() >= eventStartAt) {
@@ -229,6 +263,10 @@ export class TicketsService {
   }
 
   async issueTicketForRegistration(registrationId: string) {
+    if (!Types.ObjectId.isValid(registrationId)) {
+      throw new AppError("Mã đăng ký không hợp lệ.", 400);
+    }
+
     const existingTicket =
       await this.ticketRepository.findByRegistrationIdPlain(registrationId);
     if (existingTicket) return existingTicket;
@@ -295,7 +333,7 @@ export class TicketsService {
       timestamp: Date.now(),
     });
 
-    const ticket = await this.ticketRepository.create({
+    const ticketResult = await this.ticketRepository.create({
       registrationId: registration._id,
       attendeeId: registration.userId,
       eventId: registration.eventId,
@@ -305,50 +343,125 @@ export class TicketsService {
       issuedAt: new Date(),
       expiredAt: event.endDate,
     });
+    const ticket = ticketResult.ticket;
 
-    await this.eventRepository.updateByAttendeeCount(
-      registration.eventId.toString(),
-    );
+    if (ticketResult.created) {
+      await this.eventRepository.updateByAttendeeCount(
+        registration.eventId.toString(),
+      );
 
-    // Emit realtime để dashboard organizer cập nhật totalRegistered ngay lập tức
-    try {
-      const eventId = registration.eventId.toString();
-      const { CheckinRepository } =
-        await import("../checkin/repositories/checkin.repository");
-      const checkinRepo = new CheckinRepository();
-      const totalRegistered = await checkinRepo.countRegistered(eventId);
-      getIO().to(eventId).emit("registration_update", { totalRegistered });
-    } catch (err) {
-      console.error("Lỗi emit registration_update:", err);
-    }
+      try {
+        const eventId = registration.eventId.toString();
+        const { CheckinRepository } =
+          await import("../checkin/repositories/checkin.repository");
+        const checkinRepo = new CheckinRepository();
+        const totalRegistered = await checkinRepo.countRegistered(eventId);
+        getIO().to(eventId).emit("registration_update", { totalRegistered });
+      } catch (err) {
+        console.error("Lỗi emit registration_update:", err);
+      }
 
-    try {
-      await this.emailService.sendTicketEmail({
-        to: attendee.email,
-        attendeeName: attendee.name,
-        eventTitle: event.title,
-        ticketTypeName: reservedTicketType.name,
-        qrCode,
-      });
-    } catch (mailError) {
-      console.error("Gửi email vé thất bại:", mailError);
+      try {
+        await this.emailService.sendTicketEmail({
+          to: attendee.email,
+          attendeeName: attendee.name,
+          eventTitle: event.title,
+          ticketTypeName: reservedTicketType.name,
+          qrCode,
+        });
+      } catch (mailError) {
+        console.error("Gửi email vé thất bại:", mailError);
+      }
     }
 
     return ticket;
   }
 
   async getTicketDetail(ticketId: string, attendeeId: string) {
-    const ticket = await this.ticketRepository.findDetailById(ticketId);
+    if (!Types.ObjectId.isValid(ticketId)) {
+      throw new AppError("Mã vé không hợp lệ.", 400);
+    }
+
+    const ticket = await this.ticketRepository.findDetailById(
+      ticketId,
+      attendeeId,
+    );
     if (!ticket) {
-      throw new AppError("Khong tim thay ve.", 404);
+      throw new AppError("Không tìm thấy vé.", 404);
     }
 
     return ticket;
   }
 
-  async getAttendanceHistory(attendeeId: string) {
-    const tickets =
-      await this.ticketRepository.findByAttendeeIdWithDetails(attendeeId);
-    return tickets;
+  async getAttendanceHistory(attendeeId: string, page = 1, limit = 10) {
+    if (!Types.ObjectId.isValid(attendeeId)) {
+      throw new AppError("Người dùng không hợp lệ.", 400);
+    }
+
+    const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+    const safeLimit =
+      Number.isFinite(limit) && limit > 0 ? Math.min(Math.floor(limit), 100) : 10;
+
+    const { registrations, totalItems } =
+      await this.registrationRepository.findHistoryByAttendee(
+        attendeeId,
+        safePage,
+        safeLimit,
+      );
+    const tickets = await this.ticketRepository.findByRegistrationIds(
+      registrations.map((registration) => registration._id.toString()),
+    );
+    const ticketsByRegistrationId = new Map(
+      tickets.map((ticket) => [ticket.registrationId.toString(), ticket]),
+    );
+
+    const items = registrations.map((registration) => {
+      const ticket =
+        ticketsByRegistrationId.get(registration._id.toString()) || null;
+
+      return {
+        registration,
+        ticket,
+        event: registration.eventId || null,
+        ticketType: registration.ticketTypeId || null,
+        displayStatus: this.getAttendanceDisplayStatus(registration, ticket),
+      };
+    });
+
+    return {
+      items,
+      currentPage: safePage,
+      totalPages: Math.max(1, Math.ceil(totalItems / safeLimit)),
+      totalItems,
+      limit: safeLimit,
+    };
+  }
+
+  private getAttendanceDisplayStatus(registration: any, ticket: any) {
+    const event = registration.eventId;
+    const eventStatus = event?.status;
+    const eventEndDate = event?.endDate ? new Date(event.endDate) : null;
+
+    if (eventStatus === "CANCELLED" || registration.status === "cancelled") {
+      return "Đã hủy";
+    }
+
+    if (registration.status === "payment_failed") {
+      return "Thanh toán thất bại";
+    }
+
+    if (registration.status === "pending_payment" || !ticket) {
+      return "Chờ thanh toán";
+    }
+
+    if (ticket.status === "CHECKED_IN") {
+      return "Đã tham dự";
+    }
+
+    if (eventEndDate && eventEndDate < new Date()) {
+      return "Đã kết thúc";
+    }
+
+    return "Sắp diễn ra";
   }
 }

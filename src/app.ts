@@ -13,6 +13,7 @@ import paymentRoutes from "./features/payment/payment.routes";
 import checkinRouter from "./features/checkin/checkin.router";
 import registrationRouter from "./features/tickets/registration.router";
 import ticketsRouter from "./features/tickets/tickets.router";
+import reviewsRouter from "./features/reviews/reviews.router"
 import { setupSwagger } from "./config/swagger";
 
 const ejsLayouts = require("express-ejs-layouts");
@@ -61,6 +62,7 @@ app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/checkin", checkinRouter);
 app.use("/api/v1/notifications", notificationRouter);
 app.use("/api/v1/admin", adminRouter);
+app.use("/api/v1/reviews", reviewsRouter);
 
 // Global Error Handler
 app.use(errorHandler);
