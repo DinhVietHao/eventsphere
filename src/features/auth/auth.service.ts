@@ -8,8 +8,8 @@ import { emailService } from "../../shared/services/email.service";
 import { signAccessToken, signRefreshToken } from "../../shared/utils/jwt.util";
 
 // Thời hạn hiệu lực của link xác thực email và link đặt lại mật khẩu
-const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;  // 24 giờ
-const PASSWORD_RESET_TTL_MS     = 30 * 60 * 1000;       // 30 phút
+const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 giờ
+const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000; // 30 phút
 
 export class AuthService {
   private userRepository = new UserRepository();
@@ -18,7 +18,9 @@ export class AuthService {
   async register(
     dto: any,
     baseUrl: string,
-  ): Promise<{ user: { id: string; name: string; email: string; role: string } }> {
+  ): Promise<{
+    user: { id: string; name: string; email: string; role: string };
+  }> {
     const existingUser = await this.userRepository.findByEmail(dto.email);
     if (existingUser) {
       throw new AppError("Email này đã được sử dụng trên hệ thống", 409);
@@ -30,13 +32,17 @@ export class AuthService {
       email: dto.email,
       passwordHash,
       role: dto.role,
+      phone: dto.phone || null,
     });
 
     const userId = (newUser as any)._id.toString();
 
     // Sinh token xác thực email — chỉ lưu bản hash trong DB, gửi token gốc qua mail (giống cơ chế refresh token)
     const rawVerifyToken = crypto.randomBytes(32).toString("hex");
-    const verifyTokenHash = crypto.createHash("sha256").update(rawVerifyToken).digest("hex");
+    const verifyTokenHash = crypto
+      .createHash("sha256")
+      .update(rawVerifyToken)
+      .digest("hex");
     await this.userRepository.setEmailVerificationToken(
       userId,
       verifyTokenHash,
@@ -83,7 +89,10 @@ export class AuthService {
       );
 
     if (!user.isActive)
-      throw new AppError("Tai khoan cua ban da bi khoa. Vui long lien he quan tri vien.", 403);
+      throw new AppError(
+        "Tai khoan cua ban da bi khoa. Vui long lien he quan tri vien.",
+        403,
+      );
 
     const userId = (user as any)._id.toString();
 
@@ -131,10 +140,18 @@ export class AuthService {
 
   // Xác thực email từ link trong mail đăng ký
   async verifyEmail(rawToken: string): Promise<void> {
-    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
-    const user = await this.userRepository.findByEmailVerificationToken(tokenHash);
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
+    const user =
+      await this.userRepository.findByEmailVerificationToken(tokenHash);
 
-    if (!user || !user.emailVerificationExpires || user.emailVerificationExpires < new Date()) {
+    if (
+      !user ||
+      !user.emailVerificationExpires ||
+      user.emailVerificationExpires < new Date()
+    ) {
       throw new AppError("Link xác thực không hợp lệ hoặc đã hết hạn", 400);
     }
 
@@ -147,7 +164,10 @@ export class AuthService {
     if (!user) return;
 
     const rawResetToken = crypto.randomBytes(32).toString("hex");
-    const resetTokenHash = crypto.createHash("sha256").update(rawResetToken).digest("hex");
+    const resetTokenHash = crypto
+      .createHash("sha256")
+      .update(rawResetToken)
+      .digest("hex");
     await this.userRepository.setPasswordResetToken(
       (user as any)._id.toString(),
       resetTokenHash,
@@ -164,11 +184,21 @@ export class AuthService {
 
   // Đặt mật khẩu mới bằng token từ email quên mật khẩu
   async resetPassword(rawToken: string, newPassword: string): Promise<void> {
-    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
     const user = await this.userRepository.findByPasswordResetToken(tokenHash);
 
-    if (!user || !user.passwordResetExpires || user.passwordResetExpires < new Date()) {
-      throw new AppError("Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn", 400);
+    if (
+      !user ||
+      !user.passwordResetExpires ||
+      user.passwordResetExpires < new Date()
+    ) {
+      throw new AppError(
+        "Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn",
+        400,
+      );
     }
 
     const userId = (user as any)._id.toString();

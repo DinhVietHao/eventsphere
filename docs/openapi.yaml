@@ -550,7 +550,7 @@ paths:
     get:
       tags: [Events]
       summary: Event summary report (revenue, attendance, ticket breakdown)
-      description: Requires role `organizer` (event owner).
+      description: Requires role `organizer` (event owner). The report is only available after the event status is `ENDED`.
       parameters:
         - $ref: "#/components/parameters/EventId"
       responses:
@@ -584,8 +584,10 @@ paths:
                                 quota: { type: integer }
                                 sold: { type: integer }
                                 revenue: { type: number }
+        "400": { $ref: "#/components/responses/BadRequest" }                       
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+
 
   /events/{id}/dashboard:
     get:
@@ -1072,6 +1074,43 @@ paths:
                           queued: { type: boolean, example: true }
                           totalQueued: { type: integer }
         "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    
+    get:
+      tags: [Notifications]
+      summary: Get notification sending history
+      description: Returns the notification history of the authenticated organizer.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                            eventId:
+                              type: string
+                            eventTitle:
+                              type: string
+                            subject:
+                              type: string
+                            message:
+                              type: string
+                            totalRecipients:
+                              type: integer
+                            sentAt:
+                              type: string
+                              format: date-time
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 

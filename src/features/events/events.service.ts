@@ -35,17 +35,20 @@ export class EventService {
 
   // UC04 - Lọc theo category / khoảng thời gian / từ khóa, có phân trang
   async filterEvents(
-      filters: {
-        keyword?: string;
-        category?: string;
-        startFrom?: Date;
-        startTo?: Date;
-      },
-      page = 1,
-      limit = 9,
+    filters: {
+      keyword?: string;
+      category?: string;
+      startFrom?: Date;
+      startTo?: Date;
+    },
+    page = 1,
+    limit = 9,
   ): Promise<{ events: any[]; total: number }> {
     const hasFilter =
-        filters.category || filters.startFrom || filters.startTo || filters.keyword;
+      filters.category ||
+      filters.startFrom ||
+      filters.startTo ||
+      filters.keyword;
     if (!hasFilter) {
       throw new AppError("At least one filter is required", 400);
     }
@@ -75,9 +78,8 @@ export class EventService {
 
   private async withMinTicketPrices(events: IEvent[]): Promise<any[]> {
     const eventIds = events.map((event: any) => event._id.toString());
-    const minPriceMap = await eventRepository.findMinTicketPricesByEventIds(
-      eventIds,
-    );
+    const minPriceMap =
+      await eventRepository.findMinTicketPricesByEventIds(eventIds);
 
     return events.map((event: any) => {
       const plainEvent = event.toObject ? event.toObject() : event;
@@ -108,7 +110,8 @@ export class EventService {
     // được xét ONGOING->ENDED ngay trong cùng 1 lượt quét (nếu endDate cũng đã qua).
     const started = await eventRepository.startApprovedEvents(now);
     const ended = await eventRepository.endOngoingEvents(now);
-    const cancelled = await eventRepository.cancelStalePendingEvents(pendingCutoff);
+    const cancelled =
+      await eventRepository.cancelStalePendingEvents(pendingCutoff);
 
     return { started, ended, cancelled };
   }
@@ -199,13 +202,13 @@ export class EventService {
 
     const event = await eventRepository.findOwnedEventById(id, organizerId);
     if (!event) {
-      throw new AppError("Event không tồn tại hoặc bạn không có quyền chỉnh sửa", 404);
+      throw new AppError(
+        "Event không tồn tại hoặc bạn không có quyền chỉnh sửa",
+        404,
+      );
     }
     if (event.status !== "DRAFT") {
-      throw new AppError(
-        "Chỉ có thể chỉnh sửa event ở trạng thái DRAFT",
-        403,
-      );
+      throw new AppError("Chỉ có thể chỉnh sửa event ở trạng thái DRAFT", 403);
     }
 
     const updateData: Partial<IEvent> = {
@@ -240,14 +243,21 @@ export class EventService {
 
     const event = await eventRepository.findOwnedEventById(id, organizerId);
     if (!event) {
-      throw new AppError("Event không tồn tại hoặc bạn không có quyền thực hiện thao tác này", 404);
+      throw new AppError(
+        "Event không tồn tại hoặc bạn không có quyền thực hiện thao tác này",
+        404,
+      );
     }
     if (event.status !== "DRAFT") {
       throw new AppError("Chỉ có thể gửi duyệt event ở trạng thái DRAFT", 400);
     }
-    const updated = await eventRepository.updateOwnedEventById(id, organizerId, {
-      status: "PENDING",
-    });
+    const updated = await eventRepository.updateOwnedEventById(
+      id,
+      organizerId,
+      {
+        status: "PENDING",
+      },
+    );
     return updated!;
   }
 
@@ -259,15 +269,22 @@ export class EventService {
 
     const event = await eventRepository.findOwnedEventById(id, organizerId);
     if (!event) {
-      throw new AppError("Event không tồn tại hoặc bạn không có quyền hủy", 404);
+      throw new AppError(
+        "Event không tồn tại hoặc bạn không có quyền hủy",
+        404,
+      );
     }
     if (event.status !== "PENDING") {
       throw new AppError("Chỉ có thể hủy event ở trạng thái PENDING", 400);
     }
 
-    const updated = await eventRepository.updateOwnedEventById(id, organizerId, {
-      status: "DRAFT",
-    });
+    const updated = await eventRepository.updateOwnedEventById(
+      id,
+      organizerId,
+      {
+        status: "DRAFT",
+      },
+    );
     return updated!;
   }
 
@@ -305,6 +322,12 @@ export class EventService {
       throw new AppError("Bạn không có quyền xem báo cáo sự kiện này", 403);
     }
 
+    if (event.status !== "ENDED") {
+      throw new AppError(
+        "Báo cáo tổng kết chỉ khả dụng khi sự kiện đã kết thúc",
+        400,
+      );
+    }
     // 2. Lấy dữ liệu song song (Promise.all = nhanh hơn gọi tuần tự)
     const [ticketTypes, regStats, totalCheckedIn, totalReviews, avgRating] =
       await Promise.all([
