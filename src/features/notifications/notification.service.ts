@@ -39,14 +39,6 @@ export class NotificationService {
       .select("name email")
       .lean();
 
-    console.log("Registrations:", registrations.length);
-    console.log("UserIds:", userIds.length);
-
-    const uniqueUserIds = new Set(userIds.map(String));
-    console.log("Unique userIds:", uniqueUserIds.size);
-
-    console.log("Users found:", users.length);
-
     const recipients = users.map((u: Partial<IUser>) => ({
       name: u.name!,
       email: u.email!,
