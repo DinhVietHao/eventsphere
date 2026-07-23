@@ -1,117 +1,100 @@
 openapi: 3.0.3
 info:
   title: EventSphere API
-  description: |
-    REST API for EventSphere — Event Management & QR Check-in System.
-
-    All JSON responses use a common envelope: `{ success, message, data }` on success,
-    or `{ success: false, data: null, message, error }` on failure.
-    Exceptions: the CSV export endpoint returns raw `text/csv`, and the VNPay
-    return/IPN endpoints follow VNPay's own payload conventions.
   version: "1.0.0"
+  description: |
+    Swagger test documentation for the EventSphere REST API.
+
+    Source of truth: current Express routers, controllers, Joi DTOs and Mongoose models.
+    JSON responses normally use `{ success, message, data, error }`.
+    Exceptions: attendee CSV export returns `text/csv`; VNPay return renders an HTML result page;
+    VNPay IPN returns VNPay response codes.
+
 servers:
   - url: /api/v1
-    description: Relative to the host serving this app
+    description: Same host as the running server
   - url: http://localhost:3000/api/v1
     description: Local development
 
 tags:
-  - name: Auth
-    description: Registration, login, email verification, password reset, profile
+  - name: Authentication
+    description: Dang ky, dang nhap va quan ly phien dang nhap
   - name: Events
-    description: Public browsing/search plus organizer CRUD and lifecycle management
-  - name: Ticket Types
-    description: Organizer-managed ticket tiers, nested under an event
-  - name: Registrations & Tickets
-    description: Attendee registration/attendance and ticket history
+    description: Xem, tim kiem va quan ly su kien
+  - name: Tickets
+    description: Dang ky tham du, xem ve va lich su ve
   - name: Payments
-    description: VNPay payment flow
-  - name: Check-in
-    description: Staff QR / manual check-in at the door
+    description: Thanh toan ve qua VNPay
+  - name: Reviews
+    description: Danh gia su kien
   - name: Notifications
-    description: Organizer mass notifications to attendees
+    description: Gui va xem lich su thong bao
+  - name: Check-in
+    description: Check-in bang QR hoac thu cong
+  - name: Organizer
+    description: Quan ly su kien, loai ve, nhan vien va bao cao
   - name: Admin
-    description: Platform administration — approvals, accounts, reports
-
-security:
-  - bearerAuth: []
+    description: Duyet su kien, quan ly tai khoan va thong ke he thong
 
 paths:
-  # ───────────────────────────── AUTH ─────────────────────────────
   /auth/register:
     post:
-      tags: [Auth]
-      summary: Register a new user
-      security: []
+      summary: Dang ky tai khoan
+      description: API cong khai de tao tai khoan moi. Role neu khong gui se mac dinh la attendee.
+      tags: [Authentication]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [name, email, password]
-              properties:
-                name: { type: string, minLength: 2, maxLength: 50, example: "Nguyen Van A" }
-                email: { type: string, format: email }
-                password: { type: string, minLength: 6, maxLength: 30 }
-                role:
-                  type: string
-                  enum: [attendee, organizer, staff, admin]
-                  default: attendee
-                phone: { type: string }
+              $ref: "#/components/schemas/RegisterBody"
+            example:
+              name: "Vo Chi Trong"
+              email: "attendee1@gmail.com"
+              password: "123456"
+              role: attendee
+              phone: "0900000006"
       responses:
         "201":
-          description: Registered — verification email sent
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          user: { $ref: "#/components/schemas/UserSummary" }
-        "400": { $ref: "#/components/responses/BadRequest" }
+          description: Dang ky thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le
+        "500":
+          description: Loi he thong
 
   /auth/login:
     post:
-      tags: [Auth]
-      summary: Log in and obtain access/refresh tokens
-      security: []
+      summary: Dang nhap
+      description: API cong khai tra ve accessToken va refreshToken khi email/password hop le.
+      tags: [Authentication]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [email, password]
-              properties:
-                email: { type: string, format: email }
-                password: { type: string }
+              $ref: "#/components/schemas/LoginBody"
+            example:
+              email: "attendee1@gmail.com"
+              password: "123456"
       responses:
         "200":
-          description: Login successful
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          user: { $ref: "#/components/schemas/UserSummary" }
-                          accessToken: { type: string }
-                          refreshToken: { type: string }
-        "401": { $ref: "#/components/responses/Unauthorized" }
+          description: Dang nhap thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le
+        "401":
+          description: Sai thong tin dang nhap hoac token khong hop le
+        "403":
+          description: Tai khoan bi khoa
+        "500":
+          description: Loi he thong
 
   /auth/logout:
     post:
-      tags: [Auth]
-      summary: Revoke a refresh token
+      summary: Dang xuat
+      description: "Role yeu cau: user da dang nhap. Thu hoi refresh token."
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -120,30 +103,41 @@ paths:
               type: object
               required: [refreshToken]
               properties:
-                refreshToken: { type: string }
+                refreshToken:
+                  type: string
       responses:
-        "200": { $ref: "#/components/responses/OkNoData" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
+        "200":
+          description: Dang xuat thanh cong
+        "401":
+          description: Chua dang nhap hoac token khong hop le
+        "500":
+          description: Loi he thong
 
   /auth/verify-email:
     get:
-      tags: [Auth]
-      summary: Verify an email address via the token sent by email
-      security: []
+      summary: Xac thuc email
+      description: API cong khai duoc goi tu link email verification.
+      tags: [Authentication]
       parameters:
-        - name: token
-          in: query
+        - in: query
+          name: token
           required: true
-          schema: { type: string }
+          schema:
+            type: string
+          description: Token xac thuc email trong link gui qua email
       responses:
-        "200": { $ref: "#/components/responses/OkNoData" }
-        "400": { $ref: "#/components/responses/BadRequest" }
+        "200":
+          description: Xac thuc email thanh cong
+        "400":
+          description: Token khong hop le hoac da het han
+        "500":
+          description: Loi he thong
 
   /auth/forgot-password:
     post:
-      tags: [Auth]
-      summary: Request a password reset email
-      security: []
+      summary: Gui email quen mat khau
+      description: API cong khai gui email reset password neu email hop le.
+      tags: [Authentication]
       requestBody:
         required: true
         content:
@@ -152,15 +146,24 @@ paths:
               type: object
               required: [email]
               properties:
-                email: { type: string, format: email }
+                email:
+                  type: string
+                  format: email
+            example:
+              email: "attendee1@gmail.com"
       responses:
-        "200": { $ref: "#/components/responses/OkNoData" }
+        "200":
+          description: Da xu ly yeu cau quen mat khau
+        "400":
+          description: Email khong hop le
+        "500":
+          description: Loi he thong
 
   /auth/reset-password:
     post:
-      tags: [Auth]
-      summary: Reset password using the token sent by email
-      security: []
+      summary: Dat lai mat khau
+      description: API cong khai dat lai mat khau bang token reset. Source hien tai nhan token tu query hoac service tuy controller.
+      tags: [Authentication]
       requestBody:
         required: true
         content:
@@ -169,298 +172,331 @@ paths:
               type: object
               required: [token, password, confirmPassword]
               properties:
-                token: { type: string }
-                password: { type: string, minLength: 6, maxLength: 30 }
-                confirmPassword: { type: string, description: "Must match password" }
+                token:
+                  type: string
+                password:
+                  type: string
+                  minLength: 6
+                  maxLength: 30
+                  format: password
+                confirmPassword:
+                  type: string
+                  format: password
+            example:
+              token: "reset-token-from-email"
+              password: "123456"
+              confirmPassword: "123456"
       responses:
-        "200": { $ref: "#/components/responses/OkNoData" }
-        "400": { $ref: "#/components/responses/BadRequest" }
+        "200":
+          description: Dat lai mat khau thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le
+        "500":
+          description: Loi he thong
 
   /auth/me:
     get:
-      tags: [Auth]
-      summary: Get the authenticated user's profile
+      summary: Lay thong tin ca nhan
+      description: "Role yeu cau: user da dang nhap."
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data: { $ref: "#/components/schemas/UserProfile" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
+          description: Lay thong tin ca nhan thanh cong
+        "401":
+          description: Chua dang nhap hoac token khong hop le
+        "403":
+          description: Tai khoan bi khoa
+        "500":
+          description: Loi he thong
     patch:
-      tags: [Auth]
-      summary: Update the authenticated user's profile
+      summary: Cap nhat thong tin ca nhan
+      description: "Role yeu cau: user da dang nhap. Chi chap nhan name, phone, avatar."
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              minProperties: 1
-              properties:
-                name: { type: string, minLength: 2, maxLength: 50 }
-                phone: { type: string, pattern: "^0[0-9]{9}$", nullable: true }
-                avatar: { type: string, format: uri, nullable: true }
+              $ref: "#/components/schemas/UpdateProfileBody"
+            example:
+              name: "Le Hoang Nam"
+              phone: "0900000006"
+              avatar: "https://i.pravatar.cc/150?img=31"
       responses:
         "200":
-          description: Updated
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data: { $ref: "#/components/schemas/UserSummary" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
+          description: Cap nhat thong tin ca nhan thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le
+        "401":
+          description: Chua dang nhap hoac token khong hop le
+        "403":
+          description: Tai khoan bi khoa
+        "500":
+          description: Loi he thong
 
   /auth/change-password:
     patch:
-      tags: [Auth]
-      summary: Change the authenticated user's password
+      summary: Doi mat khau
+      description: "Role yeu cau: user da dang nhap."
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [currentPassword, newPassword, confirmPassword]
-              properties:
-                currentPassword: { type: string }
-                newPassword: { type: string, minLength: 6, maxLength: 30 }
-                confirmPassword: { type: string, description: "Must match newPassword" }
-      responses:
-        "200": { $ref: "#/components/responses/OkNoData" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-
-  # ───────────────────────────── EVENTS ─────────────────────────────
-  /events/search:
-    get:
-      tags: [Events]
-      summary: Keyword search across published events
-      security: []
-      parameters:
-        - name: q
-          in: query
-          required: true
-          schema: { type: string }
+              $ref: "#/components/schemas/ChangePasswordBody"
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/Event" }
-
-  /events/my:
-    get:
-      tags: [Events]
-      summary: List the authenticated organizer's own events
-      description: Requires role `organizer` or `admin`.
-      parameters:
-        - $ref: "#/components/parameters/Page"
-        - $ref: "#/components/parameters/Limit"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          events:
-                            type: array
-                            items:
-                              allOf:
-                                - $ref: "#/components/schemas/Event"
-                                - type: object
-                                  properties:
-                                    registrationsCount: { type: integer }
-                                    totalQuota: { type: integer }
-                          total: { type: integer }
-                          page: { type: integer }
-                          limit: { type: integer }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Doi mat khau thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le
+        "401":
+          description: Chua dang nhap hoac token khong hop le
+        "500":
+          description: Loi he thong
 
   /events:
     get:
+      summary: Lay danh sach hoac loc su kien cong khai
+      description: UC01/UC04. API cong khai. Neu co category/startFrom/startTo thi source chay filter mode.
       tags: [Events]
-      summary: List published events, or filter them
-      description: |
-        With no filter query params, returns the paginated public listing (UC01).
-        If any of `category`, `startFrom`, or `startTo` is present, switches to
-        filtered mode (UC04) and returns a paginated envelope instead of a bare array.
-      security: []
       parameters:
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/Limit"
-        - name: category
-          in: query
-          schema: { type: string, enum: [music, tech, sport, education] }
-        - name: startFrom
-          in: query
-          schema: { type: string, format: date }
-        - name: startTo
-          in: query
-          schema: { type: string, format: date }
+        - in: query
+          name: category
+          schema:
+            type: string
+            enum: [music, tech, sport, education]
+          description: Loc theo danh muc su kien
+        - in: query
+          name: startFrom
+          schema:
+            type: string
+            format: date
+          description: Ngay bat dau tu
+        - in: query
+          name: startTo
+          schema:
+            type: string
+            format: date
+          description: Ngay bat dau den
       responses:
         "200":
-          description: OK — shape depends on whether filters were applied (see description)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ApiResponse"
+          description: Lay danh sach su kien thanh cong
+        "400":
+          description: Query khong hop le
+        "500":
+          description: Loi he thong
     post:
-      tags: [Events]
-      summary: Create a new event
-      description: |
-        Requires role `organizer` or `admin`. `startDate` must be at least 24h in the
-        future and before `endDate`. Result status is `DRAFT` unless `actionType=submit`,
-        which sets it to `PENDING` for admin review.
+      summary: Tao su kien
+      description: "UC13. Role yeu cau: organizer hoac admin. Ho tro JSON hoac multipart/form-data voi file field `banner`."
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
-          multipart/form-data:
-            schema:
-              $ref: "#/components/schemas/CreateEventBody"
           application/json:
             schema:
               $ref: "#/components/schemas/CreateEventBody"
+            example:
+              title: "Hoi thao Cong nghe 2026"
+              description: "Mo ta chi tiet su kien lon hon 10 ky tu"
+              category: tech
+              location: "Trung tam Hoi nghi"
+              startDate: "2026-08-01T08:00:00.000Z"
+              endDate: "2026-08-01T17:00:00.000Z"
+              bannerUrl: "https://picsum.photos/seed/es-new/900/500"
+              actionType: draft
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateEventMultipartBody"
       responses:
         "201":
-          description: Created
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data: { $ref: "#/components/schemas/Event" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Tao su kien thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Organizer
+        "500":
+          description: Loi he thong
 
-  /events/{id}:
-    parameters:
-      - $ref: "#/components/parameters/EventId"
+  /events/search:
     get:
+      summary: Tim kiem su kien
+      description: UC03. API cong khai tim kiem theo query `q`.
       tags: [Events]
-      summary: Get event detail
-      security: []
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+          description: Tu khoa tim kiem
+          example: "Su kien cong nghe"
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data: { $ref: "#/components/schemas/Event" }
-        "404": { $ref: "#/components/responses/NotFound" }
-    put:
+          description: Tim kiem su kien thanh cong
+        "400":
+          description: Query khong hop le
+        "500":
+          description: Loi he thong
+
+  /events/my:
+    get:
+      summary: Lay danh sach su kien cua organizer
+      description: "UC13. Role yeu cau: organizer hoac admin."
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Lay danh sach su kien cua organizer thanh cong
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Organizer
+        "500":
+          description: Loi he thong
+
+  /events/{id}:
+    get:
+      summary: Lay chi tiet su kien
+      description: UC02. API cong khai lay chi tiet su kien theo MongoDB ObjectId.
       tags: [Events]
-      summary: Update an event
-      description: Owner-only, and only while the event is `DRAFT`.
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200":
+          description: Lay chi tiet su kien thanh cong
+        "400":
+          description: Path parameter khong hop le
+        "404":
+          description: Khong tim thay su kien
+        "500":
+          description: Loi he thong
+    put:
+      summary: Cap nhat su kien
+      description: "UC13. Role yeu cau: organizer hoac admin. Source chi cho owner sua event o trang thai DRAFT."
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
-          multipart/form-data:
-            schema:
-              $ref: "#/components/schemas/UpdateEventBody"
           application/json:
             schema:
               $ref: "#/components/schemas/UpdateEventBody"
+            example:
+              title: "Hoi thao Cong nghe 2026 - Updated"
+              location: "FPT Can Tho"
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UpdateEventMultipartBody"
       responses:
         "200":
-          description: Updated
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data: { $ref: "#/components/schemas/Event" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Cap nhat su kien thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen hoac trang thai khong cho sua
+        "404":
+          description: Khong tim thay su kien
+        "500":
+          description: Loi he thong
     delete:
-      tags: [Events]
-      summary: Delete an event
-      description: Only allowed while status is `DRAFT` or `REJECTED`.
+      summary: Xoa su kien
+      description: "UC13. Role yeu cau: organizer hoac admin. Source chi cho xoa event DRAFT hoac REJECTED."
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        "200": { $ref: "#/components/responses/OkNoData" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+        "200":
+          description: Xoa su kien thanh cong
+        "400":
+          description: Path parameter khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen hoac trang thai khong cho xoa
+        "404":
+          description: Khong tim thay su kien
+        "500":
+          description: Loi he thong
 
   /events/{id}/submit:
     patch:
-      tags: [Events]
-      summary: Submit a DRAFT event for admin approval (→ PENDING)
+      summary: Gui su kien di duyet
+      description: "UC13. Role yeu cau: organizer hoac admin. Chuyen DRAFT sang PENDING."
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/EventId"
+        - $ref: "#/components/parameters/IdPath"
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data: { $ref: "#/components/schemas/Event" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Gui duyet thanh cong
+        "400":
+          description: Trang thai khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Organizer
+        "404":
+          description: Khong tim thay su kien
+        "500":
+          description: Loi he thong
 
   /events/{id}/cancel:
     patch:
-      tags: [Events]
-      summary: Cancel a PENDING event (→ back to DRAFT)
+      summary: Huy yeu cau duyet su kien
+      description: "UC13. Role yeu cau: organizer hoac admin. Source chuyen PENDING ve DRAFT."
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/EventId"
+        - $ref: "#/components/parameters/IdPath"
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data: { $ref: "#/components/schemas/Event" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Huy yeu cau duyet thanh cong
+        "400":
+          description: Trang thai khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Organizer
+        "404":
+          description: Khong tim thay su kien
+        "500":
+          description: Loi he thong
 
   /events/{id}/staffs:
     post:
-      tags: [Events]
-      summary: Assign a check-in staff member to an event
+      summary: Phan cong nhan vien check-in
+      description: "UC17. Role yeu cau: organizer hoac admin. Body email phai thuoc user role staff."
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/EventId"
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
@@ -469,382 +505,376 @@ paths:
               type: object
               required: [email]
               properties:
-                email: { type: string, format: email, description: "Must belong to an existing user with role=staff" }
+                email:
+                  type: string
+                  format: email
+            example:
+              email: "staff1@eventsphere.vn"
       responses:
-        "201": { $ref: "#/components/responses/OkNoData" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+        "201":
+          description: Them nhan vien thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Organizer
+        "404":
+          description: Khong tim thay su kien hoac staff
+        "500":
+          description: Loi he thong
 
   /events/{id}/staffs/{staffId}:
     delete:
-      tags: [Events]
-      summary: Remove a check-in staff member from an event
+      summary: Go nhan vien check-in khoi su kien
+      description: "UC17. Role yeu cau: organizer hoac admin."
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/EventId"
-        - name: staffId
-          in: path
+        - $ref: "#/components/parameters/IdPath"
+        - in: path
+          name: staffId
           required: true
-          schema: { type: string }
+          schema:
+            $ref: "#/components/schemas/ObjectId"
+          description: MongoDB ObjectId cua staff assignment hoac staff theo repository source
       responses:
-        "200": { $ref: "#/components/responses/OkNoData" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+        "200":
+          description: Xoa nhan vien khoi su kien thanh cong
+        "400":
+          description: Path parameter khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Organizer
+        "404":
+          description: Khong tim thay su kien
+        "500":
+          description: Loi he thong
 
   /events/{id}/registrations:
     get:
-      tags: [Events]
-      summary: List registrations for an event (organizer view)
+      summary: Lay danh sach dang ky cua su kien
+      description: "UC15. Role yeu cau: organizer hoac admin. Organizer chi xem su kien cua minh."
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/EventId"
+        - $ref: "#/components/parameters/IdPath"
         - $ref: "#/components/parameters/Page"
-        - name: limit
-          in: query
-          schema: { type: integer, default: 20 }
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
+          description: So ban ghi moi trang
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          registrations:
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                attendeeName: { type: string }
-                                attendeeEmail: { type: string }
-                                ticketType: { type: string }
-                                createdAt: { type: string, format: date-time }
-                                status: { type: string }
-                                paymentStatus: { type: string }
-                          total: { type: integer }
-                          page: { type: integer }
-                          limit: { type: integer }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Lay danh sach dang ky thanh cong
+        "400":
+          description: Query hoac path parameter khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen xem danh sach dang ky
+        "404":
+          description: Khong tim thay su kien
+        "500":
+          description: Loi he thong
 
   /events/{id}/export:
     get:
-      tags: [Events]
-      summary: Export the attendee list as CSV
+      summary: Xuat danh sach attendee CSV
+      description: "UC18. Role yeu cau: organizer hoac admin. Endpoint tra ve file CSV, khong tra JSON."
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/EventId"
+        - $ref: "#/components/parameters/IdPath"
       responses:
         "200":
-          description: CSV file
+          description: Xuat danh sach nguoi tham du thanh cong
           content:
             text/csv:
-              schema: { type: string }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Path parameter khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Organizer
+        "404":
+          description: Khong tim thay su kien
+        "500":
+          description: Loi he thong
 
   /events/{id}/report:
     get:
-      tags: [Events]
-      summary: Event summary report (revenue, attendance, ticket breakdown)
-      description: Requires role `organizer` (event owner). The report is only available after the event status is `ENDED`.
+      summary: Xem bao cao tong ket su kien
+      description: "UC19. Role yeu cau: organizer. Source chi cho owner xem va chi kha dung khi event da ENDED."
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/EventId"
+        - $ref: "#/components/parameters/IdPath"
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          eventId: { type: string }
-                          eventTitle: { type: string }
-                          totalRegistered: { type: integer }
-                          totalCheckedIn: { type: integer }
-                          attendanceRate: { type: number }
-                          totalRevenue: { type: number }
-                          avgRating: { type: number }
-                          totalReviews: { type: integer }
-                          ticketBreakdown:
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                ticketTypeName: { type: string }
-                                price: { type: number }
-                                quota: { type: integer }
-                                sold: { type: integer }
-                                revenue: { type: number }
-        "400": { $ref: "#/components/responses/BadRequest" }                       
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-
+          description: Lay bao cao su kien thanh cong
+        "400":
+          description: Su kien chua ket thuc hoac ID khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Organizer hoac khong phai owner
+        "404":
+          description: Khong tim thay su kien
+        "500":
+          description: Loi he thong
 
   /events/{id}/dashboard:
     get:
-      tags: [Events]
-      summary: Live dashboard snapshot for an event (recent check-ins)
-      description: Requires role `organizer` (event owner).
+      summary: Lay snapshot dashboard check-in
+      description: "UC20 REST snapshot. Role yeu cau: organizer. Socket.io realtime dung event `join_event` va server emit `checkin_update` theo room eventId."
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/EventId"
+        - $ref: "#/components/parameters/IdPath"
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          eventId: { type: string }
-                          eventTitle: { type: string }
-                          totalRegistered: { type: integer }
-                          totalCheckedIn: { type: integer }
-                          attendanceRate: { type: number }
-                          recentCheckins:
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                name: { type: string }
-                                email: { type: string }
-                                checkedAt: { type: string, format: date-time }
-                                method: { type: string }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Lay dashboard snapshot thanh cong
+        "400":
+          description: Path parameter khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Organizer
+        "404":
+          description: Khong tim thay su kien
+        "500":
+          description: Loi he thong
 
-  # ───────────────────────── TICKET TYPES (nested) ─────────────────────────
   /events/{eventId}/ticket-types:
     get:
-      tags: [Ticket Types]
-      summary: List ticket types for an event
-      security: []
+      summary: Lay danh sach loai ve cua su kien
+      description: UC14. API cong khai xem ticket types cua event.
+      tags: [Events]
       parameters:
-        - $ref: "#/components/parameters/EventIdInPath"
+        - $ref: "#/components/parameters/EventIdPath"
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/TicketType" }
+          description: Lay danh sach loai ve thanh cong
+        "400":
+          description: Path parameter khong hop le
+        "404":
+          description: Khong tim thay su kien
+        "500":
+          description: Loi he thong
     post:
-      tags: [Ticket Types]
-      summary: Create a ticket type for an event
-      description: Event must be owned by the requester and in status `DRAFT` or `PENDING`.
+      summary: Tao loai ve
+      description: "UC14. Role yeu cau: organizer hoac admin."
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/EventIdInPath"
+        - $ref: "#/components/parameters/EventIdPath"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [name, price, quota]
-              properties:
-                name: { type: string, minLength: 2, maxLength: 50 }
-                price: { type: number, minimum: 0 }
-                quota: { type: integer, minimum: 1 }
-                description: { type: string, nullable: true }
+              $ref: "#/components/schemas/TicketTypeBody"
+            example:
+              name: "General"
+              price: 0
+              quota: 100
+              description: "Ve mien phi"
       responses:
         "201":
-          description: Created
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data: { $ref: "#/components/schemas/TicketType" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Tao loai ve thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Organizer
+        "404":
+          description: Khong tim thay su kien
+        "500":
+          description: Loi he thong
 
   /events/{eventId}/ticket-types/{id}:
     put:
-      tags: [Ticket Types]
-      summary: Update a ticket type
-      description: Quota cannot be lowered below the number already sold.
+      summary: Cap nhat loai ve
+      description: "UC14. Role yeu cau: organizer hoac admin."
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/EventIdInPath"
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: "#/components/parameters/EventIdPath"
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              minProperties: 1
-              properties:
-                name: { type: string, minLength: 2, maxLength: 50 }
-                price: { type: number, minimum: 0 }
-                quota: { type: integer, minimum: 1 }
-                description: { type: string, nullable: true }
+              $ref: "#/components/schemas/UpdateTicketTypeBody"
+            example:
+              price: 450000
+              quota: 30
       responses:
         "200":
-          description: Updated
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data: { $ref: "#/components/schemas/TicketType" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Cap nhat loai ve thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Organizer
+        "404":
+          description: Khong tim thay loai ve
+        "500":
+          description: Loi he thong
     delete:
-      tags: [Ticket Types]
-      summary: Delete a ticket type
-      description: Only allowed if no tickets have been sold for it (`sold === 0`).
+      summary: Xoa loai ve
+      description: "UC14. Role yeu cau: organizer hoac admin."
+      tags: [Organizer]
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/EventIdInPath"
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: "#/components/parameters/EventIdPath"
+        - $ref: "#/components/parameters/IdPath"
       responses:
-        "200": { $ref: "#/components/responses/OkNoData" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+        "200":
+          description: Xoa loai ve thanh cong
+        "400":
+          description: Path parameter khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Organizer
+        "404":
+          description: Khong tim thay loai ve
+        "500":
+          description: Loi he thong
 
-  # ───────────────────── REGISTRATIONS & TICKETS ─────────────────────
   /registrations:
     post:
-      tags: [Registrations & Tickets]
-      summary: Register attendance for an event/ticket type
-      description: |
-        Requires role `attendee`. Identical behavior to `POST /tickets/register`
-        (same controller method, mounted at two paths). Issues a ticket immediately
-        for free ticket types; otherwise creates a pending-payment registration that
-        must be completed via the Payments API.
+      summary: Dang ky tham du su kien
+      description: "UC07 alternative endpoint. Role yeu cau: attendee. Cung controller voi POST /tickets/register."
+      tags: [Tickets]
+      security:
+        - bearerAuth: []
       requestBody:
         $ref: "#/components/requestBodies/RegisterAttendance"
       responses:
         "201":
-          $ref: "#/components/responses/RegistrationResult"
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Dang ky ve su kien thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le hoac su kien khong cho dang ky
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Attendee
+        "404":
+          description: Khong tim thay su kien hoac loai ve
+        "409":
+          description: Dang ky da ton tai hoac trang thai xung dot
+        "500":
+          description: Loi he thong
 
   /tickets/register:
     post:
-      tags: [Registrations & Tickets]
-      summary: Register attendance for an event/ticket type
-      description: Requires role `attendee`. Same as `POST /registrations` above.
+      summary: Dang ky tham du su kien
+      description: "UC07. Role yeu cau: attendee."
+      tags: [Tickets]
+      security:
+        - bearerAuth: []
       requestBody:
         $ref: "#/components/requestBodies/RegisterAttendance"
       responses:
         "201":
-          $ref: "#/components/responses/RegistrationResult"
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Dang ky ve su kien thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le hoac su kien khong cho dang ky
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Attendee
+        "404":
+          description: Khong tim thay su kien hoac loai ve
+        "409":
+          description: Dang ky da ton tai hoac trang thai xung dot
+        "500":
+          description: Loi he thong
 
   /tickets:
     get:
-      tags: [Registrations & Tickets]
-      summary: List the authenticated attendee's own tickets/attendance history
-      description: Requires role `attendee`.
+      summary: Xem lich su tham du
+      description: "UC12. Role yeu cau: attendee."
+      tags: [Tickets]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/Ticket" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Lay lich su ve thanh cong
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Attendee
+        "500":
+          description: Loi he thong
 
   /tickets/{id}:
     get:
-      tags: [Registrations & Tickets]
-      summary: Get a single ticket's detail
-      description: Requires role `attendee`.
+      summary: Xem chi tiet ve
+      description: "UC09. Role yeu cau: attendee. Attendee chi xem ve cua minh."
+      tags: [Tickets]
+      security:
+        - bearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: "#/components/parameters/IdPath"
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data: { $ref: "#/components/schemas/Ticket" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
+          description: Lay chi tiet ve thanh cong
+        "400":
+          description: Path parameter khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Attendee hoac khong phai chu ve
+        "404":
+          description: Khong tim thay ve
+        "500":
+          description: Loi he thong
 
   /tickets/{id}/calendar:
     post:
-      tags: [Registrations & Tickets]
-      summary: Add a ticket's event to Google Calendar
-      description: |
-        **Not implemented (stub).** UC10 (Google Calendar sync via OAuth2) is not
-        yet built — this route currently has no auth middleware and returns a
-        static placeholder message.
-      security: []
+      summary: Them ve vao Google Calendar
+      description: "UC10 placeholder trong source. Endpoint hien chi tra message stub `UC10 - Add to Google Calendar (OAuth2)` va chua co middleware auth."
+      tags: [Tickets]
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: string }
+        - $ref: "#/components/parameters/IdPath"
       responses:
         "200":
-          description: Placeholder response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message: { type: string, example: "UC10 - Add to Google Calendar (OAuth2)" }
+          description: Placeholder Google Calendar response
+        "500":
+          description: Loi he thong
 
-  # ───────────────────────────── PAYMENTS ─────────────────────────────
   /payments/vnpay/create:
     post:
+      summary: Tao URL thanh toan VNPay
+      description: "UC08. Role yeu cau: attendee. Neu Accept la application/json thi tra JSON; neu khong co the redirect sang paymentUrl."
       tags: [Payments]
-      summary: Create a VNPay payment URL for a pending-payment registration
-      description: |
-        Requires role `attendee`. If the request declares a JSON `Accept`/`Content-Type`,
-        responds with JSON containing the payment URL; otherwise responds with a
-        302 redirect straight to VNPay.
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -853,418 +883,384 @@ paths:
               type: object
               required: [registrationId]
               properties:
-                registrationId: { type: string, description: "Mongo ObjectId of a pending-payment registration" }
-                bankCode: { type: string }
-                language: { type: string, default: vn }
+                registrationId:
+                  $ref: "#/components/schemas/ObjectId"
+                bankCode:
+                  type: string
+                  example: NCB
+                language:
+                  type: string
+                  default: vn
+                  example: vn
+            example:
+              registrationId: "6a60ab7c507157922364aa6d"
+              bankCode: "NCB"
+              language: "vn"
       responses:
         "200":
-          description: Payment URL created (JSON mode)
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          paymentUrl: { type: string, format: uri }
-                          orderCode: { type: string }
-                          amount: { type: number }
-                          registrationId: { type: string }
+          description: Tao URL thanh toan thanh cong
         "302":
-          description: Redirect to VNPay (default/browser mode)
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Redirect sang VNPay neu request khong uu tien JSON
+        "400":
+          description: Du lieu dau vao hoac trang thai dang ky khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Attendee
+        "404":
+          description: Khong tim thay dang ky, su kien hoac loai ve
+        "409":
+          description: Dang ky da duoc thanh toan
+        "500":
+          description: Loi cau hinh VNPay hoac loi he thong
 
   /payments/vnpay/return:
     get:
-      tags: [Payments]
-      summary: VNPay browser return URL (renders a result page)
+      summary: VNPay return callback
       description: |
-        Called when VNPay redirects the shopper's browser back after payment.
-        Verifies the checksum/amount, confirms the payment, and issues a ticket
-        if successful. Renders an HTML page (`payments/payment-result`) rather
-        than returning JSON.
-      security: []
+        UC08 callback. Endpoint duoc trinh duyet/VNPay redirect ve sau thanh toan.
+        Khong yeu cau Bearer Token trong source. Nen test bang cach goi Create Payment
+        va mo paymentUrl, khong tu dien secure hash gia.
+      tags: [Payments]
       parameters:
-        - name: vnp_TxnRef
-          in: query
-          schema: { type: string }
-        - name: vnp_ResponseCode
-          in: query
-          schema: { type: string }
-        - name: vnp_TransactionStatus
-          in: query
-          schema: { type: string }
-        - name: vnp_Amount
-          in: query
-          schema: { type: string }
-        - name: vnp_TransactionNo
-          in: query
-          schema: { type: string }
-        - name: vnp_SecureHash
-          in: query
-          schema: { type: string }
+        - in: query
+          name: vnp_TxnRef
+          schema:
+            type: string
+          description: Ma giao dich do he thong tao
+        - in: query
+          name: vnp_ResponseCode
+          schema:
+            type: string
+          description: Ma ket qua VNPay
+        - in: query
+          name: vnp_TransactionStatus
+          schema:
+            type: string
+          description: Trang thai giao dich VNPay
       responses:
         "200":
-          description: HTML result page
-          content:
-            text/html:
-              schema: { type: string }
+          description: Render trang ket qua thanh toan
+        "400":
+          description: Checksum khong hop le
+        "500":
+          description: Loi he thong
 
   /payments/vnpay/ipn:
     get:
+      summary: VNPay IPN callback
+      description: |
+        UC08 server-to-server callback do VNPay goi de xac nhan giao dich.
+        Khong yeu cau Bearer Token trong source. Chi nen gia lap khi co bo query
+        va vnp_SecureHash hop le.
       tags: [Payments]
-      summary: VNPay server-to-server IPN webhook
-      description: Verifies and marks the underlying payment as paid/failed. Follows VNPay's IPN response contract.
-      security: []
       parameters:
-        - name: vnp_TxnRef
-          in: query
-          schema: { type: string }
-        - name: vnp_ResponseCode
-          in: query
-          schema: { type: string }
-        - name: vnp_TransactionStatus
-          in: query
-          schema: { type: string }
-        - name: vnp_Amount
-          in: query
-          schema: { type: string }
-        - name: vnp_SecureHash
-          in: query
-          schema: { type: string }
+        - in: query
+          name: vnp_TxnRef
+          schema:
+            type: string
+          description: Ma giao dich do he thong tao
+        - in: query
+          name: vnp_Amount
+          schema:
+            type: string
+          description: So tien VNPay gui ve, don vi theo VNPay
+        - in: query
+          name: vnp_ResponseCode
+          schema:
+            type: string
+          description: Ma ket qua VNPay
+        - in: query
+          name: vnp_TransactionStatus
+          schema:
+            type: string
+          description: Trang thai giao dich VNPay
       responses:
         "200":
-          description: VNPay IPN acknowledgement
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  RspCode: { type: string, example: "00" }
-                  Message: { type: string, example: "Confirm Success" }
+          description: Tra RspCode/Message theo chuan VNPay IPN
+        "500":
+          description: Loi he thong
 
-  # ───────────────────────────── CHECK-IN ─────────────────────────────
-  /checkin/qr:
+  /reviews:
     post:
-      tags: [Check-in]
-      summary: Check in an attendee via scanned QR code
-      description: Requires role `staff` or `admin`. Emits a `checkin_update` socket.io event on success.
+      summary: Gui danh gia su kien
+      description: "UC11. Role yeu cau: attendee. Rating tu 1 den 5."
+      tags: [Reviews]
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [registrationId, eventId, timestamp]
-              properties:
-                registrationId: { type: string }
-                eventId: { type: string }
-                timestamp: { type: integer, description: "Unix epoch ms from the scanning device" }
+              $ref: "#/components/schemas/ReviewBody"
+            example:
+              eventId: "6a605f96aca87f236e645ede"
+              rating: 5
+              comment: "Su kien nay qua hay"
       responses:
         "200":
-          description: Checked in
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data: { $ref: "#/components/schemas/Ticket" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Gui danh gia thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Attendee hoac chua du dieu kien danh gia
+        "404":
+          description: Khong tim thay su kien
+        "409":
+          description: Trang thai danh gia bi xung dot
+        "500":
+          description: Loi he thong
+
+  /notifications:
+    post:
+      summary: Gui thong bao hang loat
+      description: "UC16. Role yeu cau: organizer hoac admin. Job gui email/push duoc dua vao hang doi."
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationBody"
+            example:
+              eventId: "6a605f96aca87f236e645edb"
+              subject: "Thong bao tu ban to chuc"
+              message: "Su kien sap bat dau sau 1 gio nua!"
+      responses:
+        "200":
+          description: Da dua thong bao vao hang doi gui
+        "400":
+          description: Du lieu dau vao khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Organizer
+        "404":
+          description: Khong tim thay su kien
+        "500":
+          description: Loi he thong
+    get:
+      summary: Xem lich su gui thong bao
+      description: "UC16.1. Role yeu cau: organizer hoac admin."
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lay lich su gui thong bao thanh cong
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Organizer
+        "500":
+          description: Loi he thong
+
+  /checkin/qr:
+    post:
+      summary: Check-in bang QR
+      description: "UC21. Role yeu cau: staff hoac admin."
+      tags: [Check-in]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QrCheckinBody"
+            example:
+              registrationId: "6a605f97aca87f236e645ef2"
+              eventId: "6a605f96aca87f236e645edb"
+              timestamp: 1721550484000
+      responses:
+        "200":
+          description: Check-in thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le hoac ve khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Staff
+        "404":
+          description: Khong tim thay registration hoac ticket
+        "409":
+          description: Ve da check-in hoac trang thai xung dot
+        "500":
+          description: Loi he thong
 
   /checkin/manual:
     post:
+      summary: Check-in thu cong
+      description: "UC22. Role yeu cau: staff hoac admin."
       tags: [Check-in]
-      summary: Manually approve a check-in after searching for an attendee
-      description: Requires role `staff` or `admin`.
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [registrationId, eventId]
-              properties:
-                registrationId: { type: string }
-                eventId: { type: string }
-                timestamp: { type: integer }
+              $ref: "#/components/schemas/ManualCheckinBody"
+            example:
+              registrationId: "6a605f97aca87f236e645ef2"
+              eventId: "6a605f96aca87f236e645edb"
+              timestamp: 1721550484000
       responses:
         "200":
-          description: Checked in
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data: { $ref: "#/components/schemas/Ticket" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Duyet ve thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le hoac ve khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Staff
+        "404":
+          description: Khong tim thay registration hoac ticket
+        "409":
+          description: Ve da check-in hoac trang thai xung dot
+        "500":
+          description: Loi he thong
 
   /checkin/search:
     get:
+      summary: Tim attendee de check-in thu cong
+      description: "UC22. Role yeu cau: staff hoac admin. Tim theo ten/email trong su kien."
       tags: [Check-in]
-      summary: Search attendees within an event by name/email for manual check-in
-      description: Requires role `staff` or `admin`.
+      security:
+        - bearerAuth: []
       parameters:
-        - name: eventId
-          in: query
+        - in: query
+          name: eventId
           required: true
-          schema: { type: string }
-        - name: keyword
-          in: query
+          schema:
+            $ref: "#/components/schemas/ObjectId"
+          description: MongoDB ObjectId cua su kien
+        - in: query
+          name: keyword
           required: true
-          schema: { type: string, minLength: 1, maxLength: 100 }
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+          description: Ten hoac email attendee
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items: { $ref: "#/components/schemas/Ticket" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Tim attendee thanh cong
+        "400":
+          description: Query khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Staff
+        "500":
+          description: Loi he thong
 
-  # ───────────────────────────── NOTIFICATIONS ─────────────────────────────
-  /notifications:
-    post:
-      tags: [Notifications]
-      summary: Mass-notify all confirmed attendees of an event
-      description: Requires role `organizer` or `admin`. Queues an async job and writes a `NotificationLog` entry.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [eventId, subject, message]
-              properties:
-                eventId: { type: string }
-                subject: { type: string, minLength: 1, maxLength: 200 }
-                message: { type: string, minLength: 1, maxLength: 2000 }
-      responses:
-        "200":
-          description: Queued
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          queued: { type: boolean, example: true }
-                          totalQueued: { type: integer }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-    
-    get:
-      tags: [Notifications]
-      summary: Get notification sending history
-      description: Returns the notification history of the authenticated organizer.
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            _id:
-                              type: string
-                            eventId:
-                              type: string
-                            eventTitle:
-                              type: string
-                            subject:
-                              type: string
-                            message:
-                              type: string
-                            totalRecipients:
-                              type: integer
-                            sentAt:
-                              type: string
-                              format: date-time
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-
-  # ───────────────────────────── ADMIN ─────────────────────────────
   /admin/dashboard:
     get:
+      summary: Xem dashboard he thong
+      description: "UC25. Role yeu cau: admin."
       tags: [Admin]
-      summary: System-wide overview dashboard
-      description: Requires role `admin`.
+      security:
+        - bearerAuth: []
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          users:
-                            type: object
-                            properties:
-                              total: { type: integer }
-                              attendee: { type: integer }
-                              organizer: { type: integer }
-                              staff: { type: integer }
-                              admin: { type: integer }
-                          events:
-                            type: object
-                            properties:
-                              total: { type: integer }
-                              draft: { type: integer }
-                              pending: { type: integer }
-                              approved: { type: integer }
-                              ongoing: { type: integer }
-                              ended: { type: integer }
-                              cancelled: { type: integer }
-                          tickets:
-                            type: object
-                            properties:
-                              totalPaid: { type: integer }
-                          checkins:
-                            type: object
-                            properties:
-                              total: { type: integer }
-                          recentPendingEvents:
-                            type: array
-                            items: { $ref: "#/components/schemas/Event" }
-                          recentUsers:
-                            type: array
-                            items: { $ref: "#/components/schemas/UserSummary" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Lay dashboard he thong thanh cong
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Admin
+        "500":
+          description: Loi he thong
 
   /admin/events/pending:
     get:
+      summary: Lay danh sach su kien cho duyet
+      description: "UC23. Role yeu cau: admin."
       tags: [Admin]
-      summary: List events awaiting approval
-      description: Requires role `admin`.
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/Page"
-        - name: limit
-          in: query
-          schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
-        - name: keyword
-          in: query
-          schema: { type: string }
+        - $ref: "#/components/parameters/Limit"
+        - in: query
+          name: keyword
+          schema:
+            type: string
+          description: Tim theo tieu de hoac thong tin lien quan
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          events:
-                            type: array
-                            items: { $ref: "#/components/schemas/EventWithOrganizer" }
-                          currentPage: { type: integer }
-                          totalPages: { type: integer }
-                          totalItems: { type: integer }
-                          keyword: { type: string }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Lay danh sach su kien cho duyet thanh cong
+        "400":
+          description: Query khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Admin
+        "500":
+          description: Loi he thong
 
   /admin/events/{eventId}:
     get:
+      summary: Lay chi tiet su kien de duyet
+      description: "UC23. Role yeu cau: admin."
       tags: [Admin]
-      summary: Get full event review detail, including ticket types
-      description: Requires role `admin`.
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/EventIdInPath"
+        - $ref: "#/components/parameters/EventIdPath"
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          event: { $ref: "#/components/schemas/EventWithOrganizer" }
-                          ticketTypes:
-                            type: array
-                            items: { $ref: "#/components/schemas/TicketType" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
+          description: Lay chi tiet su kien thanh cong
+        "400":
+          description: Path parameter khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Admin
+        "404":
+          description: Khong tim thay su kien
+        "500":
+          description: Loi he thong
 
   /admin/events/{eventId}/approve:
     patch:
+      summary: Duyet su kien
+      description: "UC23. Role yeu cau: admin. Duyet event dang PENDING va gui email organizer."
       tags: [Admin]
-      summary: Approve a pending event
-      description: Requires role `admin`. Emails the organizer.
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/EventIdInPath"
+        - $ref: "#/components/parameters/EventIdPath"
       responses:
         "200":
-          description: Approved
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          event: { $ref: "#/components/schemas/EventWithOrganizer" }
-                          emailSent: { type: boolean }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
+          description: Duyet su kien thanh cong
+        "400":
+          description: Trang thai su kien khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Admin
+        "404":
+          description: Khong tim thay su kien
+        "409":
+          description: Trang thai duyet bi xung dot
+        "500":
+          description: Loi he thong
 
   /admin/events/{eventId}/reject:
     patch:
+      summary: Tu choi su kien
+      description: "UC23. Role yeu cau: admin. Tu choi event dang PENDING va gui email organizer."
       tags: [Admin]
-      summary: Reject a pending event with a reason
-      description: Requires role `admin`. Emails the organizer.
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/EventIdInPath"
+        - $ref: "#/components/parameters/EventIdPath"
       requestBody:
         required: true
         content:
@@ -1273,110 +1269,106 @@ paths:
               type: object
               required: [rejectionReason]
               properties:
-                rejectionReason: { type: string, minLength: 10, maxLength: 500 }
+                rejectionReason:
+                  type: string
+                  minLength: 10
+                  maxLength: 500
+            example:
+              rejectionReason: "An ninh chua duoc dam bao"
       responses:
         "200":
-          description: Rejected
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          event: { $ref: "#/components/schemas/EventWithOrganizer" }
-                          emailSent: { type: boolean }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
+          description: Tu choi su kien thanh cong
+        "400":
+          description: Du lieu dau vao hoac trang thai su kien khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Admin
+        "404":
+          description: Khong tim thay su kien
+        "409":
+          description: Trang thai duyet bi xung dot
+        "500":
+          description: Loi he thong
 
   /admin/accounts:
     get:
+      summary: Lay danh sach tai khoan
+      description: "UC24. Role yeu cau: admin. Ho tro tim kiem, loc va phan trang."
       tags: [Admin]
-      summary: List/search/filter user accounts
-      description: Requires role `admin`.
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: "#/components/parameters/Page"
-        - name: limit
-          in: query
-          schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
-        - name: keyword
-          in: query
-          schema: { type: string }
-        - name: role
-          in: query
-          schema: { type: string, enum: [attendee, organizer, staff, admin] }
-        - name: status
-          in: query
-          schema: { type: string, enum: [active, locked] }
-        - name: sort
-          in: query
-          schema: { type: string, enum: [newest, oldest, name_asc, name_desc], default: newest }
+        - $ref: "#/components/parameters/Limit"
+        - in: query
+          name: keyword
+          schema:
+            type: string
+          description: Tim theo ten hoac email
+        - in: query
+          name: role
+          schema:
+            type: string
+            enum: [attendee, organizer, staff, admin]
+          description: Loc theo role
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, locked]
+          description: Loc theo trang thai tai khoan
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [newest, oldest, name_asc, name_desc]
+            default: newest
+          description: Sap xep danh sach
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          users:
-                            type: array
-                            items: { $ref: "#/components/schemas/UserProfile" }
-                          currentPage: { type: integer }
-                          totalPages: { type: integer }
-                          totalItems: { type: integer }
-                          filters:
-                            type: object
-                            properties:
-                              keyword: { type: string }
-                              role: { type: string }
-                              status: { type: string }
-                              sort: { type: string }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Lay danh sach tai khoan thanh cong
+        "400":
+          description: Query khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Admin
+        "500":
+          description: Loi he thong
 
   /admin/accounts/{userId}:
     get:
+      summary: Lay chi tiet tai khoan
+      description: "UC24. Role yeu cau: admin."
       tags: [Admin]
-      summary: Get account detail
-      description: Requires role `admin`.
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/UserIdInPath"
+        - $ref: "#/components/parameters/UserIdPath"
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          account: { $ref: "#/components/schemas/UserProfile" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
+          description: Lay thong tin tai khoan thanh cong
+        "400":
+          description: Path parameter khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Admin
+        "404":
+          description: Khong tim thay tai khoan
+        "500":
+          description: Loi he thong
 
   /admin/accounts/{userId}/lock:
     post:
+      summary: Khoa tai khoan
+      description: "UC24. Role yeu cau: admin. Ly do khoa toi thieu 10 ky tu."
       tags: [Admin]
-      summary: Lock a user account
-      description: Requires role `admin`. Emails the affected user.
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/UserIdInPath"
+        - $ref: "#/components/parameters/UserIdPath"
       requestBody:
         required: true
         content:
@@ -1385,102 +1377,98 @@ paths:
               type: object
               required: [reason]
               properties:
-                reason: { type: string, minLength: 10, maxLength: 500 }
+                reason:
+                  type: string
+                  minLength: 10
+                  maxLength: 500
+            example:
+              reason: "Vi pham chinh sach cong dong"
       responses:
         "200":
-          description: Locked
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          user: { $ref: "#/components/schemas/UserProfile" }
-                          emailSent: { type: boolean }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
+          description: Khoa tai khoan thanh cong
+        "400":
+          description: Du lieu dau vao khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Admin
+        "404":
+          description: Khong tim thay tai khoan
+        "500":
+          description: Loi he thong
 
   /admin/accounts/{userId}/unlock:
     post:
+      summary: Mo khoa tai khoan
+      description: "UC24. Role yeu cau: admin."
       tags: [Admin]
-      summary: Unlock a user account
-      description: Requires role `admin`. Emails the affected user.
+      security:
+        - bearerAuth: []
       parameters:
-        - $ref: "#/components/parameters/UserIdInPath"
+        - $ref: "#/components/parameters/UserIdPath"
       responses:
         "200":
-          description: Unlocked
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          user: { $ref: "#/components/schemas/UserProfile" }
-                          emailSent: { type: boolean }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
+          description: Mo khoa tai khoan thanh cong
+        "400":
+          description: Path parameter khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Admin
+        "404":
+          description: Khong tim thay tai khoan
+        "500":
+          description: Loi he thong
 
   /admin/reports/revenue:
     get:
+      summary: Xem bao cao doanh thu toan he thong
+      description: "UC26. Role yeu cau: admin."
       tags: [Admin]
-      summary: Platform-wide revenue report, grouped by day/week/month/organizer/category
-      description: Requires role `admin`.
+      security:
+        - bearerAuth: []
       parameters:
-        - name: startDate
-          in: query
-          schema: { type: string, format: date }
-        - name: endDate
-          in: query
-          schema: { type: string, format: date, description: "Must be >= startDate" }
-        - name: organizerId
-          in: query
-          schema: { type: string }
-        - name: category
-          in: query
-          schema: { type: string, enum: [music, tech, sport, education] }
-        - name: groupBy
-          in: query
-          schema: { type: string, enum: [day, week, month, organizer, category], default: day }
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+          description: Ngay bat dau ky bao cao
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+          description: Ngay ket thuc, phai >= startDate
+        - in: query
+          name: organizerId
+          schema:
+            $ref: "#/components/schemas/ObjectId"
+          description: Loc theo organizer
+        - in: query
+          name: category
+          schema:
+            type: string
+            enum: [music, tech, sport, education]
+          description: Loc theo danh muc su kien
+        - in: query
+          name: groupBy
+          schema:
+            type: string
+            enum: [day, week, month, organizer, category]
+            default: day
+          description: Cach gom nhom du lieu
       responses:
         "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: "#/components/schemas/ApiResponse"
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          groupBy: { type: string }
-                          filters: { type: object }
-                          totalPeriodRevenue: { type: number }
-                          totalPeriodTickets: { type: integer }
-                          chartData:
-                            type: array
-                            items:
-                              type: object
-                              description: "Grouping key field (e.g. date/organizer/category) plus totals"
-                              properties:
-                                totalRevenue: { type: number }
-                                totalTicketSold: { type: integer }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
+          description: Lay bao cao doanh thu thanh cong
+        "400":
+          description: Query khong hop le
+        "401":
+          description: Chua dang nhap
+        "403":
+          description: Khong co quyen Admin
+        "500":
+          description: Loi he thong
 
 components:
   securitySchemes:
@@ -1488,35 +1476,47 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Pass the `accessToken` returned by `/auth/login` as `Authorization: Bearer <token>`.
+      description: Nhap accessToken tu API login. Swagger UI se tu them prefix Bearer.
 
   parameters:
     Page:
+      in: query
       name: page
-      in: query
-      schema: { type: integer, minimum: 1, default: 1 }
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Trang hien tai
     Limit:
-      name: limit
       in: query
-      schema: { type: integer, default: 10 }
-    EventId:
+      name: limit
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+      description: So ban ghi moi trang
+    IdPath:
+      in: path
       name: id
-      in: path
       required: true
-      schema: { type: string }
-      description: Event Mongo ObjectId
-    EventIdInPath:
+      schema:
+        $ref: "#/components/schemas/ObjectId"
+      description: MongoDB ObjectId theo router `:id`
+    EventIdPath:
+      in: path
       name: eventId
-      in: path
       required: true
-      schema: { type: string }
-      description: Event Mongo ObjectId
-    UserIdInPath:
+      schema:
+        $ref: "#/components/schemas/ObjectId"
+      description: MongoDB ObjectId cua su kien
+    UserIdPath:
+      in: path
       name: userId
-      in: path
       required: true
-      schema: { type: string }
-      description: User Mongo ObjectId
+      schema:
+        $ref: "#/components/schemas/ObjectId"
+      description: MongoDB ObjectId cua tai khoan
 
   requestBodies:
     RegisterAttendance:
@@ -1527,198 +1527,300 @@ components:
             type: object
             required: [eventId, ticketTypeId]
             properties:
-              eventId: { type: string, description: "24-char hex Mongo ObjectId" }
-              ticketTypeId: { type: string, description: "24-char hex Mongo ObjectId" }
-
-  responses:
-    OkNoData:
-      description: OK
-      content:
-        application/json:
-          schema:
-            allOf:
-              - $ref: "#/components/schemas/ApiResponse"
-              - type: object
-                properties:
-                  data: { nullable: true, example: null }
-    BadRequest:
-      description: Validation error
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/ApiError" }
-    Unauthorized:
-      description: Missing/invalid/expired access token
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/ApiError" }
-    Forbidden:
-      description: Authenticated but role not permitted
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/ApiError" }
-    NotFound:
-      description: Resource not found
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/ApiError" }
-    RegistrationResult:
-      description: Registration created
-      content:
-        application/json:
-          schema:
-            allOf:
-              - $ref: "#/components/schemas/ApiResponse"
-              - type: object
-                properties:
-                  data:
-                    type: object
-                    properties:
-                      registration:
-                        type: object
-                        properties:
-                          _id: { type: string }
-                          userId: { type: string }
-                          eventId: { type: string }
-                          ticketTypeId: { type: string }
-                          status:
-                            type: string
-                            enum: [pending_payment, confirmed, payment_failed, cancelled]
-                          paymentStatus:
-                            type: string
-                            enum: [unpaid, paid, free, pending]
-                      ticket:
-                        nullable: true
-                        allOf:
-                          - $ref: "#/components/schemas/Ticket"
-                      payment:
-                        type: object
-                        nullable: true
-                        properties:
-                          amount: { type: number }
-                          currency: { type: string }
-                      nextStep:
-                        type: string
-                        enum: [payment_required, ticket_issued]
+              eventId:
+                $ref: "#/components/schemas/ObjectId"
+              ticketTypeId:
+                $ref: "#/components/schemas/ObjectId"
+          example:
+            eventId: "6a605f96aca87f236e645edc"
+            ticketTypeId: "6a605f96aca87f236e645ee7"
 
   schemas:
+    ObjectId:
+      type: string
+      pattern: "^[a-fA-F0-9]{24}$"
+      example: "6a605f96aca87f236e645edc"
+
     ApiResponse:
       type: object
       properties:
-        success: { type: boolean, example: true }
-        message: { type: string, example: "OK" }
-        data: {}
-
-    ApiError:
-      type: object
-      properties:
-        success: { type: boolean, example: false }
-        data: { nullable: true, example: null }
-        message: { type: string }
-        error: { type: string }
-
-    UserSummary:
-      type: object
-      properties:
-        id: { type: string }
-        name: { type: string }
-        email: { type: string, format: email }
-        role: { type: string, enum: [attendee, organizer, staff, admin] }
-
-    UserProfile:
-      allOf:
-        - $ref: "#/components/schemas/UserSummary"
-        - type: object
-          properties:
-            phone: { type: string, nullable: true }
-            avatar: { type: string, nullable: true }
-            isActive: { type: boolean }
-            emailVerified: { type: boolean }
-            createdAt: { type: string, format: date-time }
-            updatedAt: { type: string, format: date-time }
-
-    Event:
-      type: object
-      properties:
-        _id: { type: string }
-        title: { type: string }
-        description: { type: string }
-        category: { type: string, enum: [music, tech, sport, education] }
-        location: { type: string }
-        startDate: { type: string, format: date-time }
-        endDate: { type: string, format: date-time }
-        status:
+        success:
+          type: boolean
+        message:
           type: string
-          enum: [DRAFT, PENDING, APPROVED, ONGOING, ENDED, CANCELLED]
-        bannerUrl: { type: string, nullable: true }
-        organizerId: { type: string }
-        avgRating: { type: number }
-        attendeeCount: { type: integer }
-        rejectionReason: { type: string, nullable: true }
-        createdAt: { type: string, format: date-time }
-        updatedAt: { type: string, format: date-time }
+        data:
+          nullable: true
+        error:
+          nullable: true
 
-    EventWithOrganizer:
-      allOf:
-        - $ref: "#/components/schemas/Event"
-        - type: object
-          properties:
-            organizerId:
-              type: object
-              description: Populated organizer summary (name, email) when returned from admin endpoints
-              properties:
-                _id: { type: string }
-                name: { type: string }
-                email: { type: string }
+    RegisterBody:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 50
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+          maxLength: 30
+          format: password
+        role:
+          type: string
+          enum: [attendee, organizer, staff, admin]
+          default: attendee
+        phone:
+          type: string
+          nullable: true
+
+    LoginBody:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    UpdateProfileBody:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 50
+        phone:
+          type: string
+          pattern: "^0[0-9]{9}$"
+          nullable: true
+        avatar:
+          type: string
+          format: uri
+          nullable: true
+
+    ChangePasswordBody:
+      type: object
+      required: [currentPassword, newPassword, confirmPassword]
+      properties:
+        currentPassword:
+          type: string
+          format: password
+        newPassword:
+          type: string
+          minLength: 6
+          maxLength: 30
+          format: password
+        confirmPassword:
+          type: string
+          format: password
 
     CreateEventBody:
       type: object
       required: [title, description, category, location, startDate, endDate]
       properties:
-        title: { type: string, minLength: 3, maxLength: 100 }
-        description: { type: string, minLength: 10 }
-        category: { type: string, enum: [music, tech, sport, education] }
-        location: { type: string }
-        startDate: { type: string, format: date-time, description: "Must be >= now + 24h" }
-        endDate: { type: string, format: date-time, description: "Must be after startDate" }
-        banner: { type: string, format: binary, description: "Event banner image file (multipart uploads only)" }
-        bannerUrl: { type: string, maxLength: 2048, nullable: true, description: "Used instead of `banner` for JSON requests" }
-        actionType: { type: string, enum: [draft, submit], default: draft }
+        title:
+          type: string
+          minLength: 3
+          maxLength: 100
+        description:
+          type: string
+          minLength: 10
+        category:
+          type: string
+          enum: [music, tech, sport, education]
+        location:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        bannerUrl:
+          type: string
+          maxLength: 2048
+          nullable: true
+        actionType:
+          type: string
+          enum: [draft, submit]
+          default: draft
+
+    CreateEventMultipartBody:
+      type: object
+      required: [title, description, category, location, startDate, endDate]
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 100
+        description:
+          type: string
+          minLength: 10
+        category:
+          type: string
+          enum: [music, tech, sport, education]
+        location:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        actionType:
+          type: string
+          enum: [draft, submit]
+          default: draft
+        banner:
+          type: string
+          format: binary
 
     UpdateEventBody:
       type: object
       minProperties: 1
       properties:
-        title: { type: string }
-        description: { type: string }
-        category: { type: string, enum: [music, tech, sport, education] }
-        location: { type: string }
-        startDate: { type: string, format: date-time }
-        endDate: { type: string, format: date-time }
-        banner: { type: string, format: binary, description: "Event banner image file (multipart uploads only)" }
-        bannerUrl: { type: string, nullable: true }
-
-    TicketType:
-      type: object
-      properties:
-        _id: { type: string }
-        eventId: { type: string }
-        name: { type: string }
-        price: { type: number }
-        quota: { type: integer }
-        sold: { type: integer }
-        description: { type: string, nullable: true }
-
-    Ticket:
-      type: object
-      properties:
-        _id: { type: string }
-        registrationId: { type: string }
-        attendeeId: { type: string }
-        eventId: { type: string }
-        ticketTypeId: { type: string }
-        qrCode: { type: string }
-        status:
+        title:
           type: string
-          enum: [ISSUED, CHECKED_IN, EXPIRED, CANCELLED]
-        issuedAt: { type: string, format: date-time }
-        expiredAt: { type: string, format: date-time, nullable: true }
+          minLength: 3
+          maxLength: 100
+        description:
+          type: string
+          minLength: 10
+        category:
+          type: string
+          enum: [music, tech, sport, education]
+        location:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        bannerUrl:
+          type: string
+          maxLength: 2048
+          nullable: true
+
+    UpdateEventMultipartBody:
+      type: object
+      minProperties: 1
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 100
+        description:
+          type: string
+          minLength: 10
+        category:
+          type: string
+          enum: [music, tech, sport, education]
+        location:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        banner:
+          type: string
+          format: binary
+
+    TicketTypeBody:
+      type: object
+      required: [name, price, quota]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 50
+        price:
+          type: number
+          minimum: 0
+        quota:
+          type: integer
+          minimum: 1
+        description:
+          type: string
+          nullable: true
+
+    UpdateTicketTypeBody:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 50
+        price:
+          type: number
+          minimum: 0
+        quota:
+          type: integer
+          minimum: 1
+        description:
+          type: string
+          nullable: true
+
+    ReviewBody:
+      type: object
+      required: [eventId, rating]
+      properties:
+        eventId:
+          $ref: "#/components/schemas/ObjectId"
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+          maxLength: 500
+          nullable: true
+
+    NotificationBody:
+      type: object
+      required: [eventId, subject, message]
+      properties:
+        eventId:
+          $ref: "#/components/schemas/ObjectId"
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 200
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+
+    QrCheckinBody:
+      type: object
+      required: [registrationId, eventId, timestamp]
+      properties:
+        registrationId:
+          $ref: "#/components/schemas/ObjectId"
+        eventId:
+          $ref: "#/components/schemas/ObjectId"
+        timestamp:
+          type: integer
+          minimum: 1
+
+    ManualCheckinBody:
+      type: object
+      required: [registrationId, eventId]
+      properties:
+        registrationId:
+          $ref: "#/components/schemas/ObjectId"
+        eventId:
+          $ref: "#/components/schemas/ObjectId"
+        timestamp:
+          type: integer
+          minimum: 1
