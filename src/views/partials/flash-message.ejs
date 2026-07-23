@@ -1,25 +1,25 @@
-<%# 
+<%#
   Data truyền vào (thường lưu ở res.locals thông qua middleware):
   - messages: { success: [], error: [] }
 %>
 <div class="container mt-3">
   <% if (typeof messages !== 'undefined' && messages.success && messages.success.length > 0) { %>
-  <% messages.success.forEach(msg => { %>
-  <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm d-flex align-items-center" role="alert">
-    <i class="bi bi-check-circle-fill me-2 fs-5"></i>
-    <div><%= msg %></div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  </div>
-  <% }) %>
+    <% messages.success.forEach(msg => { %>
+      <div class="alert flash-ticket alert-dismissible fade show mb-2" role="alert">
+        <span class="flash-ticket__icon"><i class="bi bi-check-lg"></i></span>
+        <div class="flash-ticket__msg"><%= msg %></div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <% }) %>
   <% } %>
 
   <% if (typeof messages !== 'undefined' && messages.error && messages.error.length > 0) { %>
-  <% messages.error.forEach(msg => { %>
-  <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm d-flex align-items-center" role="alert">
-    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-    <div><%= msg %></div>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  </div>
-  <% }) %>
+    <% messages.error.forEach(msg => { %>
+      <div class="alert flash-ticket is-danger alert-dismissible fade show mb-2" role="alert">
+        <span class="flash-ticket__icon"><i class="bi bi-exclamation-lg"></i></span>
+        <div class="flash-ticket__msg"><%= msg %></div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <% }) %>
   <% } %>
 </div>

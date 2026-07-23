@@ -10,14 +10,19 @@ import {
 import { PaymentRepository } from "./repositories/payment.repository";
 import { RegistrationRepository } from "../tickets/repositories/registration.repository";
 import { TicketRepository } from "../tickets/repositories/ticket.repository";
-import { TicketsService } from "../tickets/tickets.service";
+import {
+    EVENT_REGISTRATION_CLOSED_MESSAGE,
+    TicketsService,
+} from "../tickets/tickets.service";
 import { TicketTypeRepository } from "../events/repositories/ticketType.repository";
+import { EventRepository } from "../events/repositories/event.repository";
 
 export class PaymentService {
     private paymentRepository: PaymentRepository;
     private registrationRepository: RegistrationRepository;
     private ticketRepository: TicketRepository;
     private ticketTypeRepository: TicketTypeRepository;
+    private eventRepository: EventRepository;
     private ticketsService: TicketsService;
 
     constructor() {
@@ -25,6 +30,7 @@ export class PaymentService {
         this.registrationRepository = new RegistrationRepository();
         this.ticketRepository = new TicketRepository();
         this.ticketTypeRepository = new TicketTypeRepository();
+        this.eventRepository = new EventRepository();
         this.ticketsService = new TicketsService();
     }
 
@@ -72,6 +78,18 @@ export class PaymentService {
             throw new AppError("Đăng ký này đã được thanh toán.", 409);
         }
 
+        const event = await this.eventRepository.findById(registration.eventId.toString());
+        if (!event) {
+            throw new AppError("Không tìm thấy thông tin sự kiện.", 404);
+        }
+        if (event.status === "CANCELLED") {
+            throw new AppError("Sự kiện đã bị hủy. Bạn không thể đăng ký hoặc mua vé.", 400);
+        }
+        if (event.status !== "APPROVED") {
+            throw new AppError("Sự kiện hiện không cho phép đăng ký tham dự.", 400);
+        }
+        this.assertEventCanAcceptRegistration(event);
+
         const ticketType = await this.ticketTypeRepository.findByEventAndTicketType(
             registration.eventId.toString(),
             registration.ticketTypeId.toString(),
@@ -87,7 +105,7 @@ export class PaymentService {
 
         const date = new Date();
         const createDate = moment(date).format("YYYYMMDDHHmmss");
-        const orderCode = `${Date.now()}`;
+        const orderCode = new Types.ObjectId().toString();
         const locale = language && language !== "" ? language : "vn";
 
         const vnpParams: Record<string, string | number> = {
@@ -97,7 +115,7 @@ export class PaymentService {
             vnp_Locale: locale,
             vnp_CurrCode: "VND",
             vnp_TxnRef: orderCode,
-            vnp_OrderInfo: `Thanh toan cho ma GD:${orderCode}`,
+            vnp_OrderInfo: `Thanh toán cho mã giao dịch: ${orderCode}`,
             vnp_OrderType: "other",
             vnp_Amount: Number(ticketType.price) * 100,
             vnp_ReturnUrl: appConfig.vnpay.returnUrl,
@@ -141,6 +159,13 @@ export class PaymentService {
         };
     }
 
+    private assertEventCanAcceptRegistration(event: { startDate: Date }) {
+        const eventStartAt = new Date(event.startDate);
+        if (Number.isNaN(eventStartAt.getTime()) || new Date() >= eventStartAt) {
+            throw new AppError(EVENT_REGISTRATION_CLOSED_MESSAGE, 400);
+        }
+    }
+
     async handleVNPayReturn(query: Record<string, string>) {
         const isValid = verifyVNPaySecureHash(query, appConfig.vnpay.hashSecret);
 
@@ -169,12 +194,25 @@ export class PaymentService {
         const actualAmount = Number(query.vnp_Amount);
         const expectedAmount = Number(payment?.amount ?? 0) * 100;
         const amountValid = payment ? actualAmount === expectedAmount : false;
+        const alreadyPaid = payment?.status === "paid";
+        const effectivePaid = (isPaid || alreadyPaid) && amountValid;
         const issuedTicket =
-            isPaid && payment && amountValid
-                ? await this.confirmSuccessfulPayment(query, payment)
+            effectivePaid && payment
+                ? alreadyPaid
+                    ? ticket
+                    : await this.confirmSuccessfulPayment(query, payment)
                 : ticket;
 
-        if (isPaid && !amountValid) {
+        if (isPaid && !amountValid && !alreadyPaid) {
+            if (payment) {
+                await this.paymentRepository.markFailed(query.vnp_TxnRef, query);
+                await this.registrationRepository.updateRegistrationStatus(
+                    payment.registrationId.toString(),
+                    "payment_failed",
+                    "unpaid",
+                    query.vnp_TxnRef,
+                );
+            }
             return {
                 success: false,
                 checksumValid: true,
@@ -185,8 +223,18 @@ export class PaymentService {
             };
         }
 
+        if (payment && !effectivePaid) {
+            await this.paymentRepository.markFailed(query.vnp_TxnRef, query);
+            await this.registrationRepository.updateRegistrationStatus(
+                payment.registrationId.toString(),
+                "payment_failed",
+                "unpaid",
+                query.vnp_TxnRef,
+            );
+        }
+
         return {
-            success: isPaid,
+            success: effectivePaid,
             checksumValid: true,
             orderCode: query.vnp_TxnRef,
             transactionNo: query.vnp_TransactionNo,
@@ -196,7 +244,7 @@ export class PaymentService {
             eventId: payment?.eventId?.toString(),
             ticketId: issuedTicket?._id?.toString(),
             qrCode: issuedTicket?.qrCode,
-            message: isPaid ? "Payment success" : "Payment failed",
+            message: effectivePaid ? "Payment success" : "Payment failed",
         };
     }
 
@@ -222,7 +270,7 @@ export class PaymentService {
             await this.paymentRepository.markFailed(orderCode, query);
             await this.registrationRepository.updateRegistrationStatus(
                 payment.registrationId.toString(),
-                "cancelled",
+                "payment_failed",
                 "unpaid",
                 orderCode,
             );
@@ -237,7 +285,7 @@ export class PaymentService {
             await this.paymentRepository.markFailed(orderCode, query);
             await this.registrationRepository.updateRegistrationStatus(
                 payment.registrationId.toString(),
-                "cancelled",
+                "payment_failed",
                 "unpaid",
                 orderCode,
             );
@@ -252,7 +300,7 @@ export class PaymentService {
             await this.paymentRepository.markFailed(orderCode, query);
             await this.registrationRepository.updateRegistrationStatus(
                 payment.registrationId.toString(),
-                "cancelled",
+                "payment_failed",
                 "unpaid",
                 orderCode,
             );

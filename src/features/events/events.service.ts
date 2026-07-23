@@ -11,8 +11,9 @@ const registrationRepository = new RegistrationRepository();
 
 export class EventService {
   // UC01 - Danh sách event công khai
-  async getPublishedEvents(page: number, limit: number): Promise<IEvent[]> {
-    return eventRepository.findPublished(page, limit);
+  async getPublishedEvents(page: number, limit: number): Promise<any[]> {
+    const events = await eventRepository.findPublished(page, limit);
+    return this.withMinTicketPrices(events);
   }
 
   // UC02 - Chi tiết 1 event
@@ -32,23 +33,87 @@ export class EventService {
     return eventRepository.search(keyword.trim());
   }
 
-  // UC04 - Lọc theo category và/hoặc khoảng thời gian
-  async filterEvents(filters: {
-    category?: string;
-    startFrom?: Date;
-    startTo?: Date;
-  }): Promise<IEvent[]> {
-    const hasFilter = filters.category || filters.startFrom || filters.startTo;
+  // UC04 - Lọc theo category / khoảng thời gian / từ khóa, có phân trang
+  async filterEvents(
+    filters: {
+      keyword?: string;
+      category?: string;
+      startFrom?: Date;
+      startTo?: Date;
+    },
+    page = 1,
+    limit = 9,
+  ): Promise<{ events: any[]; total: number }> {
+    const hasFilter =
+      filters.category ||
+      filters.startFrom ||
+      filters.startTo ||
+      filters.keyword;
     if (!hasFilter) {
       throw new AppError("At least one filter is required", 400);
     }
-    return eventRepository.findWithFilters(filters);
+
+    // Ngày kết thúc chỉ có phần ngày (00:00:00) → đẩy về cuối ngày để
+    // bao trọn cả ngày đó (kể cả khi startFrom === startTo).
+    let startTo = filters.startTo;
+    if (startTo) {
+      startTo = new Date(startTo);
+      startTo.setUTCHours(23, 59, 59, 999);
+    }
+
+    const normalizedFilters = {
+      keyword: filters.keyword?.trim() || undefined,
+      category: filters.category,
+      startFrom: filters.startFrom,
+      startTo,
+    };
+
+    const [events, total] = await Promise.all([
+      eventRepository.findWithFilters(normalizedFilters, page, limit),
+      eventRepository.countWithFilters(normalizedFilters),
+    ]);
+
+    return { events: await this.withMinTicketPrices(events), total };
+  }
+
+  private async withMinTicketPrices(events: IEvent[]): Promise<any[]> {
+    const eventIds = events.map((event: any) => event._id.toString());
+    const minPriceMap =
+      await eventRepository.findMinTicketPricesByEventIds(eventIds);
+
+    return events.map((event: any) => {
+      const plainEvent = event.toObject ? event.toObject() : event;
+      const minPrice = minPriceMap.get(event._id.toString());
+      return {
+        ...plainEvent,
+        price: minPrice ?? null,
+      };
+    });
   }
 
   async countPublishedEvents(
     filters: { category?: string } = {},
   ): Promise<number> {
     return eventRepository.countPublished(filters);
+  }
+
+  // Tự động chuyển trạng thái event theo thời gian — chạy định kỳ bởi scheduler
+  async autoUpdateEventStatuses(): Promise<{
+    started: string[];
+    ended: string[];
+    cancelled: string[];
+  }> {
+    const now = new Date();
+    const pendingCutoff = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+
+    // Chạy tuần tự để 1 event vừa APPROVED->ONGOING có thể tiếp tục
+    // được xét ONGOING->ENDED ngay trong cùng 1 lượt quét (nếu endDate cũng đã qua).
+    const started = await eventRepository.startApprovedEvents(now);
+    const ended = await eventRepository.endOngoingEvents(now);
+    const cancelled =
+      await eventRepository.cancelStalePendingEvents(pendingCutoff);
+
+    return { started, ended, cancelled };
   }
 
   // ───── UC13 — Organizer CRUD ─────
@@ -67,28 +132,32 @@ export class EventService {
     }));
   }
 
-  // Lấy danh sách events của organizer
+  // Lấy danh sách events của organizer, có lọc/tìm kiếm
   async getMyEvents(
     organizerId: string,
     page: number,
     limit: number,
+    filters: { keyword?: string; category?: string; status?: string } = {},
   ): Promise<{
-    events: (IEvent & { registrationsCount: number })[];
+    events: (IEvent & { registrationsCount: number; totalQuota: number })[];
     total: number;
   }> {
     const [events, total] = await Promise.all([
-      eventRepository.findByOrganizer(organizerId, page, limit),
-      eventRepository.countByOrganizer(organizerId),
+      eventRepository.findByOrganizer(organizerId, page, limit, filters),
+      eventRepository.countByOrganizer(organizerId, filters),
     ]);
 
-    // Đếm số đăng ký thực tế cho tất cả event trong 1 query aggregate
+    // Đếm số đăng ký + tổng quota vé thực tế cho tất cả event trong 2 query aggregate
     const eventIds = events.map((e: any) => e._id.toString());
-    const countMap =
-      await eventRepository.countRegistrationsByEventIds(eventIds);
+    const [countMap, quotaMap] = await Promise.all([
+      eventRepository.countRegistrationsByEventIds(eventIds),
+      eventRepository.sumQuotaByEventIds(eventIds),
+    ]);
 
     const eventsWithCount = events.map((e: any) => ({
       ...(e.toObject ? e.toObject() : e),
       registrationsCount: countMap.get(e._id.toString()) ?? 0,
+      totalQuota: quotaMap.get(e._id.toString()) ?? 0,
     }));
 
     return { events: eventsWithCount, total };
@@ -127,51 +196,95 @@ export class EventService {
     organizerId: string,
     dto: IUpdateEventDto,
   ): Promise<IEvent> {
-    const event = await eventRepository.findById(id);
-    if (!event) {
-      throw new AppError("Event không tồn tại", 404);
-    }
-    if (event.organizerId.toString() !== organizerId) {
-      throw new AppError("Bạn không có quyền chỉnh sửa event này", 403);
-    }
-    if (event.status === "APPROVED" || event.status === "ONGOING") {
-      throw new AppError(
-        "Không thể chỉnh sửa event đã được duyệt hoặc đang diễn ra",
-        403,
-      );
+    if (!Types.ObjectId.isValid(id)) {
+      throw new AppError("ID sự kiện không hợp lệ", 400);
     }
 
-    const updated = await eventRepository.updateById(id, {
+    const event = await eventRepository.findOwnedEventById(id, organizerId);
+    if (!event) {
+      throw new AppError(
+        "Event không tồn tại hoặc bạn không có quyền chỉnh sửa",
+        404,
+      );
+    }
+    if (event.status !== "DRAFT") {
+      throw new AppError("Chỉ có thể chỉnh sửa event ở trạng thái DRAFT", 403);
+    }
+
+    const updateData: Partial<IEvent> = {
       title: dto.title,
       description: dto.description,
       category: dto.category,
       location: dto.location,
       startDate: dto.startDate ? new Date(dto.startDate) : undefined,
       endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+      bannerUrl: dto.bannerUrl,
+    };
+    Object.keys(updateData).forEach((key) => {
+      if (updateData[key as keyof IEvent] === undefined) {
+        delete updateData[key as keyof IEvent];
+      }
     });
+
+    const updated = await eventRepository.updateOwnedEventById(
+      id,
+      organizerId,
+      updateData,
+    );
 
     return updated!;
   }
 
   // Gửi duyệt event — DRAFT → PENDING
   async submitEvent(id: string, organizerId: string): Promise<IEvent> {
-    const event = await eventRepository.findById(id);
-    console.log("submitEvent called:", {
-      id,
-      organizerId,
-      status: event?.status,
-      eventOrganizerId: event?.organizerId.toString(),
-    });
-    if (!event) {
-      throw new AppError("Event không tồn tại", 404);
+    if (!Types.ObjectId.isValid(id)) {
+      throw new AppError("ID sự kiện không hợp lệ", 400);
     }
-    if (event.organizerId.toString() !== organizerId) {
-      throw new AppError("Bạn không có quyền thực hiện thao tác này", 403);
+
+    const event = await eventRepository.findOwnedEventById(id, organizerId);
+    if (!event) {
+      throw new AppError(
+        "Event không tồn tại hoặc bạn không có quyền thực hiện thao tác này",
+        404,
+      );
     }
     if (event.status !== "DRAFT") {
       throw new AppError("Chỉ có thể gửi duyệt event ở trạng thái DRAFT", 400);
     }
-    const updated = await eventRepository.updateById(id, { status: "PENDING" });
+    const updated = await eventRepository.updateOwnedEventById(
+      id,
+      organizerId,
+      {
+        status: "PENDING",
+      },
+    );
+    return updated!;
+  }
+
+  // Hủy event đang chờ duyệt — PENDING → CANCELLED
+  async cancelEvent(id: string, organizerId: string): Promise<IEvent> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new AppError("ID sự kiện không hợp lệ", 400);
+    }
+
+    const event = await eventRepository.findOwnedEventById(id, organizerId);
+    if (!event) {
+      throw new AppError(
+        "Event không tồn tại hoặc bạn không có quyền hủy",
+        404,
+      );
+    }
+    if (event.status !== "PENDING") {
+      throw new AppError("Chỉ có thể hủy event ở trạng thái PENDING", 400);
+    }
+
+    const updated = await eventRepository.updateOwnedEventById(
+      id,
+      organizerId,
+      {
+        status: "DRAFT",
+      },
+    );
     return updated!;
   }
 
@@ -209,6 +322,12 @@ export class EventService {
       throw new AppError("Bạn không có quyền xem báo cáo sự kiện này", 403);
     }
 
+    if (event.status !== "ENDED") {
+      throw new AppError(
+        "Báo cáo tổng kết chỉ khả dụng khi sự kiện đã kết thúc",
+        400,
+      );
+    }
     // 2. Lấy dữ liệu song song (Promise.all = nhanh hơn gọi tuần tự)
     const [ticketTypes, regStats, totalCheckedIn, totalReviews, avgRating] =
       await Promise.all([

@@ -8,9 +8,20 @@ export class TicketRepository {
   async create(
     data: ITicket
   ) {
-    const ticket = new TicketModel(data);
-    const savedTicket = await ticket.save();
-    return savedTicket;
+    try {
+      const ticket = new TicketModel(data);
+      const savedTicket = await ticket.save();
+      return { ticket: savedTicket, created: true };
+    } catch (error: any) {
+      if (error?.code === 11000) {
+        const existingTicket = await this.findByRegistrationIdPlain(
+          data.registrationId.toString(),
+        );
+        if (existingTicket) return { ticket: existingTicket, created: false };
+      }
+
+      throw error;
+    }
   }
 
   async findByRegistrationIdPlain(registrationId: string) {
@@ -19,8 +30,11 @@ export class TicketRepository {
     });
   }
 
-  async findDetailById(ticketId: string) {
-    return TicketModel.findById(new Types.ObjectId(ticketId))
+  async findDetailById(ticketId: string, attendeeId: string) {
+    return TicketModel.findOne({
+      _id: new Types.ObjectId(ticketId),
+      attendeeId: new Types.ObjectId(attendeeId),
+    })
       .populate("eventId", "title startDate endDate startTime endTime location bannerUrl")
       .populate("ticketTypeId", "name price")
       .populate("registrationId", "userId status registeredAt")
@@ -36,6 +50,18 @@ export class TicketRepository {
       .lean();
   }
 
+  async findByRegistrationIds(registrationIds: string[]) {
+    if (registrationIds.length === 0) return [];
+
+    return TicketModel.find({
+      registrationId: {
+        $in: registrationIds.map((id) => new Types.ObjectId(id)),
+      },
+    })
+      .select("_id registrationId attendeeId eventId ticketTypeId qrCode status issuedAt expiredAt")
+      .lean();
+  }
+
   async findAttendanceByEventAndUser(
     eventId: string, userId: string
   ) {
@@ -44,7 +70,7 @@ export class TicketRepository {
     return TicketModel.findOne({
       eventId: eventObjectId,
       attendeeId: userObjectId,
-      status: { $in: ["ISSUED", "CHECKED_IN", "EXPIRED"] },
+      status: "CHECKED_IN",
     });
   }
 }

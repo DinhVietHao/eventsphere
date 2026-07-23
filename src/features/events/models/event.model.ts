@@ -11,6 +11,7 @@ export interface IEvent extends Document {
   bannerUrl      ?: string;
   organizerId     : Schema.Types.ObjectId;
   avgRating       : number;
+  reviewCount     : number;
   attendeeCount   : number;
   rejectionReason?: string;
   reviewedBy     ?: Schema.Types.ObjectId;
@@ -39,6 +40,7 @@ const eventSchema = new Schema<IEvent>(
     bannerUrl      : { type: String },
     organizerId    : { type: Schema.Types.ObjectId, ref: 'User', required: true },
     avgRating      : { type: Number, default: 0 },
+    reviewCount    : { type: Number, default: 0 },
     attendeeCount  : { type: Number, default: 0 },
     rejectionReason: { type: String, default: null },
     reviewedBy     : { type: Schema.Types.ObjectId, ref: 'User', default: null },

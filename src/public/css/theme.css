@@ -1,0 +1,491 @@
+/* =========================================================
+   EventSphere — "Admit One" design system
+   A platform that issues real tickets should look like one:
+   perforated edges, torn stubs, stamped categories, ticket
+   serials in monospace. Built once here, inherited everywhere.
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+
+:root{
+    --ink:            #12141c;
+    --ink-2:          #1c2030;
+    --paper:          #eef1ec;
+    --paper-raised:   #ffffff;
+    --indigo:         #4338ca;
+    --indigo-deep:    #322a9e;
+    --indigo-soft:    #e7e5fb;
+    --amber:          #f5a623;
+    --amber-soft:     #fdecc8;
+    --success:        #1e9e63;
+    --success-soft:   #dcf5e8;
+    --danger:         #d6455a;
+    --danger-soft:    #fbe4e7;
+    --amber-soft2:    rgba(245,166,35,.14);
+    --indigo-soft2:   rgba(67,56,202,.10);
+    --line:           #d7dbd2;
+    --ink-soft:       #565b68;
+    --ink-faint:      #8b90a0;
+
+    --font-display: 'Space Grotesk', 'Inter', sans-serif;
+    --font-body:    'Inter', sans-serif;
+    --font-mono:    'JetBrains Mono', monospace;
+
+    --radius-lg: 22px;
+    --radius-md: 16px;
+    --radius-sm: 10px;
+
+    --bs-primary: var(--indigo);
+    --bs-primary-rgb: 67,56,202;
+    --bs-body-font-family: var(--font-body);
+    --bs-body-color: var(--ink);
+    --bs-body-bg: var(--paper);
+    --bs-border-radius: var(--radius-sm);
+    --bs-border-radius-lg: var(--radius-md);
+    --bs-link-color: var(--indigo);
+    --bs-link-hover-color: var(--indigo-deep);
+}
+
+body{
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+}
+
+h1,h2,h3,h4,h5,h6{
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+    *{ animation: none !important; transition: none !important; }
+}
+
+/* Visible keyboard focus everywhere */
+a:focus-visible, button:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible, .page-link:focus-visible{
+    outline: 2px solid var(--indigo);
+    outline-offset: 2px;
+}
+
+/* -------------------------------------------------
+   Utility: perforation edges (the "tear here" motif)
+   The circle color must match whatever sits BEHIND
+   the element at that edge.
+------------------------------------------------- */
+.perforated-bottom{ position: relative; }
+.perforated-bottom::after{
+    content:"";
+    position:absolute; left:0; right:0; bottom:-7px; height:14px;
+    background-image: radial-gradient(circle at 7px 7px, var(--paper) 6px, transparent 7px);
+    background-size: 18px 14px;
+    background-repeat: repeat-x;
+    pointer-events: none;
+}
+.perforated-top{ position: relative; }
+.perforated-top::before{
+    content:"";
+    position:absolute; left:0; right:0; top:-7px; height:14px;
+    background-image: radial-gradient(circle at 7px 7px, var(--paper) 6px, transparent 7px);
+    background-size: 18px 14px;
+    background-repeat: repeat-x;
+    pointer-events: none;
+}
+
+/* =========================================================
+   NAVBAR
+   ========================================================= */
+.navbar-ticket{
+    background: var(--ink);
+    padding: .85rem 0;
+    min-height: 68px;
+}
+.navbar-ticket .navbar-brand{
+    display: flex; align-items: center; gap: .6rem;
+    font-family: var(--font-display); font-weight: 700; font-size: 1.15rem;
+    color: #fff !important;
+}
+.navbar-ticket .brand-mark{
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--amber); color: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+}
+.navbar-ticket .brand-word b{ color: var(--amber); font-weight: 700; }
+
+.navbar-ticket .nav-link{
+    color: rgba(255,255,255,.78) !important;
+    font-size: .85rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .06em;
+    padding: .5rem .9rem !important;
+    position: relative;
+}
+.navbar-ticket .nav-link::after{
+    content:""; position:absolute; left:.9rem; right:.9rem; bottom:.15rem; height:2px;
+    background: var(--amber); transform: scaleX(0); transform-origin: left;
+    transition: transform .2s ease;
+}
+.navbar-ticket .nav-link:hover{ color:#fff !important; }
+.navbar-ticket .nav-link:hover::after{ transform: scaleX(1); }
+
+.btn-ticket-ghost{
+    border: 1.5px solid rgba(255,255,255,.35);
+    color: #fff; border-radius: 999px; font-weight: 600; font-size: .85rem;
+    padding: .45rem 1.1rem; background: transparent;
+}
+.btn-ticket-ghost:hover{ border-color:#fff; color:#fff; background: rgba(255,255,255,.08); }
+
+.btn-ticket-solid{
+    background: var(--amber); color: var(--ink); border: none;
+    border-radius: 999px; font-weight: 700; font-size: .85rem;
+    padding: .5rem 1.2rem;
+}
+.btn-ticket-solid:hover{ background:#e6981a; color: var(--ink); }
+
+.navbar-ticket .avatar-chip{
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--amber); color: var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    font-weight: 700;
+}
+.navbar-ticket .dropdown-menu{
+    border: none; border-radius: var(--radius-md);
+    box-shadow: 0 24px 48px -20px rgba(18,20,28,.35);
+    padding: .5rem; margin-top: .75rem !important;
+}
+.navbar-ticket .dropdown-item{
+    border-radius: var(--radius-sm); padding: .55rem .75rem; font-size: .9rem; font-weight: 500;
+}
+.navbar-ticket .dropdown-item:hover{ background: var(--indigo-soft); color: var(--indigo-deep); }
+.navbar-ticket .dropdown-item.text-danger:hover{ background: #fbe4e7; }
+
+/* =========================================================
+   HERO — the page opens as one oversized ticket
+   ========================================================= */
+.ticket-hero{
+    background: var(--paper-raised);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 40px 70px -36px rgba(18,20,28,.28);
+    display: flex; overflow: hidden;
+}
+.ticket-hero__main{
+    flex: 1 1 auto; padding: 3rem 3rem 2.5rem;
+}
+.ticket-hero__eyebrow{
+    font-family: var(--font-mono); font-size: .72rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--indigo); font-weight: 600;
+    display:flex; align-items:center; gap:.5rem; margin-bottom: .9rem;
+}
+.ticket-hero__eyebrow::before{ content:""; width:8px; height:8px; border-radius:50%; background: var(--amber); }
+.ticket-hero__title{
+    font-size: clamp(1.7rem, 3vw, 2.5rem); font-weight: 700; line-height: 1.15;
+    color: var(--ink); max-width: 30ch; margin-bottom: 1.6rem;
+}
+
+.search-ticket{
+    display:flex; align-items:center; gap:.5rem;
+    background: var(--paper); border: 1.5px solid var(--line);
+    border-radius: 999px; padding: .4rem .4rem .4rem 1.2rem;
+}
+.search-ticket input{
+    border:none; background: transparent; flex:1; font-size: .95rem;
+    font-family: var(--font-body); color: var(--ink);
+}
+.search-ticket input:focus{ outline:none; box-shadow:none; }
+.search-ticket button{
+    background: var(--indigo); color:#fff; border:none; border-radius: 999px;
+    padding: .6rem 1.4rem; font-weight: 600; font-size: .9rem; white-space: nowrap;
+}
+.search-ticket button:hover{ background: var(--indigo-deep); }
+
+.chip-row{ display:flex; flex-wrap:wrap; gap:.5rem; margin-top: 1.25rem; }
+.chip-ticket{
+    font-family: var(--font-mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
+    padding: .4rem .85rem; border-radius: 999px; border: 1.5px solid var(--line);
+    color: var(--ink-soft); background: var(--paper-raised); font-weight: 600;
+    text-decoration: none; display:inline-block;
+}
+.chip-ticket.is-active, .chip-ticket:hover{
+    border-color: var(--indigo); color: var(--indigo); background: var(--indigo-soft);
+}
+
+/* the torn-off stub on the right of the hero */
+.ticket-hero__stub{
+    flex: 0 0 210px;
+    background: var(--ink);
+    color: #fff;
+    display:flex; flex-direction:column; align-items:center; justify-content: space-between;
+    padding: 1.75rem 1rem;
+    position: relative;
+    border-left: 2px dashed rgba(255,255,255,.22);
+}
+.ticket-hero__stub .stub-eyebrow{
+    font-family: var(--font-mono); font-size: .65rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--amber); text-align:center;
+}
+.ticket-hero__stub .stub-icon{ font-size: 2.3rem; color: rgba(255,255,255,.9); }
+.ticket-hero__stub .stub-serial{
+    font-family: var(--font-mono); font-size: .68rem; color: rgba(255,255,255,.55);
+    writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: .1em;
+}
+@media (max-width: 767.98px){
+    .ticket-hero{ flex-direction: column; }
+    .ticket-hero__stub{
+        flex-direction: row; flex: none; border-left:none;
+        border-top: 2px dashed rgba(255,255,255,.22);
+    }
+    .ticket-hero__stub .stub-serial{ writing-mode: horizontal-tb; }
+    .ticket-hero__main{ padding: 2rem 1.5rem; }
+}
+
+/* =========================================================
+   SECTION HEADER — headline + tear-line filler
+   ========================================================= */
+.section-head{ display:flex; align-items:baseline; gap:1rem; margin-bottom: 1.75rem; }
+.section-head h2{ font-weight: 700; font-size: 1.4rem; color: var(--ink); white-space: nowrap; margin:0; }
+.section-head .tear-line{
+    flex:1; height:0; border-top: 2px dashed var(--line); transform: translateY(-4px);
+}
+.section-head .eyebrow{
+    font-family: var(--font-mono); font-size: .72rem; letter-spacing:.1em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight:600;
+}
+
+/* =========================================================
+   TICKET CARD — the event card, styled as an actual stub
+   ========================================================= */
+.ticket-card{
+    background: var(--paper-raised);
+    border-radius: var(--radius-md);
+    overflow: visible;
+    position: relative;
+    box-shadow: 0 20px 40px -28px rgba(18,20,28,.4);
+    transition: transform .22s ease, box-shadow .22s ease;
+    height: 100%;
+    display: flex; flex-direction: column;
+}
+.ticket-card:hover{
+    transform: translateY(-5px);
+    box-shadow: 0 28px 54px -24px rgba(18,20,28,.45);
+}
+.ticket-card__media{
+    position: relative; height: 178px; overflow:hidden;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+.ticket-card__media img{ width:100%; height:100%; object-fit: cover; display:block; }
+.ticket-card__stamp{
+    position:absolute; top:12px; left:12px;
+    font-family: var(--font-mono); font-size: .65rem; font-weight:700;
+    text-transform: uppercase; letter-spacing: .08em;
+    padding: .25rem .55rem; border-radius: 6px;
+    border: 1.5px solid #fff; color:#fff;
+    background: rgba(18,20,28,.45); backdrop-filter: blur(3px);
+    transform: rotate(-6deg);
+}
+.ticket-card__divider{
+    position: relative; height: 0; margin: 0 14px;
+    border-top: 2px dashed var(--line);
+}
+.ticket-card__divider::before,
+.ticket-card__divider::after{
+    content:""; position:absolute; top:50%; width:20px; height:20px;
+    border-radius:50%; background: var(--paper); transform: translateY(-50%);
+}
+.ticket-card__divider::before{ left:-24px; }
+.ticket-card__divider::after{ right:-24px; }
+
+.ticket-card__body{ padding: 1.1rem 1.15rem 1.15rem; display:flex; flex-direction:column; flex:1; }
+.ticket-card__title{
+    font-family: var(--font-display); font-weight: 700; font-size: .98rem; color: var(--ink);
+    height: 2.6em; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+    margin-bottom: .55rem;
+}
+.ticket-card__meta{ font-size: .8rem; color: var(--ink-soft); margin-bottom: .25rem; display:flex; align-items:center; gap:.4rem; }
+.ticket-card__meta i{ color: var(--indigo); }
+.ticket-card__footer{
+    margin-top: auto; padding-top: .85rem; border-top: 1px solid var(--line);
+    display:flex; align-items:center; justify-content: space-between;
+}
+.ticket-card__price{ font-family: var(--font-mono); font-weight: 700; color: var(--indigo); font-size: .95rem; }
+.btn-stub{
+    border: 1.5px solid var(--indigo); color: var(--indigo); background: transparent;
+    border-radius: 999px; font-size: .78rem; font-weight: 700; padding: .35rem 1rem;
+    text-decoration: none;
+}
+.btn-stub:hover{ background: var(--indigo); color: #fff; }
+
+/* horizontal variant used on the search results page */
+.ticket-row{
+    background: var(--paper-raised); border-radius: var(--radius-md);
+    box-shadow: 0 18px 36px -26px rgba(18,20,28,.4);
+    overflow: visible; position: relative; transition: transform .2s ease;
+}
+.ticket-row:hover{ transform: translateY(-3px); }
+.ticket-row__media{ height:100%; min-height: 168px; overflow:hidden; border-radius: var(--radius-md) 0 0 var(--radius-md); }
+.ticket-row__media img{ width:100%; height:100%; object-fit:cover; display:block; }
+.ticket-row__divider{
+    position: relative; width:0; height: 100%;
+    border-left: 2px dashed var(--line);
+}
+.ticket-row__divider::before,
+.ticket-row__divider::after{
+    content:""; position:absolute; left:50%; width:20px; height:20px;
+    border-radius:50%; background: var(--paper); transform: translateX(-50%);
+}
+.ticket-row__divider::before{ top:-10px; }
+.ticket-row__divider::after{ bottom:-10px; }
+@media (max-width: 767.98px){
+    .ticket-row__divider{ display:none; }
+}
+
+/* =========================================================
+   PAGINATION — punch-card tokens
+   ========================================================= */
+.pagination-ticket .page-item{ margin: 0 .2rem; }
+.pagination-ticket .page-link{
+    border: 1.5px dashed var(--line); border-radius: var(--radius-sm);
+    font-family: var(--font-mono); font-size: .82rem; font-weight: 600;
+    color: var(--ink); background: var(--paper-raised);
+    min-width: 40px; text-align:center;
+}
+.pagination-ticket .page-item.active .page-link{
+    background: var(--ink); border-color: var(--ink); color: var(--paper); position: relative;
+}
+.pagination-ticket .page-item.active .page-link::after{
+    content:""; position:absolute; top:4px; right:4px; width:5px; height:5px; border-radius:50%;
+    background: var(--amber);
+}
+.pagination-ticket .page-item.disabled .page-link{ color: var(--ink-faint); background: transparent; }
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+.footer-ticket{
+    background: var(--ink); color: rgba(255,255,255,.7);
+    padding: 2.5rem 0 2rem; margin-top: 2rem;
+    position: relative; overflow: hidden;
+}
+.footer-ticket::before{
+    content:"";
+    position:absolute; right:-40px; top:-40px; width:180px; height:180px;
+    background-image: radial-gradient(rgba(245,166,35,.35) 2px, transparent 2px);
+    background-size: 14px 14px; opacity:.5; pointer-events:none;
+}
+.footer-ticket .brand{ color:#fff; font-family: var(--font-display); font-weight:700; }
+.footer-ticket .brand .brand-mark{
+    width:30px; height:30px; border-radius:8px; background: var(--amber); color: var(--ink);
+    display:inline-flex; align-items:center; justify-content:center; margin-right:.5rem;
+}
+.footer-ticket a{ color: rgba(255,255,255,.6); }
+.footer-ticket a:hover{ color: var(--amber); }
+.footer-ticket small{ color: rgba(255,255,255,.4); }
+
+/* =========================================================
+   Global Bootstrap component touch-ups (so untouched pages
+   like detail/booking inherit the identity for free)
+   ========================================================= */
+.btn-primary{ background: var(--indigo); border-color: var(--indigo); }
+.btn-primary:hover{ background: var(--indigo-deep); border-color: var(--indigo-deep); }
+.btn-outline-primary{ color: var(--indigo); border-color: var(--indigo); }
+.btn-outline-primary:hover{ background: var(--indigo); border-color: var(--indigo); }
+.badge.bg-primary{ background: var(--indigo) !important; }
+.text-primary{ color: var(--indigo) !important; }
+.card{ border-radius: var(--radius-md); }
+.form-control:focus, .form-select:focus{
+    border-color: var(--indigo); box-shadow: 0 0 0 .2rem rgba(67,56,202,.15);
+}
+
+/* =========================================================
+   FLASH MESSAGES — small torn notes, not banner alerts
+   ========================================================= */
+.alert.flash-ticket{
+    background: var(--paper-raised);
+    border: none;
+    border-left: 4px solid var(--success);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 16px 32px -24px rgba(18,20,28,.4);
+    padding: .85rem 1rem;
+    display: flex; align-items: center; gap: .75rem;
+}
+.alert.flash-ticket.is-danger{ border-left-color: var(--danger); }
+.flash-ticket__icon{
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--success-soft); color: var(--success); font-size: 1rem;
+}
+.flash-ticket.is-danger .flash-ticket__icon{ background: var(--danger-soft); color: var(--danger); }
+.flash-ticket__msg{ font-size: .9rem; font-weight: 500; color: var(--ink); flex: 1; }
+
+/* =========================================================
+   EVENT DETAIL — hero + info stubs + price stub
+   ========================================================= */
+.detail-hero{
+    position: relative; overflow: hidden; color: #fff;
+    border-radius: var(--radius-lg);
+    min-height: 320px; display: flex; align-items: flex-end;
+}
+.detail-hero img{ position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.detail-hero::before{
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(18,20,28,.2) 0%, rgba(18,20,28,.55) 60%, rgba(18,20,28,.94) 100%);
+}
+.detail-hero__content{ position: relative; padding: 2rem clamp(1.25rem, 4vw, 2.5rem); width: 100%; }
+.detail-hero__stamp{
+    font-family: var(--font-mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase;
+    background: var(--amber); color: var(--ink); font-weight: 700;
+    padding: .35rem .8rem; border-radius: 999px; display: inline-block; margin-bottom: .9rem;
+}
+.detail-hero__title{
+    font-family: var(--font-display); font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 700;
+    max-width: 46ch; text-shadow: 0 4px 24px rgba(0,0,0,.4); margin: 0;
+}
+
+.info-stub{ display: flex; align-items: flex-start; gap: .85rem; }
+.info-stub__icon{
+    width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0; font-size: 1.05rem;
+    display: flex; align-items: center; justify-content: center;
+}
+.info-stub__icon.is-indigo{ background: var(--indigo-soft); color: var(--indigo); }
+.info-stub__icon.is-amber{ background: var(--amber-soft); color: #a3690f; }
+.info-stub__icon.is-success{ background: var(--success-soft); color: var(--success); }
+.info-stub__label{ display: block; font-weight: 700; color: var(--ink); font-size: .92rem; }
+.info-stub__value{ color: var(--ink-soft); font-size: .86rem; }
+
+.price-stub{
+    background: var(--paper-raised); border-radius: var(--radius-md);
+    box-shadow: 0 24px 48px -30px rgba(18,20,28,.4);
+    padding: 1.75rem; text-align: center; overflow: hidden;
+}
+.price-stub__label{ font-family: var(--font-mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-faint); font-weight: 600; }
+.price-stub__value{ font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; color: var(--indigo); margin: .35rem 0 0; }
+.price-stub__divider{ position: relative; height: 0; margin: 1.5rem -1.75rem; border-top: 2px dashed var(--line); }
+.price-stub__divider::before, .price-stub__divider::after{
+    content: ""; position: absolute; top: 50%; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--paper); transform: translateY(-50%);
+}
+.price-stub__divider::before{ left: -12px; }
+.price-stub__divider::after{ right: -12px; }
+
+.star-row i{ color: var(--amber); }
+.star-row i.is-empty{ color: var(--line); }
+
+/* =========================================================
+   BOOKING — ticket-tier picker + QR ticket confirmation
+   ========================================================= */
+.tier-card{
+    display: block; cursor: pointer; height: 100%;
+    background: var(--paper-raised); border: 2px solid var(--line);
+    border-radius: var(--radius-md); padding: 1.1rem 1.2rem;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+.tier-card:hover{ border-color: var(--indigo); }
+.tier-card.is-selected{ border-color: var(--indigo); box-shadow: 0 0 0 3px var(--indigo-soft); }
+.tier-card.is-soldout{ opacity: .55; cursor: not-allowed; }
+.tier-card .form-check-input:checked{ background-color: var(--indigo); border-color: var(--indigo); }
+.tier-card__price{ font-family: var(--font-mono); font-weight: 700; color: var(--indigo); font-size: 1.05rem; }
+
+.qr-ticket__code{
+    font-family: var(--font-mono); font-size: .78rem; color: var(--ink-soft);
+    letter-spacing: .04em; word-break: break-all;
+}

@@ -12,7 +12,7 @@
 </div>
 <% } %>
 
-<form action="/organizer/events" method="POST" id="eventForm">
+<form action="/organizer/events" method="POST" id="eventForm" enctype="multipart/form-data">
   <%# ── PHẦN 1: THÔNG TIN SỰ KIỆN ── %>
   <div class="card border-0 shadow-sm p-4 mb-4">
     <h2 class="h5 fw-bold text-dark mb-4 border-bottom pb-2">
@@ -51,6 +51,11 @@
             value="<%= (typeof old !== 'undefined' && old) ? old.location || '' : '' %>">
         </div>
         <div class="mb-3">
+          <label class="form-label small fw-bold">Banner sự kiện</label>
+          <input type="file" class="form-control" name="banner" accept="image/*">
+          <div class="form-text">Ảnh tối đa 5MB.</div>
+        </div>
+        <div class="mb-3">
           <label class="form-label small fw-bold">Ngày bắt đầu <span class="text-danger">*</span></label>
           <input type="datetime-local" class="form-control" id="startDate" name="startDate" required
             value="<%= (typeof old !== 'undefined' && old) ? old.startDate || '' : '' %>">
@@ -77,37 +82,40 @@
       </button>
     </div>
 
+    <% const oldTickets = (typeof old !== 'undefined' && old && old.tickets && old.tickets.length) ? old.tickets : [{}]; %>
     <div id="ticketList">
-      <div class="ticket-row card bg-light border-0 p-3 mb-3" data-index="0">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <span class="row-label fw-bold small text-muted">Loại vé #1</span>
-          <button type="button" class="btn btn-outline-danger btn-sm remove-btn d-none" onclick="removeTicketRow(this)">
-            <i class="bi bi-trash"></i>
-          </button>
+      <% oldTickets.forEach(function (t, idx) { %>
+        <div class="ticket-row card bg-light border-0 p-3 mb-3" data-index="<%= idx %>">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="row-label fw-bold small text-muted">Loại vé #<%= idx + 1 %></span>
+            <button type="button" class="btn btn-outline-danger btn-sm remove-btn <%= oldTickets.length === 1 ? 'd-none' : '' %>" onclick="removeTicketRow(this)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label small fw-bold">Tên loại vé <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-sm" name="ticketName[]" required
+                placeholder="VD: General, VIP..." value="<%= t.name || '' %>">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-bold">Giá (VNĐ) <span class="text-danger">*</span></label>
+              <input type="number" class="form-control form-control-sm" name="ticketPrice[]" required min="0"
+                placeholder="0 = Miễn phí" value="<%= (t.price !== undefined && t.price !== '') ? t.price : '' %>">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-bold">Số lượng <span class="text-danger">*</span></label>
+              <input type="number" class="form-control form-control-sm" name="ticketQuota[]" required min="1"
+                placeholder="VD: 100" value="<%= (t.quota !== undefined && t.quota !== '') ? t.quota : '' %>">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-bold">Mô tả quyền lợi</label>
+              <input type="text" class="form-control form-control-sm" name="ticketDescription[]"
+                placeholder="Không bắt buộc" value="<%= t.description || '' %>">
+            </div>
+          </div>
         </div>
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label small fw-bold">Tên loại vé <span class="text-danger">*</span></label>
-            <input type="text" class="form-control form-control-sm" name="ticketName[]" required
-              placeholder="VD: General, VIP...">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-bold">Giá (VNĐ) <span class="text-danger">*</span></label>
-            <input type="number" class="form-control form-control-sm" name="ticketPrice[]" required min="0"
-              placeholder="0 = Miễn phí">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-bold">Số lượng <span class="text-danger">*</span></label>
-            <input type="number" class="form-control form-control-sm" name="ticketQuota[]" required min="1"
-              placeholder="VD: 100">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-bold">Mô tả quyền lợi</label>
-            <input type="text" class="form-control form-control-sm" name="ticketDescription[]"
-              placeholder="Không bắt buộc">
-          </div>
-        </div>
-      </div>
+      <% }) %>
     </div>
   </div>
 
@@ -125,7 +133,7 @@
 </form>
 
 <script>
-  let ticketCount = 1;
+  let ticketCount = <%= oldTickets.length %>;
 
   function addTicketRow() {
     ticketCount++;

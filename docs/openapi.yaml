@@ -1,0 +1,1724 @@
+openapi: 3.0.3
+info:
+  title: EventSphere API
+  description: |
+    REST API for EventSphere — Event Management & QR Check-in System.
+
+    All JSON responses use a common envelope: `{ success, message, data }` on success,
+    or `{ success: false, data: null, message, error }` on failure.
+    Exceptions: the CSV export endpoint returns raw `text/csv`, and the VNPay
+    return/IPN endpoints follow VNPay's own payload conventions.
+  version: "1.0.0"
+servers:
+  - url: /api/v1
+    description: Relative to the host serving this app
+  - url: http://localhost:3000/api/v1
+    description: Local development
+
+tags:
+  - name: Auth
+    description: Registration, login, email verification, password reset, profile
+  - name: Events
+    description: Public browsing/search plus organizer CRUD and lifecycle management
+  - name: Ticket Types
+    description: Organizer-managed ticket tiers, nested under an event
+  - name: Registrations & Tickets
+    description: Attendee registration/attendance and ticket history
+  - name: Payments
+    description: VNPay payment flow
+  - name: Check-in
+    description: Staff QR / manual check-in at the door
+  - name: Notifications
+    description: Organizer mass notifications to attendees
+  - name: Admin
+    description: Platform administration — approvals, accounts, reports
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ───────────────────────────── AUTH ─────────────────────────────
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name: { type: string, minLength: 2, maxLength: 50, example: "Nguyen Van A" }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 6, maxLength: 30 }
+                role:
+                  type: string
+                  enum: [attendee, organizer, staff, admin]
+                  default: attendee
+                phone: { type: string }
+      responses:
+        "201":
+          description: Registered — verification email sent
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user: { $ref: "#/components/schemas/UserSummary" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in and obtain access/refresh tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user: { $ref: "#/components/schemas/UserSummary" }
+                          accessToken: { type: string }
+                          refreshToken: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke a refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/OkNoData" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /auth/verify-email:
+    get:
+      tags: [Auth]
+      summary: Verify an email address via the token sent by email
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/OkNoData" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Request a password reset email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "200": { $ref: "#/components/responses/OkNoData" }
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password using the token sent by email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password, confirmPassword]
+              properties:
+                token: { type: string }
+                password: { type: string, minLength: 6, maxLength: 30 }
+                confirmPassword: { type: string, description: "Must match password" }
+      responses:
+        "200": { $ref: "#/components/responses/OkNoData" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get the authenticated user's profile
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/UserProfile" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    patch:
+      tags: [Auth]
+      summary: Update the authenticated user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                name: { type: string, minLength: 2, maxLength: 50 }
+                phone: { type: string, pattern: "^0[0-9]{9}$", nullable: true }
+                avatar: { type: string, format: uri, nullable: true }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/UserSummary" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /auth/change-password:
+    patch:
+      tags: [Auth]
+      summary: Change the authenticated user's password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword, confirmPassword]
+              properties:
+                currentPassword: { type: string }
+                newPassword: { type: string, minLength: 6, maxLength: 30 }
+                confirmPassword: { type: string, description: "Must match newPassword" }
+      responses:
+        "200": { $ref: "#/components/responses/OkNoData" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ───────────────────────────── EVENTS ─────────────────────────────
+  /events/search:
+    get:
+      tags: [Events]
+      summary: Keyword search across published events
+      security: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/Event" }
+
+  /events/my:
+    get:
+      tags: [Events]
+      summary: List the authenticated organizer's own events
+      description: Requires role `organizer` or `admin`.
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          events:
+                            type: array
+                            items:
+                              allOf:
+                                - $ref: "#/components/schemas/Event"
+                                - type: object
+                                  properties:
+                                    registrationsCount: { type: integer }
+                                    totalQuota: { type: integer }
+                          total: { type: integer }
+                          page: { type: integer }
+                          limit: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /events:
+    get:
+      tags: [Events]
+      summary: List published events, or filter them
+      description: |
+        With no filter query params, returns the paginated public listing (UC01).
+        If any of `category`, `startFrom`, or `startTo` is present, switches to
+        filtered mode (UC04) and returns a paginated envelope instead of a bare array.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
+        - name: category
+          in: query
+          schema: { type: string, enum: [music, tech, sport, education] }
+        - name: startFrom
+          in: query
+          schema: { type: string, format: date }
+        - name: startTo
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: OK — shape depends on whether filters were applied (see description)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+    post:
+      tags: [Events]
+      summary: Create a new event
+      description: |
+        Requires role `organizer` or `admin`. `startDate` must be at least 24h in the
+        future and before `endDate`. Result status is `DRAFT` unless `actionType=submit`,
+        which sets it to `PENDING` for admin review.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateEventBody"
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/Event" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /events/{id}:
+    parameters:
+      - $ref: "#/components/parameters/EventId"
+    get:
+      tags: [Events]
+      summary: Get event detail
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/Event" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Events]
+      summary: Update an event
+      description: Owner-only, and only while the event is `DRAFT`.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UpdateEventBody"
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEventBody"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/Event" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    delete:
+      tags: [Events]
+      summary: Delete an event
+      description: Only allowed while status is `DRAFT` or `REJECTED`.
+      responses:
+        "200": { $ref: "#/components/responses/OkNoData" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /events/{id}/submit:
+    patch:
+      tags: [Events]
+      summary: Submit a DRAFT event for admin approval (→ PENDING)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/Event" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /events/{id}/cancel:
+    patch:
+      tags: [Events]
+      summary: Cancel a PENDING event (→ back to DRAFT)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/Event" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /events/{id}/staffs:
+    post:
+      tags: [Events]
+      summary: Assign a check-in staff member to an event
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email, description: "Must belong to an existing user with role=staff" }
+      responses:
+        "201": { $ref: "#/components/responses/OkNoData" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /events/{id}/staffs/{staffId}:
+    delete:
+      tags: [Events]
+      summary: Remove a check-in staff member from an event
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+        - name: staffId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/OkNoData" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /events/{id}/registrations:
+    get:
+      tags: [Events]
+      summary: List registrations for an event (organizer view)
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+        - $ref: "#/components/parameters/Page"
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          registrations:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                attendeeName: { type: string }
+                                attendeeEmail: { type: string }
+                                ticketType: { type: string }
+                                createdAt: { type: string, format: date-time }
+                                status: { type: string }
+                                paymentStatus: { type: string }
+                          total: { type: integer }
+                          page: { type: integer }
+                          limit: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /events/{id}/export:
+    get:
+      tags: [Events]
+      summary: Export the attendee list as CSV
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: CSV file
+          content:
+            text/csv:
+              schema: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /events/{id}/report:
+    get:
+      tags: [Events]
+      summary: Event summary report (revenue, attendance, ticket breakdown)
+      description: Requires role `organizer` (event owner). The report is only available after the event status is `ENDED`.
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          eventId: { type: string }
+                          eventTitle: { type: string }
+                          totalRegistered: { type: integer }
+                          totalCheckedIn: { type: integer }
+                          attendanceRate: { type: number }
+                          totalRevenue: { type: number }
+                          avgRating: { type: number }
+                          totalReviews: { type: integer }
+                          ticketBreakdown:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                ticketTypeName: { type: string }
+                                price: { type: number }
+                                quota: { type: integer }
+                                sold: { type: integer }
+                                revenue: { type: number }
+        "400": { $ref: "#/components/responses/BadRequest" }                       
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+
+  /events/{id}/dashboard:
+    get:
+      tags: [Events]
+      summary: Live dashboard snapshot for an event (recent check-ins)
+      description: Requires role `organizer` (event owner).
+      parameters:
+        - $ref: "#/components/parameters/EventId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          eventId: { type: string }
+                          eventTitle: { type: string }
+                          totalRegistered: { type: integer }
+                          totalCheckedIn: { type: integer }
+                          attendanceRate: { type: number }
+                          recentCheckins:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name: { type: string }
+                                email: { type: string }
+                                checkedAt: { type: string, format: date-time }
+                                method: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ───────────────────────── TICKET TYPES (nested) ─────────────────────────
+  /events/{eventId}/ticket-types:
+    get:
+      tags: [Ticket Types]
+      summary: List ticket types for an event
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/EventIdInPath"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/TicketType" }
+    post:
+      tags: [Ticket Types]
+      summary: Create a ticket type for an event
+      description: Event must be owned by the requester and in status `DRAFT` or `PENDING`.
+      parameters:
+        - $ref: "#/components/parameters/EventIdInPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, price, quota]
+              properties:
+                name: { type: string, minLength: 2, maxLength: 50 }
+                price: { type: number, minimum: 0 }
+                quota: { type: integer, minimum: 1 }
+                description: { type: string, nullable: true }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/TicketType" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /events/{eventId}/ticket-types/{id}:
+    put:
+      tags: [Ticket Types]
+      summary: Update a ticket type
+      description: Quota cannot be lowered below the number already sold.
+      parameters:
+        - $ref: "#/components/parameters/EventIdInPath"
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                name: { type: string, minLength: 2, maxLength: 50 }
+                price: { type: number, minimum: 0 }
+                quota: { type: integer, minimum: 1 }
+                description: { type: string, nullable: true }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/TicketType" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    delete:
+      tags: [Ticket Types]
+      summary: Delete a ticket type
+      description: Only allowed if no tickets have been sold for it (`sold === 0`).
+      parameters:
+        - $ref: "#/components/parameters/EventIdInPath"
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/OkNoData" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ───────────────────── REGISTRATIONS & TICKETS ─────────────────────
+  /registrations:
+    post:
+      tags: [Registrations & Tickets]
+      summary: Register attendance for an event/ticket type
+      description: |
+        Requires role `attendee`. Identical behavior to `POST /tickets/register`
+        (same controller method, mounted at two paths). Issues a ticket immediately
+        for free ticket types; otherwise creates a pending-payment registration that
+        must be completed via the Payments API.
+      requestBody:
+        $ref: "#/components/requestBodies/RegisterAttendance"
+      responses:
+        "201":
+          $ref: "#/components/responses/RegistrationResult"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /tickets/register:
+    post:
+      tags: [Registrations & Tickets]
+      summary: Register attendance for an event/ticket type
+      description: Requires role `attendee`. Same as `POST /registrations` above.
+      requestBody:
+        $ref: "#/components/requestBodies/RegisterAttendance"
+      responses:
+        "201":
+          $ref: "#/components/responses/RegistrationResult"
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /tickets:
+    get:
+      tags: [Registrations & Tickets]
+      summary: List the authenticated attendee's own tickets/attendance history
+      description: Requires role `attendee`.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/Ticket" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /tickets/{id}:
+    get:
+      tags: [Registrations & Tickets]
+      summary: Get a single ticket's detail
+      description: Requires role `attendee`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/Ticket" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /tickets/{id}/calendar:
+    post:
+      tags: [Registrations & Tickets]
+      summary: Add a ticket's event to Google Calendar
+      description: |
+        **Not implemented (stub).** UC10 (Google Calendar sync via OAuth2) is not
+        yet built — this route currently has no auth middleware and returns a
+        static placeholder message.
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Placeholder response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string, example: "UC10 - Add to Google Calendar (OAuth2)" }
+
+  # ───────────────────────────── PAYMENTS ─────────────────────────────
+  /payments/vnpay/create:
+    post:
+      tags: [Payments]
+      summary: Create a VNPay payment URL for a pending-payment registration
+      description: |
+        Requires role `attendee`. If the request declares a JSON `Accept`/`Content-Type`,
+        responds with JSON containing the payment URL; otherwise responds with a
+        302 redirect straight to VNPay.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [registrationId]
+              properties:
+                registrationId: { type: string, description: "Mongo ObjectId of a pending-payment registration" }
+                bankCode: { type: string }
+                language: { type: string, default: vn }
+      responses:
+        "200":
+          description: Payment URL created (JSON mode)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          paymentUrl: { type: string, format: uri }
+                          orderCode: { type: string }
+                          amount: { type: number }
+                          registrationId: { type: string }
+        "302":
+          description: Redirect to VNPay (default/browser mode)
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /payments/vnpay/return:
+    get:
+      tags: [Payments]
+      summary: VNPay browser return URL (renders a result page)
+      description: |
+        Called when VNPay redirects the shopper's browser back after payment.
+        Verifies the checksum/amount, confirms the payment, and issues a ticket
+        if successful. Renders an HTML page (`payments/payment-result`) rather
+        than returning JSON.
+      security: []
+      parameters:
+        - name: vnp_TxnRef
+          in: query
+          schema: { type: string }
+        - name: vnp_ResponseCode
+          in: query
+          schema: { type: string }
+        - name: vnp_TransactionStatus
+          in: query
+          schema: { type: string }
+        - name: vnp_Amount
+          in: query
+          schema: { type: string }
+        - name: vnp_TransactionNo
+          in: query
+          schema: { type: string }
+        - name: vnp_SecureHash
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: HTML result page
+          content:
+            text/html:
+              schema: { type: string }
+
+  /payments/vnpay/ipn:
+    get:
+      tags: [Payments]
+      summary: VNPay server-to-server IPN webhook
+      description: Verifies and marks the underlying payment as paid/failed. Follows VNPay's IPN response contract.
+      security: []
+      parameters:
+        - name: vnp_TxnRef
+          in: query
+          schema: { type: string }
+        - name: vnp_ResponseCode
+          in: query
+          schema: { type: string }
+        - name: vnp_TransactionStatus
+          in: query
+          schema: { type: string }
+        - name: vnp_Amount
+          in: query
+          schema: { type: string }
+        - name: vnp_SecureHash
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: VNPay IPN acknowledgement
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  RspCode: { type: string, example: "00" }
+                  Message: { type: string, example: "Confirm Success" }
+
+  # ───────────────────────────── CHECK-IN ─────────────────────────────
+  /checkin/qr:
+    post:
+      tags: [Check-in]
+      summary: Check in an attendee via scanned QR code
+      description: Requires role `staff` or `admin`. Emits a `checkin_update` socket.io event on success.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [registrationId, eventId, timestamp]
+              properties:
+                registrationId: { type: string }
+                eventId: { type: string }
+                timestamp: { type: integer, description: "Unix epoch ms from the scanning device" }
+      responses:
+        "200":
+          description: Checked in
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/Ticket" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /checkin/manual:
+    post:
+      tags: [Check-in]
+      summary: Manually approve a check-in after searching for an attendee
+      description: Requires role `staff` or `admin`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [registrationId, eventId]
+              properties:
+                registrationId: { type: string }
+                eventId: { type: string }
+                timestamp: { type: integer }
+      responses:
+        "200":
+          description: Checked in
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/Ticket" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /checkin/search:
+    get:
+      tags: [Check-in]
+      summary: Search attendees within an event by name/email for manual check-in
+      description: Requires role `staff` or `admin`.
+      parameters:
+        - name: eventId
+          in: query
+          required: true
+          schema: { type: string }
+        - name: keyword
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 100 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/Ticket" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ───────────────────────────── NOTIFICATIONS ─────────────────────────────
+  /notifications:
+    post:
+      tags: [Notifications]
+      summary: Mass-notify all confirmed attendees of an event
+      description: Requires role `organizer` or `admin`. Queues an async job and writes a `NotificationLog` entry.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eventId, subject, message]
+              properties:
+                eventId: { type: string }
+                subject: { type: string, minLength: 1, maxLength: 200 }
+                message: { type: string, minLength: 1, maxLength: 2000 }
+      responses:
+        "200":
+          description: Queued
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          queued: { type: boolean, example: true }
+                          totalQueued: { type: integer }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    
+    get:
+      tags: [Notifications]
+      summary: Get notification sending history
+      description: Returns the notification history of the authenticated organizer.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            _id:
+                              type: string
+                            eventId:
+                              type: string
+                            eventTitle:
+                              type: string
+                            subject:
+                              type: string
+                            message:
+                              type: string
+                            totalRecipients:
+                              type: integer
+                            sentAt:
+                              type: string
+                              format: date-time
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ───────────────────────────── ADMIN ─────────────────────────────
+  /admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: System-wide overview dashboard
+      description: Requires role `admin`.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          users:
+                            type: object
+                            properties:
+                              total: { type: integer }
+                              attendee: { type: integer }
+                              organizer: { type: integer }
+                              staff: { type: integer }
+                              admin: { type: integer }
+                          events:
+                            type: object
+                            properties:
+                              total: { type: integer }
+                              draft: { type: integer }
+                              pending: { type: integer }
+                              approved: { type: integer }
+                              ongoing: { type: integer }
+                              ended: { type: integer }
+                              cancelled: { type: integer }
+                          tickets:
+                            type: object
+                            properties:
+                              totalPaid: { type: integer }
+                          checkins:
+                            type: object
+                            properties:
+                              total: { type: integer }
+                          recentPendingEvents:
+                            type: array
+                            items: { $ref: "#/components/schemas/Event" }
+                          recentUsers:
+                            type: array
+                            items: { $ref: "#/components/schemas/UserSummary" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/events/pending:
+    get:
+      tags: [Admin]
+      summary: List events awaiting approval
+      description: Requires role `admin`.
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+        - name: keyword
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          events:
+                            type: array
+                            items: { $ref: "#/components/schemas/EventWithOrganizer" }
+                          currentPage: { type: integer }
+                          totalPages: { type: integer }
+                          totalItems: { type: integer }
+                          keyword: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/events/{eventId}:
+    get:
+      tags: [Admin]
+      summary: Get full event review detail, including ticket types
+      description: Requires role `admin`.
+      parameters:
+        - $ref: "#/components/parameters/EventIdInPath"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          event: { $ref: "#/components/schemas/EventWithOrganizer" }
+                          ticketTypes:
+                            type: array
+                            items: { $ref: "#/components/schemas/TicketType" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /admin/events/{eventId}/approve:
+    patch:
+      tags: [Admin]
+      summary: Approve a pending event
+      description: Requires role `admin`. Emails the organizer.
+      parameters:
+        - $ref: "#/components/parameters/EventIdInPath"
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          event: { $ref: "#/components/schemas/EventWithOrganizer" }
+                          emailSent: { type: boolean }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /admin/events/{eventId}/reject:
+    patch:
+      tags: [Admin]
+      summary: Reject a pending event with a reason
+      description: Requires role `admin`. Emails the organizer.
+      parameters:
+        - $ref: "#/components/parameters/EventIdInPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rejectionReason]
+              properties:
+                rejectionReason: { type: string, minLength: 10, maxLength: 500 }
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          event: { $ref: "#/components/schemas/EventWithOrganizer" }
+                          emailSent: { type: boolean }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /admin/accounts:
+    get:
+      tags: [Admin]
+      summary: List/search/filter user accounts
+      description: Requires role `admin`.
+      parameters:
+        - $ref: "#/components/parameters/Page"
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+        - name: keyword
+          in: query
+          schema: { type: string }
+        - name: role
+          in: query
+          schema: { type: string, enum: [attendee, organizer, staff, admin] }
+        - name: status
+          in: query
+          schema: { type: string, enum: [active, locked] }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [newest, oldest, name_asc, name_desc], default: newest }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          users:
+                            type: array
+                            items: { $ref: "#/components/schemas/UserProfile" }
+                          currentPage: { type: integer }
+                          totalPages: { type: integer }
+                          totalItems: { type: integer }
+                          filters:
+                            type: object
+                            properties:
+                              keyword: { type: string }
+                              role: { type: string }
+                              status: { type: string }
+                              sort: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/accounts/{userId}:
+    get:
+      tags: [Admin]
+      summary: Get account detail
+      description: Requires role `admin`.
+      parameters:
+        - $ref: "#/components/parameters/UserIdInPath"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          account: { $ref: "#/components/schemas/UserProfile" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /admin/accounts/{userId}/lock:
+    post:
+      tags: [Admin]
+      summary: Lock a user account
+      description: Requires role `admin`. Emails the affected user.
+      parameters:
+        - $ref: "#/components/parameters/UserIdInPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 10, maxLength: 500 }
+      responses:
+        "200":
+          description: Locked
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user: { $ref: "#/components/schemas/UserProfile" }
+                          emailSent: { type: boolean }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /admin/accounts/{userId}/unlock:
+    post:
+      tags: [Admin]
+      summary: Unlock a user account
+      description: Requires role `admin`. Emails the affected user.
+      parameters:
+        - $ref: "#/components/parameters/UserIdInPath"
+      responses:
+        "200":
+          description: Unlocked
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user: { $ref: "#/components/schemas/UserProfile" }
+                          emailSent: { type: boolean }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /admin/reports/revenue:
+    get:
+      tags: [Admin]
+      summary: Platform-wide revenue report, grouped by day/week/month/organizer/category
+      description: Requires role `admin`.
+      parameters:
+        - name: startDate
+          in: query
+          schema: { type: string, format: date }
+        - name: endDate
+          in: query
+          schema: { type: string, format: date, description: "Must be >= startDate" }
+        - name: organizerId
+          in: query
+          schema: { type: string }
+        - name: category
+          in: query
+          schema: { type: string, enum: [music, tech, sport, education] }
+        - name: groupBy
+          in: query
+          schema: { type: string, enum: [day, week, month, organizer, category], default: day }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/ApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          groupBy: { type: string }
+                          filters: { type: object }
+                          totalPeriodRevenue: { type: number }
+                          totalPeriodTickets: { type: integer }
+                          chartData:
+                            type: array
+                            items:
+                              type: object
+                              description: "Grouping key field (e.g. date/organizer/category) plus totals"
+                              properties:
+                                totalRevenue: { type: number }
+                                totalTicketSold: { type: integer }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Pass the `accessToken` returned by `/auth/login` as `Authorization: Bearer <token>`.
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, default: 10 }
+    EventId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+      description: Event Mongo ObjectId
+    EventIdInPath:
+      name: eventId
+      in: path
+      required: true
+      schema: { type: string }
+      description: Event Mongo ObjectId
+    UserIdInPath:
+      name: userId
+      in: path
+      required: true
+      schema: { type: string }
+      description: User Mongo ObjectId
+
+  requestBodies:
+    RegisterAttendance:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [eventId, ticketTypeId]
+            properties:
+              eventId: { type: string, description: "24-char hex Mongo ObjectId" }
+              ticketTypeId: { type: string, description: "24-char hex Mongo ObjectId" }
+
+  responses:
+    OkNoData:
+      description: OK
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ApiResponse"
+              - type: object
+                properties:
+                  data: { nullable: true, example: null }
+    BadRequest:
+      description: Validation error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    Unauthorized:
+      description: Missing/invalid/expired access token
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    Forbidden:
+      description: Authenticated but role not permitted
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    RegistrationResult:
+      description: Registration created
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ApiResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      registration:
+                        type: object
+                        properties:
+                          _id: { type: string }
+                          userId: { type: string }
+                          eventId: { type: string }
+                          ticketTypeId: { type: string }
+                          status:
+                            type: string
+                            enum: [pending_payment, confirmed, payment_failed, cancelled]
+                          paymentStatus:
+                            type: string
+                            enum: [unpaid, paid, free, pending]
+                      ticket:
+                        nullable: true
+                        allOf:
+                          - $ref: "#/components/schemas/Ticket"
+                      payment:
+                        type: object
+                        nullable: true
+                        properties:
+                          amount: { type: number }
+                          currency: { type: string }
+                      nextStep:
+                        type: string
+                        enum: [payment_required, ticket_issued]
+
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+        message: { type: string, example: "OK" }
+        data: {}
+
+    ApiError:
+      type: object
+      properties:
+        success: { type: boolean, example: false }
+        data: { nullable: true, example: null }
+        message: { type: string }
+        error: { type: string }
+
+    UserSummary:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { type: string, enum: [attendee, organizer, staff, admin] }
+
+    UserProfile:
+      allOf:
+        - $ref: "#/components/schemas/UserSummary"
+        - type: object
+          properties:
+            phone: { type: string, nullable: true }
+            avatar: { type: string, nullable: true }
+            isActive: { type: boolean }
+            emailVerified: { type: boolean }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+
+    Event:
+      type: object
+      properties:
+        _id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        category: { type: string, enum: [music, tech, sport, education] }
+        location: { type: string }
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
+        status:
+          type: string
+          enum: [DRAFT, PENDING, APPROVED, ONGOING, ENDED, CANCELLED]
+        bannerUrl: { type: string, nullable: true }
+        organizerId: { type: string }
+        avgRating: { type: number }
+        attendeeCount: { type: integer }
+        rejectionReason: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    EventWithOrganizer:
+      allOf:
+        - $ref: "#/components/schemas/Event"
+        - type: object
+          properties:
+            organizerId:
+              type: object
+              description: Populated organizer summary (name, email) when returned from admin endpoints
+              properties:
+                _id: { type: string }
+                name: { type: string }
+                email: { type: string }
+
+    CreateEventBody:
+      type: object
+      required: [title, description, category, location, startDate, endDate]
+      properties:
+        title: { type: string, minLength: 3, maxLength: 100 }
+        description: { type: string, minLength: 10 }
+        category: { type: string, enum: [music, tech, sport, education] }
+        location: { type: string }
+        startDate: { type: string, format: date-time, description: "Must be >= now + 24h" }
+        endDate: { type: string, format: date-time, description: "Must be after startDate" }
+        banner: { type: string, format: binary, description: "Event banner image file (multipart uploads only)" }
+        bannerUrl: { type: string, maxLength: 2048, nullable: true, description: "Used instead of `banner` for JSON requests" }
+        actionType: { type: string, enum: [draft, submit], default: draft }
+
+    UpdateEventBody:
+      type: object
+      minProperties: 1
+      properties:
+        title: { type: string }
+        description: { type: string }
+        category: { type: string, enum: [music, tech, sport, education] }
+        location: { type: string }
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
+        banner: { type: string, format: binary, description: "Event banner image file (multipart uploads only)" }
+        bannerUrl: { type: string, nullable: true }
+
+    TicketType:
+      type: object
+      properties:
+        _id: { type: string }
+        eventId: { type: string }
+        name: { type: string }
+        price: { type: number }
+        quota: { type: integer }
+        sold: { type: integer }
+        description: { type: string, nullable: true }
+
+    Ticket:
+      type: object
+      properties:
+        _id: { type: string }
+        registrationId: { type: string }
+        attendeeId: { type: string }
+        eventId: { type: string }
+        ticketTypeId: { type: string }
+        qrCode: { type: string }
+        status:
+          type: string
+          enum: [ISSUED, CHECKED_IN, EXPIRED, CANCELLED]
+        issuedAt: { type: string, format: date-time }
+        expiredAt: { type: string, format: date-time, nullable: true }

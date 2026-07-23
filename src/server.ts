@@ -1,8 +1,12 @@
+import dns from "dns";
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
+
 import http from "http";
 import app from "./app";
 import mongoose from "mongoose";
 import { appConfig } from "./config/app.config";
 import { initSocket } from "./config/socket";
+import { startEventStatusScheduler } from "./shared/jobs/eventStatus.job";
 
 const PORT = appConfig.port;
 
@@ -16,6 +20,9 @@ mongoose
 
     // Khởi tạo Socket.io
     initSocket(httpServer);
+
+    // Chạy job tự động cập nhật trạng thái event (APPROVED→ONGOING→ENDED, PENDING quá hạn→CANCELLED)
+    startEventStatusScheduler();
 
     httpServer.listen(PORT, () => {
       console.log(`=========================================`);

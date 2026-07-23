@@ -4,9 +4,9 @@ import path from "path";
 dotenv.config({ path: path.join(__dirname, "../../.env") });
 
 export const appConfig = {
-  port: parseInt(process.env.PORT ?? "5000", 10),
+  port: parseInt(process.env.PORT ?? "3000", 10),
   nodeEnv: process.env.NODE_ENV ?? "development",
-  mongoUri: process.env.MONGO_URI ?? "mongodb://localhost:27017/eventsphere1",
+  mongoUri: process.env.MONGO_URI ?? "mongodb://localhost:27017/eventsphere",
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET ?? "dev_access_secret",
     accessExpires: process.env.JWT_ACCESS_EXPIRES ?? "15m",
@@ -32,7 +32,7 @@ export const appConfig = {
       "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html",
     returnUrl:
       process.env.VNP_RETURN_URL ??
-      "http://localhost:5000/api/v1/payments/vnpay/return",
+      "http://localhost:3000/api/v1/payments/vnpay/return",
     apiUrl:
       process.env.VNP_API ??
       "http://sandbox.vnpayment.vn/merchant_webapi/merchant.html",

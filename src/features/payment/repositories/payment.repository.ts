@@ -25,7 +25,7 @@ export class PaymentRepository {
     },
   ) {
     return Payment.findOneAndUpdate(
-      { orderCode },
+      { orderCode, status: { $ne: "paid" } },
       {
         status: "paid",
         gatewayTransactionNo: data.gatewayTransactionNo,
@@ -38,7 +38,7 @@ export class PaymentRepository {
 
   async markFailed(orderCode: string, rawIpnData?: Record<string, unknown>) {
     return Payment.findOneAndUpdate(
-      { orderCode },
+      { orderCode, status: "pending" },
       {
         status: "failed",
         rawIpnData,

@@ -4,6 +4,7 @@ import { sendSuccess } from "../../shared/utils/response.util";
 import type { Request, Response, NextFunction } from "express";
 import { CreateEventSchema, UpdateEventSchema } from "./dto/event.dto";
 import { AddStaffSchema } from "./dto/add-staff.dto";
+import { getEventBannerUrl } from "../../shared/middlewares/upload.middleware";
 
 const eventService = new EventService();
 
@@ -17,12 +18,20 @@ export class EventController {
 
       // Có filter → UC04
       if (category || startFrom || startTo) {
-        const events = await eventService.filterEvents({
-          category: category as string | undefined,
-          startFrom: startFrom ? new Date(startFrom as string) : undefined,
-          startTo: startTo ? new Date(startTo as string) : undefined,
-        });
-        return sendSuccess(res, events, "Filter events successfully");
+        const { events, total } = await eventService.filterEvents(
+          {
+            category: category as string | undefined,
+            startFrom: startFrom ? new Date(startFrom as string) : undefined,
+            startTo: startTo ? new Date(startTo as string) : undefined,
+          },
+          page,
+          limit,
+        );
+        return sendSuccess(
+          res,
+          { events, total, page, limit },
+          "Filter events successfully",
+        );
       }
 
       // Không có filter → UC01
@@ -80,9 +89,16 @@ export class EventController {
   // POST /api/v1/events — Tạo event mới
   async createEvent(req: Request, res: Response, next: NextFunction) {
     try {
-      const { error, value } = CreateEventSchema.validate(req.body, {
-        abortEarly: false,
-      });
+      const bannerUrl = getEventBannerUrl(req.file);
+      const { error, value } = CreateEventSchema.validate(
+        {
+          ...req.body,
+          ...(bannerUrl && { bannerUrl }),
+        },
+        {
+          abortEarly: false,
+        },
+      );
       if (error) {
         throw new AppError(error.details.map((d) => d.message).join(", "), 400);
       }
@@ -97,9 +113,16 @@ export class EventController {
   // PUT /api/v1/events/:id — Cập nhật event
   async updateEvent(req: Request, res: Response, next: NextFunction) {
     try {
-      const { error, value } = UpdateEventSchema.validate(req.body, {
-        abortEarly: false,
-      });
+      const bannerUrl = getEventBannerUrl(req.file);
+      const { error, value } = UpdateEventSchema.validate(
+        {
+          ...req.body,
+          ...(bannerUrl && { bannerUrl }),
+        },
+        {
+          abortEarly: false,
+        },
+      );
       if (error) {
         throw new AppError(error.details.map((d) => d.message).join(", "), 400);
       }
@@ -110,6 +133,34 @@ export class EventController {
         value,
       );
       sendSuccess(res, event, "Event updated successfully");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // PATCH /api/v1/events/:id/submit — Gửi duyệt event DRAFT
+  async submitEvent(req: Request, res: Response, next: NextFunction) {
+    try {
+      const organizerId = req.user!.id;
+      const event = await eventService.submitEvent(
+        req.params.id as string,
+        organizerId,
+      );
+      sendSuccess(res, event, "Event submitted successfully");
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // PATCH /api/v1/events/:id/cancel — Hủy event PENDING
+  async cancelEvent(req: Request, res: Response, next: NextFunction) {
+    try {
+      const organizerId = req.user!.id;
+      const event = await eventService.cancelEvent(
+        req.params.id as string,
+        organizerId,
+      );
+      sendSuccess(res, event, "Event cancelled successfully");
     } catch (error) {
       next(error);
     }

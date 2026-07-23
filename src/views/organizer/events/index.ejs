@@ -1,84 +1,233 @@
-<% const msgs = typeof messages !== 'undefined' ? messages : { success: [], error: [] }; %>
-<% if (msgs.error && msgs.error.length > 0) { %>
-<div class="alert alert-danger alert-dismissible fade show" role="alert">
-  <i class="bi bi-exclamation-triangle me-2"></i><%= msgs.error[0] %>
-  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-<% } %>
-<% if (msgs.success && msgs.success.length > 0) { %>
-<div class="alert alert-success alert-dismissible fade show" role="alert">
-  <i class="bi bi-check-circle me-2"></i><%= msgs.success[0] %>
-  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-<% } %>
+<% const msgs=typeof messages !=='undefined' ? messages : { success: [], error: [] }; %>
+  <% if (msgs.error && msgs.error.length> 0) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      <%= msgs.error[0] %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <% } %>
+      <% if (msgs.success && msgs.success.length> 0) { %>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          <i class="bi bi-check-circle me-2"></i>
+          <%= msgs.success[0] %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        <% } %>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="h3 fw-bold text-dark mb-0">Quản lý sự kiện của tôi</h1>
-  <a href="/organizer/events/create" class="btn btn-primary fw-bold"><i class="bi bi-plus-lg me-2"></i>Tạo sự kiện mới</a>
-</div>
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 fw-bold text-dark mb-0">Quản lý sự kiện của tôi</h1>
+            <a href="/organizer/events/create" class="btn btn-primary fw-bold"><i class="bi bi-plus-lg me-2"></i>Tạo sự
+              kiện mới</a>
+          </div>
 
-<div class="card border-0 shadow-sm">
-  <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0 text-nowrap">
-      <thead class="table-light text-muted small text-uppercase">
-        <tr>
-          <th class="ps-4">Banner</th>
-          <th>Tên Sự Kiện</th>
-          <th>Danh mục</th>
-          <th>Trạng thái</th>
-          <th>Thời gian</th>
-          <th>Đăng ký</th>
-          <th class="pe-4 text-end">Thao tác</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if(events && events.length > 0) { %>
-        <% events.forEach(item => { %>
-        <tr>
-          <td class="ps-4">
-            <img src="<%= item.bannerUrl || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=100&q=80' %>" class="rounded object-fit-cover" style="width: 60px; height: 40px;" alt="Banner">
-          </td>
-          <td class="fw-semibold">
-            <a href="/organizer/events/<%= item._id %>" class="text-decoration-none text-dark">
-              <%= item.title %>
-            </a>
-          </td>
-          <td><span class="badge bg-light text-dark text-uppercase"><%= item.category %></span></td>
-          <td>
-            <% if(item.status === 'DRAFT') { %><span class="badge bg-secondary">DRAFT</span>
-            <% } else if(item.status === 'PENDING') { %><span class="badge bg-warning text-dark">PENDING</span>
-            <% } else if(item.status === 'APPROVED') { %><span class="badge bg-success">APPROVED</span>
-            <% } else if(item.status === 'REJECTED') { %><span class="badge bg-danger">REJECTED</span>
-            <% } else { %><span class="badge bg-dark">CANCELLED</span><% } %>
-          </td>
-          <td><small class="text-muted"><%= new Date(item.startDate).toLocaleDateString('vi-VN') %></small></td>
-          <td><a href="/organizer/events/<%= item._id %>/registrations" class="text-decoration-none fw-bold"><i class="bi bi-people-fill me-1"></i> <%= item.registrationsCount || 0 %></a></td>
-          <td class="pe-4 text-end">
-            <div class="btn-group btn-group-sm">
-              <a href="/organizer/events/<%= item._id %>/edit" class="btn btn-outline-secondary" title="Sửa"><i class="bi bi-pencil"></i></a>
-              <a href="/organizer/events/<%= item._id %>/registrations" class="btn btn-outline-info" title="Danh sách đăng ký"><i class="bi bi-card-list"></i></a>
-              <a href="/organizer/events/<%= item._id %>/staffs" class="btn btn-outline-dark" title="Quản lý nhân viên"><i class="bi bi-person-gear"></i></a>
-              <% if (item.status === 'APPROVED' || item.status === 'ONGOING' || item.status === 'ENDED') { %>
-              <a href="/organizer/events/<%= item._id %>/dashboard" class="btn btn-outline-success" title="Dashboard realtime"><i class="bi bi-speedometer2"></i></a>
-              <% } %>
-              <% if (item.status === 'ENDED' || new Date(item.endDate) < new Date()) { %>
-              <a href="/organizer/events/<%= item._id %>/report" class="btn btn-outline-primary" title="Báo cáo tổng kết"><i class="bi bi-bar-chart-line"></i></a>
-              <% } %>
-              <form action="/organizer/events/<%= item._id %>/delete" method="POST" class="d-inline" onsubmit="return confirm('Bạn chắc chắn có muốn xóa sự kiện này? Thao tác không thể khôi phục!');">
-                <button type="submit" class="btn btn-outline-danger rounded-start-0" title="Xóa"><i class="bi bi-trash"></i></button>
+          <% const f = typeof filters !=='undefined' && filters ? filters : { keyword: '', category: '', status: '' }; %>
+          <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+              <form action="/organizer/events" method="GET" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                  <label for="keyword" class="form-label small fw-bold text-secondary">Tìm kiếm</label>
+                  <input type="text" class="form-control" id="keyword" name="keyword"
+                    placeholder="Tìm theo tên sự kiện..." value="<%= f.keyword %>">
+                </div>
+                <div class="col-md-3">
+                  <label for="category" class="form-label small fw-bold text-secondary">Danh mục</label>
+                  <select class="form-select" id="category" name="category">
+                    <option value="" <%= !f.category ? 'selected' : '' %>>Tất cả danh mục</option>
+                    <option value="music" <%= f.category==='music' ? 'selected' : '' %>>Music</option>
+                    <option value="tech" <%= f.category==='tech' ? 'selected' : '' %>>Tech</option>
+                    <option value="sport" <%= f.category==='sport' ? 'selected' : '' %>>Sport</option>
+                    <option value="education" <%= f.category==='education' ? 'selected' : '' %>>Education</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label for="status" class="form-label small fw-bold text-secondary">Trạng thái</label>
+                  <select class="form-select" id="status" name="status">
+                    <option value="" <%= !f.status ? 'selected' : '' %>>Tất cả trạng thái</option>
+                    <option value="DRAFT" <%= f.status==='DRAFT' ? 'selected' : '' %>>DRAFT</option>
+                    <option value="PENDING" <%= f.status==='PENDING' ? 'selected' : '' %>>PENDING</option>
+                    <option value="APPROVED" <%= f.status==='APPROVED' ? 'selected' : '' %>>APPROVED</option>
+                    <option value="ONGOING" <%= f.status==='ONGOING' ? 'selected' : '' %>>ONGOING</option>
+                    <option value="ENDED" <%= f.status==='ENDED' ? 'selected' : '' %>>ENDED</option>
+                    <option value="CANCELLED" <%= f.status==='CANCELLED' ? 'selected' : '' %>>CANCELLED</option>
+                  </select>
+                </div>
+                <div class="col-md-1 d-flex gap-2">
+                  <button type="submit" class="btn btn-primary w-100" title="Áp dụng"><i class="bi bi-search"></i></button>
+                </div>
+                <% if (f.keyword || f.category || f.status) { %>
+                <div class="col-12">
+                  <a href="/organizer/events" class="small text-decoration-none text-muted"><i class="bi bi-x-circle me-1"></i>Xóa bộ lọc</a>
+                </div>
+                <% } %>
               </form>
             </div>
-          </td>
-        </tr>
-        <% }) %>
-        <% } else { %>
-        <tr>
-          <td colspan="7" class="text-center py-5 text-muted">Bạn chưa tạo sự kiện nào. Hãy nhấn nút để tạo ngay!</td>
-        </tr>
-        <% } %>
-      </tbody>
-    </table>
-  </div>
-</div>
+          </div>
 
-<%- include('../../partials/pagination.ejs') %>
+          <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0 text-nowrap">
+                <thead class="table-light text-muted small text-uppercase">
+                  <tr>
+                    <th class="ps-4">Banner</th>
+                    <th>Tên Sự Kiện</th>
+                    <th>Danh mục</th>
+                    <th>Trạng thái</th>
+                    <th>Bắt đầu</th>
+                    <th>Kết thúc</th>
+                    <th>Đăng ký</th>
+                    <th class="pe-4 text-end">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if(events && events.length> 0) { %>
+                    <% events.forEach(item=> { %>
+                      <tr data-event-id="<%= item._id %>">
+                        <td class="ps-4">
+                          <img
+                            src="<%= item.bannerUrl || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=100&q=80' %>"
+                            class="rounded object-fit-cover" style="width: 60px; height: 40px;" alt="Banner">
+                        </td>
+                        <td class="fw-semibold">
+                          <a href="/organizer/events/<%= item._id %>" class="text-decoration-none text-dark">
+                            <%= item.title %>
+                          </a>
+                        </td>
+                        <td><span class="badge bg-light text-dark text-uppercase">
+                            <%= item.category %>
+                          </span></td>
+                        <td class="js-status-cell">
+                          <% if(item.status==='DRAFT' ) { %><span class="badge bg-secondary">DRAFT</span>
+                            <% } else if(item.status==='PENDING' ) { %><span
+                                class="badge bg-warning text-dark">PENDING</span>
+                              <% } else if(item.status==='APPROVED' ) { %><span class="badge bg-success">APPROVED</span>
+                                <% } else if(item.status==='ONGOING' ) { %><span class="badge bg-primary">ONGOING</span>
+                                  <% } else if(item.status==='ENDED' ) { %><span
+                                      class="badge bg-info text-dark">ENDED</span>
+                                    <% } else if(item.status==='REJECTED' ) { %><span
+                                        class="badge bg-danger">REJECTED</span>
+                                      <% } else { %><span class="badge bg-dark">CANCELLED</span>
+                                        <% } %>
+                        </td>
+                        <td><small class="text-muted">
+                            <%= new Date(item.startDate).toLocaleString('vi-VN', { day: '2-digit' , month: '2-digit' ,
+                              year: 'numeric' , hour: '2-digit' , minute: '2-digit' }) %>
+                          </small></td>
+                        <td><small class="text-muted">
+                            <%= new Date(item.endDate).toLocaleString('vi-VN', { day: '2-digit' , month: '2-digit' ,
+                              year: 'numeric' , hour: '2-digit' , minute: '2-digit' }) %>
+                          </small></td>
+                        <td><a href="/organizer/events/<%= item._id %>/registrations"
+                            class="text-decoration-none fw-bold"><i class="bi bi-people-fill me-1"></i>
+                            <%= item.registrationsCount || 0 %>/<%= item.totalQuota || 0 %>
+                          </a></td>
+                        <td class="pe-4 text-end">
+                          <div class="btn-group btn-group-sm">
+                            <% if (item.status==='DRAFT' ) { %>
+                              <a href="/organizer/events/<%= item._id %>/edit" class="btn btn-outline-secondary"
+                                title="Sửa"><i class="bi bi-pencil"></i></a>
+                              <% } %>
+                                <a href="/organizer/events/<%= item._id %>/registrations" class="btn btn-outline-info"
+                                  title="Danh sách đăng ký"><i class="bi bi-card-list"></i></a>
+                                <a href="/organizer/events/<%= item._id %>/staffs" class="btn btn-outline-dark"
+                                  title="Quản lý nhân viên"><i class="bi bi-person-gear"></i></a>
+                                <% if (item.status==='APPROVED' || item.status==='ONGOING' || item.status==='ENDED' ) {
+                                  %>
+                                  <a href="/organizer/events/<%= item._id %>/dashboard" class="btn btn-outline-success"
+                                    title="Dashboard realtime"><i class="bi bi-speedometer2"></i></a>
+                                  <% } %>
+                                    <% if (item.status==='ENDED' || new Date(item.endDate) < new Date()) { %>
+                                      <a href="/organizer/events/<%= item._id %>/report" class="btn btn-outline-primary"
+                                        title="Báo cáo tổng kết"><i class="bi bi-bar-chart-line"></i></a>
+                                      <% } %>
+                                        <% if (item.status==='PENDING' ) { %>
+                                          <button type="button" class="btn btn-outline-warning rounded-start-0"
+                                            title="Hủy chờ duyệt" data-bs-toggle="modal"
+                                            data-bs-target="#cancelEventModal-<%= item._id %>">
+                                            <i class="bi bi-x-circle"></i>
+                                          </button>
+                                          <% } %>
+                                            <% if (item.status==='DRAFT' ) { %>
+                                              <form action="/organizer/events/<%= item._id %>/delete" method="POST"
+                                                class="d-inline"
+                                                onsubmit="return confirm('Bạn chắc chắn có muốn xóa sự kiện này? Thao tác không thể khôi phục!');">
+                                                <button type="submit" class="btn btn-outline-danger rounded-start-0"
+                                                  title="Xóa"><i class="bi bi-trash"></i></button>
+                                              </form>
+                                              <% } %>
+                          </div>
+                        </td>
+                      </tr>
+                      <% }) %>
+                        <% } else { %>
+                          <tr>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                              <% if (f.keyword || f.category || f.status) { %>
+                                Không tìm thấy sự kiện phù hợp với bộ lọc.
+                              <% } else { %>
+                                Bạn chưa tạo sự kiện nào. Hãy nhấn nút để tạo ngay!
+                              <% } %>
+                            </td>
+                          </tr>
+                          <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <% if(events && events.length> 0) { %>
+            <% events.forEach(item=> { %>
+              <% if (item.status==='PENDING' ) { %>
+                <div class="modal fade" id="cancelEventModal-<%= item._id %>" tabindex="-1"
+                  aria-labelledby="cancelEventModalLabel-<%= item._id %>" aria-hidden="true">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <form action="/organizer/events/<%= item._id %>/cancel" method="POST">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="cancelEventModalLabel-<%= item._id %>">Hủy sự kiện</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Không"></button>
+                        </div>
+                        <div class="modal-body">
+                          Bạn có chắc chắn muốn hủy sự kiện đang chờ duyệt này không?
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Không</button>
+                          <button type="submit" class="btn btn-danger">Xác nhận hủy</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                <% } %>
+                  <% }) %>
+                    <% } %>
+
+                      <%- include('../../partials/pagination.ejs') %>
+
+                        <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4/dist/socket.io.min.js"></script>
+                        <script>
+                          (function () {
+                            const BADGE_MAP = {
+                              DRAFT: ['bg-secondary', ''],
+                              PENDING: ['bg-warning text-dark', ''],
+                              APPROVED: ['bg-success', ''],
+                              ONGOING: ['bg-primary', ''],
+                              ENDED: ['bg-info text-dark', ''],
+                              REJECTED: ['bg-danger', ''],
+                              CANCELLED: ['bg-dark', ''],
+                            };
+
+                            const socket = io(window.location.origin);
+
+                            socket.on('event_status_update', function (data) {
+                              if (!data || !data.eventId || !data.status) return;
+                              const row = document.querySelector('tr[data-event-id="' + data.eventId + '"]');
+                              if (!row) return;
+
+                              const cell = row.querySelector('.js-status-cell');
+                              const classes = BADGE_MAP[data.status];
+                              if (cell && classes) {
+                                cell.innerHTML = '<span class="badge ' + classes[0] + '">' + data.status + '</span>';
+                              }
+                            });
+                          })();
+                        </script>

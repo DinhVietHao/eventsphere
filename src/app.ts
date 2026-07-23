@@ -13,6 +13,8 @@ import paymentRoutes from "./features/payment/payment.routes";
 import checkinRouter from "./features/checkin/checkin.router";
 import registrationRouter from "./features/tickets/registration.router";
 import ticketsRouter from "./features/tickets/tickets.router";
+import reviewsRouter from "./features/reviews/reviews.router"
+import { setupSwagger } from "./config/swagger";
 
 const ejsLayouts = require("express-ejs-layouts");
 
@@ -20,6 +22,7 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "..", "public")));
 
 // Config Session + Flash
 app.use(cookieParser());
@@ -42,9 +45,13 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(ejsLayouts);
 app.set("layout", "layouts/main");
+app.use(express.static(path.join(__dirname, "public")));
 
 // View routes
 app.use("/", viewsRouter);
+
+// Swagger API docs — GET /api-docs
+setupSwagger(app);
 
 // API routes
 app.use("/api/v1/auth", authRouter);
@@ -55,6 +62,7 @@ app.use("/api/v1/payments", paymentRoutes);
 app.use("/api/v1/checkin", checkinRouter);
 app.use("/api/v1/notifications", notificationRouter);
 app.use("/api/v1/admin", adminRouter);
+app.use("/api/v1/reviews", reviewsRouter);
 
 // Global Error Handler
 app.use(errorHandler);

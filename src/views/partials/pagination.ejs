@@ -1,27 +1,59 @@
-<%# 
+<%#
   Data truyền vào từ Controller (ví dụ):
   - pagination: { currentPage: 1, totalPages: 5, limit: 10 }
-  - currentUrl: String (Ví dụ: '/events?category=music')
-%>
-<% if (typeof pagination !== 'undefined' && pagination.totalPages > 1) { %>
-<nav class="mt-5" aria-label="Page navigation">
-  <ul class="pagination justify-content-center">
+  - filters: object bất kỳ các cặp key/value filter hiện tại (tùy chọn — mọi key có giá trị
+    truthy sẽ được giữ nguyên trên URL khi đổi trang, không cần khai báo cứng từng field ở đây)
 
-    <li class="page-item <%= pagination.currentPage === 1 ? 'disabled' : '' %>">
-      <a class="page-link" href="?page=<%= pagination.currentPage - 1 %>" aria-label="Previous">
-        <span aria-hidden="true">&laquo; Trước</span>
+  Rút gọn số trang (xử lý 100% ở frontend, không cần đổi backend):
+  luôn hiện 3 trang đầu + 3 trang cuối, VÀ hiện thêm trang liền kề quanh
+  trang đang chọn (current-1, current, current+1) để luôn bấm tiếp được.
+  Ví dụ đang ở trang 3: 01 02 03 04 … 22 23 24
+  Ví dụ đang ở trang 10: 01 02 03 … 09 10 11 … 22 23 24
+%>
+<% if (typeof pagination !== 'undefined' && pagination.totalPages > 1) {
+  const pf = typeof filters !== 'undefined' && filters ? filters : {};
+  const pageUrl = (p) => {
+    const params = new URLSearchParams();
+    Object.keys(pf).forEach((k) => {
+      if (pf[k]) params.set(k, pf[k]);
+    });
+    params.set('page', p);
+    return '?' + params.toString();
+  };
+
+  const total = pagination.totalPages;
+  const current = pagination.currentPage;
+
+  const pages = new Set();
+  for (let i = 1; i <= Math.min(3, total); i++) pages.add(i);
+  for (let i = Math.max(1, total - 2); i <= total; i++) pages.add(i);
+  for (let i = Math.max(1, current - 1); i <= Math.min(total, current + 1); i++) pages.add(i);
+  const sortedPages = Array.from(pages).sort((a, b) => a - b);
+%>
+<nav class="mt-5" aria-label="Page navigation">
+  <ul class="pagination pagination-ticket justify-content-center">
+
+    <li class="page-item <%= current === 1 ? 'disabled' : '' %>">
+      <a class="page-link" href="<%= pageUrl(current - 1) %>" aria-label="Previous">
+        <span aria-hidden="true">&laquo;</span>
       </a>
     </li>
 
-    <% for(let i = 1; i <= pagination.totalPages; i++) { %>
-    <li class="page-item <%= pagination.currentPage === i ? 'active' : '' %>">
-      <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+    <% let prev = 0;
+    sortedPages.forEach((p) => {
+    if (prev && p - prev > 1) { %>
+      <li class="page-item disabled"><span class="page-link border-0 bg-transparent">…</span></li>
+    <% }
+      prev = p;
+    %>
+    <li class="page-item <%= current === p ? 'active' : '' %>">
+      <a class="page-link" href="<%= pageUrl(p) %>"><%= String(p).padStart(2, '0') %></a>
     </li>
-    <% } %>
+    <% }) %>
 
-    <li class="page-item <%= pagination.currentPage === pagination.totalPages ? 'disabled' : '' %>">
-      <a class="page-link" href="?page=<%= pagination.currentPage + 1 %>" aria-label="Next">
-        <span aria-hidden="true">Sau &raquo;</span>
+    <li class="page-item <%= current === total ? 'disabled' : '' %>">
+      <a class="page-link" href="<%= pageUrl(current + 1) %>" aria-label="Next">
+        <span aria-hidden="true">&raquo;</span>
       </a>
     </li>
 

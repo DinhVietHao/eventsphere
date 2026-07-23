@@ -16,25 +16,37 @@ const reviewsService = new ReviewsService();
 const LIMIT = 9;
 const REVIEW_LIMIT = 5;
 
-// UC01 + UC04 — Danh sách + lọc
+// UC01 + UC04 (+ keyword) — Danh sách + lọc + tìm kiếm
 eventsViewsRouter.get("/events", async (req: Request, res: Response) => {
   try {
     const page = Number(req.query.page) || 1;
     const category = req.query.category as string | undefined;
     const startFrom = req.query.startFrom as string | undefined;
     const startTo = req.query.startTo as string | undefined;
-    const hasFilter = category || startFrom || startTo;
+    const keyword = req.query.keyword as string | undefined;
+    const hasFilter = category || startFrom || startTo || keyword;
 
-    const [events, total] = await Promise.all([
-      hasFilter
-        ? eventService.filterEvents({
-          category,
-          startFrom: startFrom ? new Date(startFrom) : undefined,
-          startTo: startTo ? new Date(startTo) : undefined,
-        })
-        : eventService.getPublishedEvents(page, LIMIT),
-      eventService.countPublishedEvents({ category }),
-    ]);
+    let events;
+    let total;
+    if (hasFilter) {
+      const result = await eventService.filterEvents(
+          {
+            keyword,
+            category,
+            startFrom: startFrom ? new Date(startFrom) : undefined,
+            startTo: startTo ? new Date(startTo) : undefined,
+          },
+          page,
+          LIMIT,
+      );
+      events = result.events;
+      total = result.total;
+    } else {
+      [events, total] = await Promise.all([
+        eventService.getPublishedEvents(page, LIMIT),
+        eventService.countPublishedEvents({ category }),
+      ]);
+    }
 
     res.render("events/index", {
       events,
@@ -42,6 +54,12 @@ eventsViewsRouter.get("/events", async (req: Request, res: Response) => {
         currentPage: page,
         totalPages: Math.ceil(total / LIMIT),
         limit: LIMIT,
+      },
+      filters: {
+        keyword: keyword || "",
+        category: category || "",
+        startFrom: startFrom || "",
+        startTo: startTo || "",
       },
       user: req.user || null,
     });
